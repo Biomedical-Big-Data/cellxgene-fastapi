@@ -1,14 +1,14 @@
 import smtplib
 from email.mime.text import MIMEText
-from email.header import Header
+from conf import config
 
 
 # 邮件服务器地址和端口号
-SMTP_SERVER = "smtp.163.com"
-SMTP_PORT = 25
-SENDER_EMAIL = "18643104615@163.com"
-SENDER_PASSWORD = "VMMSRUFDFOBEZTCF"  # 这里是你的授权码
-TEST_EMAIL_ADDRESS = "619589351@qq.com"
+SMTP_SERVER = config.SMTP_SERVER
+SMTP_PORT = config.SMTP_PORT
+SENDER_EMAIL = config.SENDER_EMAIL
+AUTHORIZATION_CODE = config.AUTHORIZATION_CODE
+TEST_EMAIL_ADDRESS = config.TEST_EMAIL_ADDRESS
 
 
 # 创建一封邮件，文本内容为 "Hello, World!"
