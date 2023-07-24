@@ -1,5 +1,7 @@
 import re
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from orm.dependencies import get_db
 from orm.schema import user_model
 from orm.schema.response import ResponseMessage
@@ -15,6 +17,8 @@ router = APIRouter(
     tags=["users"],
     responses={404: {"description": "Not found"}},
 )
+
+templates = Jinja2Templates(directory="templates")
 
 
 @router.post(
@@ -40,6 +44,7 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
             user_name=user.user_name,
             email_address=user.email_address,
             salt=salt,
+            organization=user.organization,
             user_password=jwt_user_password,
             verify_state=config.NOT_VERIFY_STATE,
         ),
@@ -52,7 +57,7 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
         user_name=user.user_name, verify_url=verify_url
     )
     send_mail_result = mail_util.send_mail(
-        mail_template=mail_template, to_list=user.email_address
+        mail_template=mail_template, subject="账户验证邮件", to_list=user.email_address
     )
     if send_mail_result:
         return ResponseMessage(
@@ -77,7 +82,7 @@ async def user_login(
     if jwt_user_password == user_dict.user_password:
         token = auth_util.create_token(
             email_address=email_address,
-            user_password=user_password,
+            user_password=jwt_user_password,
             expire_time=60 * 24,
         )
         return_dict = user_dict.to_dict()
@@ -94,15 +99,19 @@ async def get_user_info(email_address: str,  db: Session = Depends(get_db)):
 
 
 @router.post('/info/edit', response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def edit_user_info(email_address: str, user_info: user_model.UserModel, db: Session = Depends(get_db)):
+async def edit_user_info(email_address: str, user_info: user_model.UserModel = Body(), db: Session = Depends(get_db)):
     user_dict = crud.get_user(db, [users.User.email_address == email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
-    new_user_dict = crud.get_user(db, [users.User.email_address == user_info.email_address])
-    if new_user_dict:
+    check_user_dict = crud.get_user(db, [users.User.email_address == user_info.email_address])
+    if check_user_dict:
         return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
-    res = crud.update_user(db, [users.User.email_address == email_address], user_info.to_dict())
-    print(type(res), res)
+    salt, jwt_user_password = auth_util.create_md5_password(
+        salt=user_dict.salt, password=user_info.user_password
+    )
+    update_user_dict = user_info.to_dict()
+    update_user_dict['user_password'] = jwt_user_password
+    crud.update_user(db, [users.User.email_address == email_address], update_user_dict)
     return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")
 
 
@@ -125,7 +134,7 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
     return ResponseMessage(status="0000", data="邮箱校验成功", message="邮箱校验成功")
 
 
-@router.post(
+@router.get(
     "/password/reset/mail/send",
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
@@ -142,7 +151,7 @@ async def send_reset_user_password_mail(email_address: str, db: Session = Depend
         user_name=user_dict.user_name, reset_password_url=reset_password_url
     )
     send_mail_result = mail_util.send_mail(
-        mail_template=mail_template, to_list=user_dict.email_address
+        mail_template=mail_template, subject="重置密码邮件", to_list=user_dict.email_address
     )
     if send_mail_result:
         return ResponseMessage(
@@ -154,6 +163,23 @@ async def send_reset_user_password_mail(email_address: str, db: Session = Depend
         return ResponseMessage(
             status="0201", data="重置密码邮件发送失败，请点击重新发送", message="重置密码邮件发送失败，请点击重新发送"
         )
+
+
+@router.get(
+    "/password/reset/template",
+    response_class=HTMLResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_reset_password_template(token: str, db: Session = Depends(get_db)):
+    verify_result, email_address, verify_message = auth_util.verify_user_token(
+        db, token
+    )
+    print(verify_result, email_address, verify_message)
+    if not verify_result:
+        return ResponseMessage(
+            status="0201", data=verify_message, message=verify_message
+        )
+    return templates.TemplateResponse("templates/reset_password.html", {})
 
 
 @router.post(

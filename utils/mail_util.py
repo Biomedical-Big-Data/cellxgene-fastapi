@@ -12,13 +12,13 @@ AUTHORIZATION_CODE = config.AUTHORIZATION_CODE
 TEST_EMAIL_ADDRESS = config.TEST_EMAIL_ADDRESS
 
 
-def send_mail(mail_template: str, to_list=None):
+def send_mail(mail_template: str, subject: str = "账户验证邮件", to_list=None):
     if to_list is None:
         to_list = [TEST_EMAIL_ADDRESS]
     message = MIMEText("{}".format(mail_template), "plain", "utf-8")
     message["From"] = SENDER_EMAIL  # 设置发件人昵称
     message["To"] = to_list  # 设置收件人昵称
-    message["Subject"] = "账户验证邮件"  # 设置邮件主题
+    message["Subject"] = subject  # 设置邮件主题
     try:
         smtp_connection = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         smtp_connection.login(SENDER_EMAIL, AUTHORIZATION_CODE)

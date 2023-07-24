@@ -4,10 +4,15 @@ from fastapi import Depends, FastAPI, Request, status, HTTPException
 from orm.dependencies import get_db
 from utils.auth_util import verify_user_token
 from fastapi.responses import RedirectResponse
+from orm.schema.response import ResponseMessage
 
 
 app = FastAPI()
 app.include_router(users.router)
+
+
+# async def exception_callback(request: Request, exc: Exception):
+#     print(request, exc)
 
 
 @app.middleware("http")
@@ -26,6 +31,8 @@ async def verify_token(request: Request, call_next):
         | path.startswith("/users/email/verify")
         | path.startswith("/favicon.ico")
         | path.startswith("/users/password/reset")
+        | path.startswith("/users/password/reset/template")
+        | path.startswith("/users/password/reset/mail/send")
     ):
         response = await call_next(request)
         return response
@@ -39,6 +46,7 @@ async def verify_token(request: Request, call_next):
             )
             if verify_result:
                 response = await call_next(request)
+                print('response', response)
                 return response
             else:
                 raise auth_error
