@@ -25,15 +25,15 @@ async def verify_token(request: Request, call_next):
         | path.startswith("/users/register")
         | path.startswith("/users/email/verify")
         | path.startswith("/favicon.ico")
+        | path.startswith("/users/password/reset")
     ):
         response = await call_next(request)
         return response
     else:
         try:
-            authorization: str = request.headers.get("authorization")
-            if not authorization:
+            token: str = request.headers.get("token", "")
+            if not token:
                 raise auth_error
-            token = authorization.split(" ")[1]
             verify_result, email_address, verify_message = verify_user_token(
                 next(get_db()), token
             )

@@ -14,3 +14,5 @@ JWT_SECRET_KEY = "RgFcYtmGEBJHo9x7mXSJgtoO"
 VERIFY_URL = "http://10.88.175.218:5050/users/email/verify?token="
 VERIFY_STATE = 1
 NOT_VERIFY_STATE = 0
+
+RESET_PASSWORD_URL = "http://10.88.175.218:5050/users/password/reset?token="

@@ -12,10 +12,9 @@ AUTHORIZATION_CODE = config.AUTHORIZATION_CODE
 TEST_EMAIL_ADDRESS = config.TEST_EMAIL_ADDRESS
 
 
-def send_mail(user_name, verify_url, to_list=None):
+def send_mail(mail_template: str, to_list=None):
     if to_list is None:
         to_list = [TEST_EMAIL_ADDRESS]
-    mail_template = verify_mail_template(user_name=user_name, verify_url=verify_url)
     message = MIMEText("{}".format(mail_template), "plain", "utf-8")
     message["From"] = SENDER_EMAIL  # 设置发件人昵称
     message["To"] = to_list  # 设置收件人昵称
@@ -33,13 +32,24 @@ def send_mail(user_name, verify_url, to_list=None):
         return False
 
 
-def verify_mail_template(user_name, verify_url):
+def verify_mail_template(user_name: str, verify_url: str):
     mail_template = """
                     Hi %s,
                     验证链接：%s
         """ % (
         user_name,
         verify_url,
+    )
+    return mail_template
+
+
+def reset_password_mail_template(user_name: str, reset_password_url: str):
+    mail_template = """
+                    Hi %s,
+                    重置密码链接：%s
+        """ % (
+        user_name,
+        reset_password_url,
     )
     return mail_template
 

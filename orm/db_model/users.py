@@ -14,6 +14,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     user_name = Column(String(255), nullable=False, unique=True)
     email_address = Column(VARCHAR(255), nullable=False, unique=True)
+    organization = Column(String(255), nullable=False)
     salt = Column(String(255), nullable=False)
     user_password = Column(String(255), nullable=False)
     verify_state = Column(TINYINT(1), nullable=False)
@@ -30,6 +31,7 @@ class User(Base):
         return {
             "user_name": self.user_name,
             "email_address": self.email_address,
+            "organization": self.organization,
             "verify_state": self.verify_state,
             "create_at": self.create_at,
             "update_at": self.update_at,
