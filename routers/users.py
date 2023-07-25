@@ -46,7 +46,7 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
             salt=salt,
             organization=user.organization,
             user_password=jwt_user_password,
-            verify_state=config.NOT_VERIFY_STATE,
+            state=config.NOT_VERIFY_STATE,
         ),
     )
     token = auth_util.create_token(
@@ -129,7 +129,7 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
     crud.update_user(
         db,
         [users.User.email_address == email_address],
-        {"verify_state": config.VERIFY_STATE},
+        {"state": config.VERIFY_STATE},
     )
     return ResponseMessage(status="0000", data="邮箱校验成功", message="邮箱校验成功")
 
@@ -166,7 +166,7 @@ async def send_reset_user_password_mail(email_address: str, db: Session = Depend
 
 
 @router.get(
-    "/password/reset/template",
+    "/password/reset/check",
     response_class=HTMLResponse,
     status_code=status.HTTP_200_OK,
 )
@@ -174,12 +174,9 @@ async def get_reset_password_template(token: str, db: Session = Depends(get_db))
     verify_result, email_address, verify_message = auth_util.verify_user_token(
         db, token
     )
-    print(verify_result, email_address, verify_message)
-    if not verify_result:
-        return ResponseMessage(
-            status="0201", data=verify_message, message=verify_message
-        )
-    return templates.TemplateResponse("templates/reset_password.html", {})
+    return ResponseMessage(
+        status="0000", data={"token_result": verify_result}, message=verify_message
+    )
 
 
 @router.post(

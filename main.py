@@ -4,8 +4,7 @@ from fastapi import Depends, FastAPI, Request, status, HTTPException
 from orm.dependencies import get_db
 from utils.auth_util import verify_user_token
 from fastapi.responses import RedirectResponse
-from orm.schema.response import ResponseMessage
-
+from starlette.responses import Response
 
 app = FastAPI()
 app.include_router(users.router)
@@ -17,9 +16,9 @@ app.include_router(users.router)
 
 @app.middleware("http")
 async def verify_token(request: Request, call_next):
-    auth_error = HTTPException(
+    auth_error = Response(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid authentication credentials",
+        content="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     path: str = request.get("path")
@@ -40,19 +39,19 @@ async def verify_token(request: Request, call_next):
         try:
             token: str = request.headers.get("token", "")
             if not token:
-                raise auth_error
+                return auth_error
             verify_result, email_address, verify_message = verify_user_token(
                 next(get_db()), token
             )
             if verify_result:
                 response = await call_next(request)
-                print('response', response)
                 return response
             else:
-                raise auth_error
+                return auth_error
+                # raise auth_error
         except Exception as e:
             print(e)
-            raise auth_error
+            return auth_error
 
 
 @app.get("/")
