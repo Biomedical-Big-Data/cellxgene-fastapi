@@ -37,6 +37,7 @@ async def verify_token(request: Request, call_next):
         | path.startswith("/users/register")
         | path.startswith("/users/email/verify")
         | path.startswith("/favicon.ico")
+        | path.startswith("/static/favicon.ico")
         | path.startswith("/users/password/reset")
         | path.startswith("/users/password/reset/template")
         | path.startswith("/users/password/reset/mail/send")

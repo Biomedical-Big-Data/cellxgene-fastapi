@@ -12,7 +12,7 @@ AUTHORIZATION_CODE = config.AUTHORIZATION_CODE
 TEST_EMAIL_ADDRESS = config.TEST_EMAIL_ADDRESS
 
 
-def send_mail(mail_template: str, subject: str = "账户验证邮件", to_list=None):
+def send_mail(mail_template: str, subject: str, to_list: str | None):
     if to_list is None:
         to_list = [TEST_EMAIL_ADDRESS]
     message = MIMEText("{}".format(mail_template), "plain", "utf-8")
@@ -22,13 +22,13 @@ def send_mail(mail_template: str, subject: str = "账户验证邮件", to_list=N
     try:
         smtp_connection = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         smtp_connection.login(SENDER_EMAIL, AUTHORIZATION_CODE)
-        smtp_connection.sendmail(SENDER_EMAIL, TEST_EMAIL_ADDRESS, message.as_string())
+        smtp_connection.sendmail(SENDER_EMAIL, to_list, message.as_string())
         smtp_connection.quit()
         # print("邮件发送成功！")
         return True
 
     except Exception as e:
-        # print("邮件发送失败：", e)
+        print("邮件发送失败：", e)
         return False
 
 
