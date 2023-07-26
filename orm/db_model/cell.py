@@ -1,7 +1,7 @@
-from sqlalchemy import Column, DateTime, Integer, String, text, Double
+from sqlalchemy import Column, DateTime, Integer, String, text, Double, TEXT
 from sqlalchemy.dialects.mysql import TINYINT
-from sqlalchemy.ext.declarative import declarative_base
-from dataclasses import dataclass
+from sqlalchemy.orm import declarative_base
+from orm.database import cellxgene_engine
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -9,7 +9,7 @@ metadata = Base.metadata
 
 class CellTypeMeta(Base):
     __tablename__ = "cell_type_meta"
-    __table_args__ = {"schema": "cell_type_meta"}
+    __table_args__ = {"schema": "cellxgene"}
 
     # ID
     id = Column(Integer, primary_key=True)
@@ -28,7 +28,7 @@ class CellTypeMeta(Base):
     # 细胞类型描述
     cell_type_description = Column(String(255))
     # 细胞类型__本体_标签
-    cell_type__ontology_label = Column(String(255))
+    cell_type__ontology_label = Column(TEXT)
 
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
@@ -42,7 +42,7 @@ class CellTypeMeta(Base):
 
 class CellClusterProportion(Base):
     __tablename__ = "cell_cluster_proportion"
-    __table_args__ = {"schema": "cell_cluster_proportion"}
+    __table_args__ = {"schema": "cellxgene"}
     # ID
     id = Column(Integer, primary_key=True)
     # 生物样品ID
@@ -70,7 +70,7 @@ class CellClusterProportion(Base):
 
 class CellClusterGeneExpression(Base):
     __tablename__ = "cell_cluster_gene_expression"
-    __table_args__ = {"schema": "cell_cluster_gene_expression"}
+    __table_args__ = {"schema": "cellxgene"}
     # ID
     id = Column(Integer, primary_key=True)
     # 细胞集群ID
@@ -93,3 +93,7 @@ class CellClusterGeneExpression(Base):
     gene_rank_cell_by_proportion = Column(Integer)
     # 用于 FACS 排序的建议表面组蛋白质
     suggested_surfaceome_protein_for_facs_sorting = Column(String(255))
+
+
+if __name__ == "__main__":
+    CellTypeMeta.metadata.create_all(cellxgene_engine)

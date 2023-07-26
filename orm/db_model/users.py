@@ -1,7 +1,7 @@
 from sqlalchemy import Column, DateTime, Integer, String, text
 from sqlalchemy.dialects.mysql import TINYINT, VARCHAR
-from sqlalchemy.ext.declarative import declarative_base
-from dataclasses import dataclass
+from sqlalchemy.orm import declarative_base
+from orm.database import cellxgene_engine
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -9,7 +9,7 @@ metadata = Base.metadata
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {"schema": "users"}
+    __table_args__ = {"schema": "cellxgene"}
 
     id = Column(Integer, primary_key=True)
     user_name = Column(String(255), nullable=False, unique=True)

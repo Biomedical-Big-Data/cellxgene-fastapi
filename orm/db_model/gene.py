@@ -1,7 +1,7 @@
 from sqlalchemy import Column, DateTime, Integer, String, text, Double
 from sqlalchemy.dialects.mysql import TINYINT
-from sqlalchemy.ext.declarative import declarative_base
-from dataclasses import dataclass
+from sqlalchemy.orm import declarative_base
+from orm.database import cellxgene_engine
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -9,7 +9,7 @@ metadata = Base.metadata
 
 class MouseGene(Base):
     __tablename__ = "mouse_gene"
-    __table_args__ = {"schema": "mouse_gene"}
+    __table_args__ = {"schema": "cellxgene"}
 
     # ID
     id = Column(Integer, primary_key=True)
@@ -50,7 +50,7 @@ class MouseGene(Base):
 
 class MousePathwayScore(Base):
     __tablename__ = "mouse_pathway_score"
-    __table_args__ = {"schema": "mouse_pathway_score"}
+    __table_args__ = {"schema": "cellxgene"}
     # ID
     id = Column(Integer, primary_key=True)
     # 路径编号
@@ -89,7 +89,7 @@ class MousePathwayScore(Base):
 
 class HumanGene(Base):
     __tablename__ = "human_gene"
-    __table_args__ = {"schema": "human_gene"}
+    __table_args__ = {"schema": "cellxgene"}
 
     # ID
     id = Column(Integer, primary_key=True)
@@ -130,7 +130,7 @@ class HumanGene(Base):
 
 class HumanPathwayScore(Base):
     __tablename__ = "human_pathway_score"
-    __table_args__ = {"schema": "human_pathway_score"}
+    __table_args__ = {"schema": "cellxgene"}
     # ID
     id = Column(Integer, primary_key=True)
     # 路径编号
@@ -165,3 +165,6 @@ class HumanPathwayScore(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
 
+
+if __name__ == "__main__":
+    MouseGene.metadata.create_all(cellxgene_engine)

@@ -5,7 +5,7 @@ from conf import config
 
 USER_DATABASE_URL = config.TEST_USER_DATABASE_URL
 
-user_engine = create_engine(
+cellxgene_engine = create_engine(
     USER_DATABASE_URL,
     pool_size=20,
     max_overflow=20,
@@ -13,6 +13,6 @@ user_engine = create_engine(
     echo=False,
     pool_pre_ping=True,
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=user_engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=cellxgene_engine)
 
 Base = declarative_base()

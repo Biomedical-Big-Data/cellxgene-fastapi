@@ -1,7 +1,7 @@
 from sqlalchemy import Column, DateTime, Integer, String, text
 from sqlalchemy.dialects.mysql import TINYINT
-from sqlalchemy.ext.declarative import declarative_base
-from dataclasses import dataclass
+from sqlalchemy.orm import declarative_base
+from orm.database import cellxgene_engine
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -9,7 +9,7 @@ metadata = Base.metadata
 
 class Project(Base):
     __tablename__ = "projects"
-    __table_args__ = {"schema": "projects"}
+    __table_args__ = {"schema": "cellxgene"}
 
     # ID
     id = Column(Integer, primary_key=True)
@@ -48,3 +48,7 @@ class Project(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+
+
+if __name__ == "__main__":
+    Project.metadata.create_all(cellxgene_engine)

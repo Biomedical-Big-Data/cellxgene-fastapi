@@ -1,7 +1,7 @@
-from sqlalchemy import Column, DateTime, Integer, String, text, Double
+from sqlalchemy import Column, DateTime, Integer, String, text, TEXT
 from sqlalchemy.dialects.mysql import TINYINT
-from sqlalchemy.ext.declarative import declarative_base
-from dataclasses import dataclass
+from sqlalchemy.orm import declarative_base
+from orm.database import cellxgene_engine
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -9,7 +9,7 @@ metadata = Base.metadata
 
 class DonorMeta(Base):
     __tablename__ = "donor_meta"
-    __table_args__ = {"schema": "donor_meta"}
+    __table_args__ = {"schema": "cellxgene"}
 
     # ID
     id = Column(Integer, primary_key=True)
@@ -18,11 +18,11 @@ class DonorMeta(Base):
     # 种族
     ethnicity = Column(String(255))
     # 种族__本体__标签
-    ethnicity__ontology_label = Column(String(255))
+    ethnicity__ontology_label = Column(TEXT)
     # 人种
     race = Column(String(255))
     # 种族__本体__标签
-    race__ontology_label = Column(String(255))
+    race__ontology_label = Column(TEXT)
     # 基因型
     mhc_genotype = Column(String(255))
     # 酒精历史
@@ -44,3 +44,7 @@ class DonorMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+
+
+if __name__ == "__main__":
+    DonorMeta.metadata.create_all(cellxgene_engine)
