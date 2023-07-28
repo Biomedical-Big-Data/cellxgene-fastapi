@@ -4,7 +4,7 @@ from hashlib import md5
 from datetime import datetime, timedelta
 from conf import config
 from orm import crud
-from orm.db_model import users
+from orm.db_model import cellxgene
 from sqlalchemy.orm import Session
 from orm.dependencies import get_db
 
@@ -54,7 +54,7 @@ def verify_user_token(db: Session, token: str, secret_key: str = config.JWT_SECR
             return False, email_address, "用户认证错误，请重新登录"
         if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
             return False, email_address, "token已过期"
-        user_dict = crud.get_user(db, [users.User.email_address == email_address])
+        user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
         if not user_dict:
             return False, email_address, "无用户，请重新登录"
         if user_dict.user_password != user_password:

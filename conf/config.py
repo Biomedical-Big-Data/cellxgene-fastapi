@@ -6,7 +6,7 @@ SENDER_EMAIL_NAME = "XX大学实验室"
 TEST_EMAIL_ADDRESS = "619589351@qq.com"
 
 TEST_USER_DATABASE_URL = (
-    "mysql+pymysql://root:Zdymarryme1314@124.223.82.115:3306/?charset=utf8"
+    "mysql+pymysql://root:Zdymarryme1314@124.223.82.115:3306/cellxgene?charset=utf8"
 )
 
 JWT_SECRET_KEY = "RgFcYtmGEBJHo9x7mXSJgtoO"

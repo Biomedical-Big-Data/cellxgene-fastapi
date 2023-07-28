@@ -1,18 +1,28 @@
 from sqlalchemy.orm import Session
-from orm.db_model.users import User
 from sqlalchemy import and_, or_, func
 from orm.schema import user_model
+from orm.db_model import cellxgene
+from orm.dependencies import get_db
 
 
 def get_user(db: Session, filters: list):
-    return db.query(User).filter(or_(*filters)).first()
+    return db.query(cellxgene.User).filter(or_(*filters)).first()
 
 
-def create_user(db: Session, insert_user_model: User):
+def create_user(db: Session, insert_user_model: cellxgene.User):
     db.add(insert_user_model)
     db.commit()
 
 
 def update_user(db: Session, filters: list, update_dict: dict):
-    db.query(User).filter(and_(*filters)).update(update_dict)
+    db.query(cellxgene.User).filter(and_(*filters)).update(update_dict)
     db.commit()
+
+
+def get_sample_donor_message(db: Session, bio_id):
+    return db.query(cellxgene.BioSample).filter(cellxgene.BioSample.id == bio_id).first()
+
+
+if __name__ == "__main__":
+    bio_msg = get_sample_donor_message(db=next(get_db()), bio_id=1)
+    print(bio_msg.donor_msg.sex)

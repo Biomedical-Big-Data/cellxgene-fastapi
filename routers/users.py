@@ -7,7 +7,7 @@ from orm.schema import user_model
 from orm.schema.response import ResponseMessage
 from orm import crud
 from sqlalchemy.orm import Session
-from orm.db_model import users
+from orm.db_model import cellxgene
 from utils import auth_util, mail_util
 from conf import config
 
@@ -33,14 +33,14 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
         return ResponseMessage(
             status="0201", data="密码应包含数字及大小写字母", message="密码应包含数字及大小写字母"
         )
-    if crud.get_user(db, [users.User.email_address == user.email_address]):
+    if crud.get_user(db, [cellxgene.User.email_address == user.email_address]):
         return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=None, password=user.user_password
     )
     crud.create_user(
         db,
-        users.User(
+        cellxgene.User(
             user_name=user.user_name,
             email_address=user.email_address,
             salt=salt,
@@ -73,7 +73,7 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
 async def user_login(
     email_address: str, user_password: str, db: Session = Depends(get_db)
 ):
-    user_dict = crud.get_user(db, [users.User.email_address == email_address])
+    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
     salt, jwt_user_password = auth_util.create_md5_password(
@@ -94,16 +94,16 @@ async def user_login(
 
 @router.get('/info', response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def get_user_info(email_address: str,  db: Session = Depends(get_db)):
-    user_dict = crud.get_user(db, [users.User.email_address == email_address])
+    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
     return ResponseMessage(status="0000", data=user_dict.to_dict(), message="success")
 
 
 @router.post('/info/edit', response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def edit_user_info(email_address: str, user_info: user_model.UserModel = Body(), db: Session = Depends(get_db)):
-    user_dict = crud.get_user(db, [users.User.email_address == email_address])
+    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
-    check_user_dict = crud.get_user(db, [users.User.email_address == user_info.email_address])
+    check_user_dict = crud.get_user(db, [cellxgene.User.email_address == user_info.email_address])
     if check_user_dict:
         return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
     salt, jwt_user_password = auth_util.create_md5_password(
@@ -111,7 +111,7 @@ async def edit_user_info(email_address: str, user_info: user_model.UserModel = B
     )
     update_user_dict = user_info.to_dict()
     update_user_dict['user_password'] = jwt_user_password
-    crud.update_user(db, [users.User.email_address == email_address], update_user_dict)
+    crud.update_user(db, [cellxgene.User.email_address == email_address], update_user_dict)
     return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")
 
 
@@ -128,7 +128,7 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
         )
     crud.update_user(
         db,
-        [users.User.email_address == email_address],
+        [cellxgene.User.email_address == email_address],
         {"state": config.VERIFY_STATE},
     )
     return ResponseMessage(status="0000", data="邮箱校验成功", message="邮箱校验成功")
@@ -140,7 +140,7 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
     status_code=status.HTTP_200_OK,
 )
 async def send_reset_user_password_mail(email_address: str, db: Session = Depends(get_db)):
-    user_dict = crud.get_user(db, [users.User.email_address == email_address])
+    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
     token = auth_util.create_token(
@@ -193,13 +193,13 @@ async def reset_user_password(email_address: str, user_password: str, db: Sessio
         return ResponseMessage(
             status="0201", data="密码应包含数字及大小写字母", message="密码应包含数字及大小写字母"
         )
-    user_dict = crud.get_user(db, [users.User.email_address == email_address])
+    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=user_dict.salt, password=user_password
     )
-    res = crud.update_user(db, [users.User.email_address == email_address], {"user_password": jwt_user_password})
+    res = crud.update_user(db, [cellxgene.User.email_address == email_address], {"user_password": jwt_user_password})
     print(type(res), res)
     return ResponseMessage(
         status="0000",
