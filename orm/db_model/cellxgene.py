@@ -1,6 +1,7 @@
 from sqlalchemy import Column, DateTime, Integer, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship
+from orm.database import cellxgene_engine
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -288,6 +289,10 @@ class Project(Base):
 
     # ID
     id = Column(Integer, primary_key=True)
+    #
+    integrated_project = Column(TINYINT(1))
+    #
+    title = Column(String(255))
     # 捐赠者编号
     donor_number = Column(String(255))
     # 生物样本编号
@@ -313,7 +318,7 @@ class Project(Base):
     # 数据策展人
     data_curators = Column(String(255))
     # 草稿状态
-    draft = Column(TINYINT(1), nullable=False)
+    # draft = Column(TINYINT(1), nullable=False)
 
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
@@ -323,6 +328,15 @@ class Project(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+
+
+class ProjectBioSample(Base):
+    __tablename__ = "project_biosample"
+
+    # ID
+    project_id = Column(Integer, primary_key=True)
+    #
+    biosample_id = Column(Integer)
 
 
 class BioSample(Base):
@@ -575,3 +589,7 @@ class User(Base):
             "create_at": self.create_at,
             "update_at": self.update_at,
         }
+
+
+if __name__ == "__main__":
+    metadata.create_all(cellxgene_engine)
