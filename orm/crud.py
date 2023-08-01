@@ -19,6 +19,14 @@ def update_user(db: Session, filters: list, update_dict: dict):
     db.commit()
 
 
+def get_project(db: Session, filters: list, skip: int = 0, limit: int = 20):
+    db.query(cellxgene.Project).filter(and_(*filters)).offset(skip).limit(limit).all()
+
+
+def get_sample(db: Session, filters: list, skip: int = 0, limit: int = 20):
+    db.query(cellxgene.BioSample).filter(and_(*filters)).offset(skip).limit(limit).all()
+
+
 def get_sample_donor_message(db: Session, bio_id):
     return db.query(cellxgene.BioSample).filter(cellxgene.BioSample.id == bio_id).first()
 

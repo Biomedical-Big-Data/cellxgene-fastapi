@@ -1,5 +1,5 @@
 import uvicorn
-from routers import users
+from routers import user, project
 from fastapi import Depends, FastAPI, Request, status, HTTPException
 from orm.dependencies import get_db
 from utils.auth_util import verify_user_token
@@ -15,7 +15,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(users.router)
+app.include_router(user.router)
+app.include_router(project.router)
 
 
 # async def exception_callback(request: Request, exc: Exception):

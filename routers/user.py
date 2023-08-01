@@ -1,7 +1,6 @@
 import re
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from orm.dependencies import get_db
 from orm.schema import user_model
 from orm.schema.response import ResponseMessage
@@ -17,8 +16,6 @@ router = APIRouter(
     tags=["users"],
     responses={404: {"description": "Not found"}},
 )
-
-templates = Jinja2Templates(directory="templates")
 
 
 @router.post(
