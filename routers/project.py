@@ -18,5 +18,12 @@ router = APIRouter(
 
 
 @router.get("/list", status_code=status.HTTP_200_OK)
-def get_project():
-    pass
+def get_project(search_type: str, filter_list: list, db: Session = Depends(get_db)):
+    if search_type == "sample":
+        res = crud.get_project_by_sample(db=db, filters=filter_list)
+    elif search_type == "cell":
+        res = crud.get_project_by_cell(db=db, filters=filter_list)
+    elif search_type == "gene":
+        res = crud.get_project_by_gene(db=db, filters=filter_list)
+    else:
+        return ResponseMessage(status='0201', data='wrong type', message='wrong type')
