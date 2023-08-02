@@ -284,7 +284,7 @@ class CalcCellClusterProportion(Base):
     # 生物样品ID
     biosample_id = Column(Integer)
     # 细胞类型ID
-    cell_type_id = Column(String(255))
+    cell_type_id = Column(String(255), ForeignKey("cell_type_meta.id"))
     # 细胞类型ID比例
     cell_proportion = Column(Double)
     # 细胞类型ID数量
@@ -302,6 +302,8 @@ class CalcCellClusterProportion(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+    cell_type_meta = relationship("CellTypeMeta", back_populates="cell_cluster_proportion_meta")
+    gene_expression = relationship("CellClusterGeneExpression", back_populates="cell_cluster_gene_meta")
 
 
 class CellTypeMeta(Base):
@@ -332,6 +334,7 @@ class CellTypeMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+    cell_cluster_proportion_meta = relationship("CalcCellClusterProportion", back_populates="cell_type_meta")
 
 
 class CellClusterGeneExpression(Base):
@@ -339,7 +342,7 @@ class CellClusterGeneExpression(Base):
     # ID
     id = Column(Integer, primary_key=True)
     # 细胞集群ID
-    calculated_cell_cluster_id = Column(String(255))
+    calculated_cell_cluster_id = Column(String(255), ForeignKey("calc_cell_cluster_proportion.id"))
     # 基因组ID
     gene_ensemble_id = Column(String(255))
     # 基因符号
@@ -367,6 +370,7 @@ class CellClusterGeneExpression(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+    cell_cluster_gene_meta = relationship("CalcCellClusterProportion", back_populates="gene_expression")
 
 
 class Species(Base):
