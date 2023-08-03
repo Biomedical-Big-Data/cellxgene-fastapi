@@ -1,10 +1,25 @@
-from sqlalchemy import Column, DateTime, Integer, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey
+from sqlalchemy import Column, DateTime, Integer, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey, Table
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship
 from orm.database import cellxgene_engine
 
 Base = declarative_base()
 metadata = Base.metadata
+
+
+project_biosample = Table(
+    "project_biosample",
+    metadata,
+    Column("project_id", Integer, ForeignKey("project_meta.id")),
+    Column("biosample_id", Integer, ForeignKey("biosample_meta.id"))
+)
+
+biosample_analysis = Table(
+    "biosample_analysis",
+    metadata,
+    Column("analysis_id", Integer, ForeignKey("analysis.id")),
+    Column("biosample_id", Integer, ForeignKey("biosample_meta.id"))
+)
 
 
 class Project(Base):
@@ -51,16 +66,7 @@ class Project(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    biosample_meta = relationship("BioSample", back_populates="project_meta")
-
-
-class ProjectBioSample(Base):
-    __tablename__ = "project_biosample"
-
-    # ID
-    project_id = Column(Integer, primary_key=True)
-    #
-    biosample_id = Column(Integer)
+    project_biosample_meta = relationship("BioSample", secondary=project_biosample, back_populates="biosample_project_meta")
 
 
 class BioSample(Base):
@@ -222,8 +228,9 @@ class BioSample(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    donor_meta = relationship("DonorMeta", back_populates="biosample_meta")
-    project_meta = relationship("Project", back_populates="biosample_meta")
+    biosample_donor_meta = relationship("DonorMeta", back_populates="donor_biosample_meta")
+    biosample_project_meta = relationship("Project", secondary=project_biosample, back_populates="project_biosample_meta")
+    biosample_analysis_meta = relationship("BioSample", back_populates="analysis_biosample_meta")
 
 
 class DonorMeta(Base):
@@ -257,14 +264,7 @@ class DonorMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    biosample_meta = relationship("BioSample", back_populates="donor_meta")
-
-
-class BioSampleAnalysis(Base):
-    __tablename__ = "biosample_analysis"
-
-    analysis_id = Column(Integer, primary_key=True)
-    biosample_id = Column(Integer)
+    donor_biosample_meta = relationship("BioSample", back_populates="biosample_donor_meta")
 
 
 class Analysis(Base):
@@ -275,6 +275,7 @@ class Analysis(Base):
     h5ad_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
+    analysis_biosample_meta = relationship("BioSample", back_populates="biosample_analysis_meta")
 
 
 class CalcCellClusterProportion(Base):
@@ -302,8 +303,8 @@ class CalcCellClusterProportion(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    cell_type_meta = relationship("CellTypeMeta", back_populates="cell_cluster_proportion_meta")
-    gene_expression = relationship("CellClusterGeneExpression", back_populates="cell_cluster_gene_meta")
+    proportion_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_proportion_meta")
+    proportion_gene_expression = relationship("CellClusterGeneExpression", back_populates="gene_expression_proportion_meta")
 
 
 class CellTypeMeta(Base):
@@ -334,7 +335,7 @@ class CellTypeMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    cell_cluster_proportion_meta = relationship("CalcCellClusterProportion", back_populates="cell_type_meta")
+    cell_type_proportion_meta = relationship("CalcCellClusterProportion", back_populates="proportion_cell_type_meta")
 
 
 class CellClusterGeneExpression(Base):
@@ -370,7 +371,7 @@ class CellClusterGeneExpression(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    cell_cluster_gene_meta = relationship("CalcCellClusterProportion", back_populates="gene_expression")
+    gene_expression_proportion_meta = relationship("CalcCellClusterProportion", back_populates="proportion_gene_expression")
 
 
 class Species(Base):
