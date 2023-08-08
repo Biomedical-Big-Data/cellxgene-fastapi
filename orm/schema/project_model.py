@@ -54,6 +54,7 @@ class ResponseProjectModel(BaseModel):
 
 class SearchProjectModel(BaseModel):
     search_type: str
+    external_project_accesstion: str | None
     organ: str | None
     species_id: int | None
     cell_id: int | None

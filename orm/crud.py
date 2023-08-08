@@ -21,19 +21,19 @@ def update_user(db: Session, filters: List, update_dict: Dict):
 
 
 def get_project_list(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.Project).filter(and_(*filters)).offset(skip).limit(limit).all()
+    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_project_by_sample(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.BioSample).filter(and_(*filters)).offset(skip).limit(limit).all()
+    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_project_by_cell(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.CalcCellClusterProportion).filter(and_(*filters)).offset(skip).limit(limit).all()
+    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_project_by_gene(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.Gene).filter(and_(*filters)).offset(skip).limit(limit).all()
+    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_sample_donor_message(db: Session, bio_id):

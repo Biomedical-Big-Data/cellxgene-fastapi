@@ -22,7 +22,7 @@ biosample_analysis = Table(
 )
 
 
-class Project(Base):
+class ProjectMeta(Base):
     __tablename__ = "project_meta"
 
     # ID
@@ -68,11 +68,11 @@ class Project(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    project_biosample_meta = relationship("BioSample", secondary=project_biosample, back_populates="biosample_project_meta")
+    project_biosample_meta = relationship("BioSampleMeta", secondary=project_biosample, back_populates="biosample_project_meta")
     project_donor_meta = relationship("DonorMeta", back_populates="donor_project_meta")
 
 
-class BioSample(Base):
+class BioSampleMeta(Base):
     __tablename__ = "biosample_meta"
 
     # ID
@@ -89,6 +89,8 @@ class BioSample(Base):
     species_id = Column(Integer, ForeignKey("species_meta.id"))
     # 捐赠者 ID
     donor_id = Column(INTEGER, ForeignKey("donor_meta.id"))
+    # 分析方法 ID
+    analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # bmi
     bmi = Column(String(255))
     # 是否活体
@@ -234,8 +236,8 @@ class BioSample(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
     biosample_donor_meta = relationship("DonorMeta", back_populates="donor_biosample_meta")
-    biosample_project_meta = relationship("Project", secondary=project_biosample, back_populates="project_biosample_meta")
-    biosample_analysis_meta = relationship("BioSample", back_populates="analysis_biosample_meta")
+    biosample_project_meta = relationship("ProjectMeta", secondary=project_biosample, back_populates="project_biosample_meta")
+    biosample_analysis_meta = relationship("Analysis", secondary=biosample_analysis, back_populates="analysis_biosample_meta")
     biosample_species_meta = relationship("SpeciesMeta", back_populates="species_biosample_meta")
 
 
@@ -270,8 +272,8 @@ class DonorMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    donor_biosample_meta = relationship("BioSample", back_populates="biosample_donor_meta")
-    donor_project_meta = relationship("BioSample", back_populates="project_donor_meta")
+    donor_biosample_meta = relationship("BioSampleMeta", back_populates="biosample_donor_meta")
+    donor_project_meta = relationship("ProjectMeta", back_populates="project_donor_meta")
 
 
 class Analysis(Base):
@@ -282,7 +284,7 @@ class Analysis(Base):
     h5ad_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
-    analysis_biosample_meta = relationship("BioSample", back_populates="biosample_analysis_meta")
+    analysis_biosample_meta = relationship("BioSampleMeta", secondary=biosample_analysis, back_populates="biosample_analysis_meta")
 
 
 class CalcCellClusterProportion(Base):
@@ -393,7 +395,7 @@ class SpeciesMeta(Base):
     species__ontology_label = Column(TEXT)
     species_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_species_meta")
     species_gene_meta = relationship("GeneMeta", back_populates="gene_species_meta")
-    species_biosample_meta = relationship("BioSample", back_populates="biosample_species_meta")
+    species_biosample_meta = relationship("BioSampleMeta", back_populates="biosample_species_meta")
 
 
 class GeneMeta(Base):
@@ -433,7 +435,7 @@ class GeneMeta(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
     gene_species_meta = relationship("SpeciesMeta", back_populates="species_gene_meta")
-    gene_gene_expression_meta = relationship("GeneMeta", back_populates="gene_expression_gene_meta")
+    gene_gene_expression_meta = relationship("CellClusterGeneExpression", back_populates="gene_expression_gene_meta")
 
 
 class PathwayScore(Base):

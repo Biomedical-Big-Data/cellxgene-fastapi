@@ -32,16 +32,17 @@ async def verify_token(request: Request, call_next):
     )
     path: str = request.get("path")
     if (
-        path.startswith("/users/login")
+        path.startswith("/user/login")
         | path.startswith("/docs")
         | path.startswith("/openapi")
-        | path.startswith("/users/register")
-        | path.startswith("/users/email/verify")
+        | path.startswith("/user/register")
+        | path.startswith("/user/email/verify")
         | path.startswith("/favicon.ico")
         | path.startswith("/static/favicon.ico")
-        | path.startswith("/users/password/reset")
-        | path.startswith("/users/password/reset/template")
-        | path.startswith("/users/password/reset/mail/send")
+        | path.startswith("/user/password/reset")
+        | path.startswith("/user/password/reset/template")
+        | path.startswith("/user/password/reset/mail/send")
+        | path.startswith("/project")
     ):
         response = await call_next(request)
         return response

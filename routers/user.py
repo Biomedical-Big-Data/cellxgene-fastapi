@@ -12,8 +12,8 @@ from conf import config
 
 
 router = APIRouter(
-    prefix="/users",
-    tags=["users"],
+    prefix="/user",
+    tags=["user"],
     responses={404: {"description": "Not found"}},
 )
 
