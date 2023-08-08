@@ -6,8 +6,10 @@ from orm.schema.response import ResponseMessage
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
+from orm.schema.project_model import ResponseProjectModel
 from utils import auth_util, mail_util
 from conf import config
+from typing import List, Union
 
 
 router = APIRouter(
@@ -18,11 +20,16 @@ router = APIRouter(
 
 
 @router.get("/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def get_project_list(search_type: str, external_project_accesstion: str | None, db: Session = Depends(get_db)):
+async def get_project_list(search_type: str, external_project_accesstion: Union[str, None] = None, disease:  Union[str, None] = None, db: Session = Depends(get_db)):
     filter_list = []
     if search_type == "project":
         filter_list.append(cellxgene.ProjectMeta.external_project_accesstion == external_project_accesstion)
-        print(filter_list)
         res = crud.get_project_list(db=db, filters=filter_list)
-        return ResponseMessage(status='0201', data='wrong type', message='wrong type')
+        for i in res:
+            print(i[0].title, i[1].bmi)
+    elif search_type == "sample":
+        filter_list.append(cellxgene.BioSampleMeta.disease == disease)
+        res = crud.get_project_list(db=db, filters=filter_list)
+        for i in res:
+            print(i[0].title, i[1].bmi)
     return ResponseMessage(status="0000", data="ok", message="ok")

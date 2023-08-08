@@ -21,25 +21,29 @@ def update_user(db: Session, filters: List, update_dict: Dict):
 
 
 def get_project_list(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+    return db.query(cellxgene.ProjectMeta, cellxgene.BioSampleMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_project_by_sample(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+    return db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_project_by_cell(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+    return db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_project_by_gene(db: Session, filters: List, skip: int = 0, limit: int = 20):
     db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
-def get_sample_donor_message(db: Session, bio_id):
-    return db.query(cellxgene.BioSample).filter(cellxgene.BioSample.id == bio_id).first()
+def create_project_biosample(db: Session):
+    project_meta = cellxgene.ProjectMeta(integrated_project=0, title='test', external_project_accesstion='4444')
+    biosample_meta = cellxgene.BioSampleMeta(external_sample_accesstion='4444', species_id=1, donor_id=1, bmi=30, disease='test')
+    project_meta.project_biosample_meta.append(biosample_meta)
+    db.add(project_meta)
+    db.commit()
 
 
 if __name__ == "__main__":
-    bio_msg = get_sample_donor_message(db=next(get_db()), bio_id=1)
-    print(bio_msg.donor_msg.sex)
+    pass
+    create_project_biosample(db=next(get_db()))

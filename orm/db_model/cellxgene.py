@@ -31,12 +31,8 @@ class ProjectMeta(Base):
     integrated_project = Column(TINYINT(1))
     #
     title = Column(String(255))
-    # 捐赠者编号
-    donor_id = Column(Integer, ForeignKey("donor_meta.id"))
     # 外部继承
     external_project_accesstion = Column(TEXT)
-    # 生物样本编号
-    biosample_number = Column(String(255))
     # 细胞数
     cell_number = Column(String(255))
     # 项目描述
@@ -69,7 +65,6 @@ class ProjectMeta(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
     project_biosample_meta = relationship("BioSampleMeta", secondary=project_biosample, back_populates="biosample_project_meta")
-    project_donor_meta = relationship("DonorMeta", back_populates="donor_project_meta")
 
 
 class BioSampleMeta(Base):
@@ -77,20 +72,14 @@ class BioSampleMeta(Base):
 
     # ID
     id = Column(Integer, primary_key=True)
-    # project ID
-    project_id = Column(Integer, ForeignKey("project_meta.id"))
     # 外部继承
     external_sample_accesstion = Column(TEXT)
-    # 外部继承
-    external_project_accesstion = Column(TEXT)
     # 生物样本类型
     biosample_type = Column(String(255))
     # 种类 ID
     species_id = Column(Integer, ForeignKey("species_meta.id"))
     # 捐赠者 ID
     donor_id = Column(INTEGER, ForeignKey("donor_meta.id"))
-    # 分析方法 ID
-    analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # bmi
     bmi = Column(String(255))
     # 是否活体
@@ -273,7 +262,6 @@ class DonorMeta(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
     donor_biosample_meta = relationship("BioSampleMeta", back_populates="biosample_donor_meta")
-    donor_project_meta = relationship("ProjectMeta", back_populates="project_donor_meta")
 
 
 class Analysis(Base):
