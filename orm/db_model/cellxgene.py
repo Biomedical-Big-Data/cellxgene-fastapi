@@ -64,7 +64,7 @@ class ProjectMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    project_biosample_meta = relationship("BioSampleMeta", secondary=project_biosample, back_populates="biosample_project_meta")
+    project_biosample_meta = relationship("BioSampleMeta", secondary=project_biosample, back_populates="biosample_project_meta", cascade="all")
 
 
 class BioSampleMeta(Base):
@@ -225,7 +225,7 @@ class BioSampleMeta(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
     biosample_donor_meta = relationship("DonorMeta", back_populates="donor_biosample_meta")
-    biosample_project_meta = relationship("ProjectMeta", secondary=project_biosample, back_populates="project_biosample_meta")
+    biosample_project_meta = relationship("ProjectMeta", secondary=project_biosample, back_populates="project_biosample_meta", cascade="all")
     biosample_analysis_meta = relationship("Analysis", secondary=biosample_analysis, back_populates="analysis_biosample_meta")
     biosample_species_meta = relationship("SpeciesMeta", back_populates="species_biosample_meta")
 

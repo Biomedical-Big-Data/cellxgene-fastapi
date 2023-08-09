@@ -37,13 +37,55 @@ def get_project_by_gene(db: Session, filters: List, skip: int = 0, limit: int = 
 
 
 def create_project_biosample(db: Session):
-    project_meta = cellxgene.ProjectMeta(integrated_project=0, title='test', external_project_accesstion='4444')
-    biosample_meta = cellxgene.BioSampleMeta(external_sample_accesstion='4444', species_id=1, donor_id=1, bmi=30, disease='test')
+    project_meta = cellxgene.ProjectMeta(integrated_project=0, title='ghjfgdh', external_project_accesstion='ioyuiu')
+    biosample_meta = cellxgene.BioSampleMeta(external_sample_accesstion='asdasd', species_id=1, donor_id=1, bmi=30, disease='4656745')
+    biosample_meta2 = cellxgene.BioSampleMeta(external_sample_accesstion='iiiii', species_id=1, donor_id=1, bmi=55,
+                                             disease='dedad')
     project_meta.project_biosample_meta.append(biosample_meta)
+    project_meta.project_biosample_meta.append(biosample_meta2)
     db.add(project_meta)
+    db.commit()
+
+
+def update_project_biosample(db: Session):
+    db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).update({"id":3})
+    db.commit()
+
+
+def delete_project_biosample(db: Session):
+    db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 2).delete()
+    db.commit()
+
+
+def add_project_biosample_relation(db: Session):
+    project_meta = db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
+    biosample_meta_list = db.query(cellxgene.BioSampleMeta).filter(cellxgene.BioSampleMeta.id.in_([2, 6, 7])).all()
+    print(project_meta)
+    print(biosample_meta_list)
+    for i in biosample_meta_list:
+        project_meta.project_biosample_meta.append(i)
+    db.commit()
+
+
+def delete_project_biosample_relation(db: Session):
+    project_meta = db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
+    biosample_meta_list = db.query(cellxgene.BioSampleMeta).filter(cellxgene.BioSampleMeta.id.in_([6, 7])).all()
+    for i in biosample_meta_list:
+        project_meta.project_biosample_meta.remove(i)
+    db.commit()
+
+
+def clear_project_biosample_relation(db: Session):
+    project_meta = db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
+    project_meta.project_biosample_meta.clear()
     db.commit()
 
 
 if __name__ == "__main__":
     pass
-    create_project_biosample(db=next(get_db()))
+    # create_project_biosample(db=next(get_db()))
+    # update_project_biosample(db=next(get_db()))
+    # delete_project_biosample(db=next(get_db()))
+    # add_project_biosample_relation(db=next(get_db()))
+    # delete_project_biosample_relation(db=next(get_db()))
+    clear_project_biosample_relation(db=next(get_db()))
