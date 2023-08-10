@@ -67,6 +67,19 @@ def add_project_biosample_relation(db: Session):
     db.commit()
 
 
+def update_project_biosample_relation(db: Session):
+    project_meta = db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 5).first()
+    biosample_meta_list = db.query(cellxgene.BioSampleMeta).filter(cellxgene.BioSampleMeta.id.in_([11,13])).all()
+    biosample_meta2 = cellxgene.BioSampleMeta(external_sample_accesstion='rewrtrt', species_id=1, donor_id=1, bmi=1,
+                                              disease='head')
+    biosample_meta_list.append(biosample_meta2)
+    print(project_meta)
+    print(biosample_meta_list)
+    # for i in biosample_meta_list:
+    project_meta.project_biosample_meta = biosample_meta_list
+    db.commit()
+
+
 def delete_project_biosample_relation(db: Session):
     project_meta = db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
     biosample_meta_list = db.query(cellxgene.BioSampleMeta).filter(cellxgene.BioSampleMeta.id.in_([6, 7])).all()
@@ -88,4 +101,4 @@ if __name__ == "__main__":
     # delete_project_biosample(db=next(get_db()))
     # add_project_biosample_relation(db=next(get_db()))
     # delete_project_biosample_relation(db=next(get_db()))
-    clear_project_biosample_relation(db=next(get_db()))
+    update_project_biosample_relation(db=next(get_db()))
