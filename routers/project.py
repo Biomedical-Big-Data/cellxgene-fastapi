@@ -10,6 +10,8 @@ from orm.schema.project_model import ResponseProjectModel
 from utils import auth_util, mail_util
 from conf import config
 from typing import List, Union
+from io import BytesIO
+import pandas as pd
 
 
 router = APIRouter(
@@ -37,4 +39,7 @@ async def get_project_list(search_type: str, external_project_accesstion: Union[
 
 @router.post("/add", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def add_project(file: UploadFile = File()):
-    file_data = file.read()
+    content = await file.read()
+    df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
+    print(df['T1.project_meta'])
+    return ResponseMessage(status="0000", data='ok', message="ok")
