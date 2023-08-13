@@ -26,3 +26,8 @@ class SearchUserListModel(BaseModel):
     organization: str
     email_address: str
     create_time: str
+
+
+class LoginUserModel(BaseModel):
+    email_address: str
+    user_password: str

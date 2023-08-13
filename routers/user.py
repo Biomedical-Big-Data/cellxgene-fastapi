@@ -68,17 +68,17 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def user_login(
-    email_address: str, user_password: str, db: Session = Depends(get_db)
+    user: user_model.LoginUserModel, db: Session = Depends(get_db)
 ):
-    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
+    user_dict = crud.get_user(db, [cellxgene.User.email_address == user.email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
     salt, jwt_user_password = auth_util.create_md5_password(
-        salt=user_dict.salt, password=user_password
+        salt=user_dict.salt, password=user.user_password
     )
     if jwt_user_password == user_dict.user_password:
         token = auth_util.create_token(
-            email_address=email_address,
+            email_address=user.email_address,
             user_password=jwt_user_password,
             expire_time=60 * 24,
         )
