@@ -37,6 +37,11 @@ async def get_project_list(search_type: str, external_project_accesstion: Union[
     return ResponseMessage(status="0000", data="ok", message="ok")
 
 
+@router.get("/list/by/project", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_project_list_by_project():
+    pass
+
+
 @router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def add_project(file: UploadFile = File()):
     content = await file.read()
@@ -56,3 +61,7 @@ async def update_project(file: UploadFile = File()):
 @router.get("/detail", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def get_project_detail(project_id: int):
     pass
+
+
+# @router.get("/species/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+# async def get_

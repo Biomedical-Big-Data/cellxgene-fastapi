@@ -66,7 +66,7 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
         )
 
 
-@router.get("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.post("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def user_login(
     email_address: str, user_password: str, db: Session = Depends(get_db)
 ):
@@ -136,7 +136,7 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
     return ResponseMessage(status="0000", data="邮箱校验成功", message="邮箱校验成功")
 
 
-@router.get(
+@router.post(
     "/password/reset/mail/send",
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
