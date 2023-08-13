@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Header, Body, Fil
 from fastapi.responses import HTMLResponse
 from orm.dependencies import get_db
 from orm.schema import project_model
-from orm.schema.response import ResponseMessage
+from orm.schema.response import ResponseMessage, ResponseBiosampleModel, ResponseCellModel, ResponseGeneModel
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
-from orm.schema.project_model import ResponseProjectModel
 from utils import auth_util, mail_util
 from conf import config
 from typing import List, Union
@@ -37,33 +36,38 @@ async def get_project_list(search_type: str, external_project_accesstion: Union[
     return ResponseMessage(status="0000", data="ok", message="ok")
 
 
-@router.get("/list/by/sample", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def get_project_list_by_sample(organ: Union[str, None] = None, species_id: Union[int, None] = None, external_project_accesstion: Union[str, None] = None,
+@router.get("/list/by/sample", response_model=ResponseBiosampleModel, status_code=status.HTTP_200_OK)
+async def get_project_list_by_sample(organ: Union[str, None] = None, species_id: Union[int, None] = None, external_sample_accesstion: Union[str, None] = None,
                                       disease: Union[str, None] = None, development_stage: Union[str, None] = None, db: Session = Depends(get_db)):
     filter_list = []
     if organ:
         filter_list.append(cellxgene.BioSampleMeta.organ == organ)
     if species_id:
         filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
-    if external_project_accesstion:
-        filter_list.append(cellxgene.BioSampleMeta.external_sample_accesstion == external_project_accesstion)
+    if external_sample_accesstion:
+        filter_list.append(cellxgene.BioSampleMeta.external_sample_accesstion == external_sample_accesstion)
     if disease:
         filter_list.append(cellxgene.BioSampleMeta.disease.like("%{}%".format(disease)))
     if development_stage:
         filter_list.append(cellxgene.BioSampleMeta.development_stage.like("%{}%".format(development_stage)))
-    project_list = crud.get_project_by_sample(db=db, filters=filter_list)
-    res_list = []
-    for project_biosample in project_list:
-        res_dict = {}
-        res_dict['title'] = project_biosample[0].title
-        res_dict['disease'] = project_biosample[1].disease
-        res_dict['sequencing_instrument_manufacturer_model'] = project_biosample[1].sequencing_instrument_manufacturer_model
-        res_dict['species'] = project_biosample[1].biosample_species_meta.species
-        res_dict['organ'] = project_biosample[1].organ
-        res_dict['donor_sex'] = project_biosample[1].biosample_donor_meta.sex
-        res_list.append(res_dict)
-    print(res_list)
-    return ResponseMessage(status="0000", data='ok', message="ok")
+    biosample_list = crud.get_project_by_sample(db=db, filters=filter_list)
+    return ResponseMessage(status="0000", data=biosample_list, message="ok")
+
+
+@router.get("/list/by/cell", response_model=ResponseCellModel, status_code=status.HTTP_200_OK)
+async def get_project_list_by_cell(cell_id: Union[int, None] = None, species_id: Union[int, None] = None, genes_positive: Union[str, None] = None,
+                                   genes_negative: Union[str, None] = None, db: Session = Depends(get_db)):
+    filter_list = []
+    if cell_id:
+        filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
+    if species_id:
+        filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
+    if genes_positive:
+        filter_list.append(cellxgene.CellTypeMeta.marker_gene_symbol)
+    cell_type_list = crud.get_project_by_cell(db=db, filters=filter_list)
+    print(cell_type_list[0].cell_type_species_meta)
+    print(cell_type_list[0].cell_type_proportion_meta[0].id)
+    return ResponseMessage(status="0000", data=cell_type_list, message="ok")
 
 
 @router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)

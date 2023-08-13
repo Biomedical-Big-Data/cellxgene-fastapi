@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey, Table
+from sqlalchemy import Column, DateTime, INTEGER, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey, Table
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship
 from orm.database import cellxgene_engine
@@ -10,15 +10,15 @@ metadata = Base.metadata
 project_biosample = Table(
     "project_biosample",
     metadata,
-    Column("project_id", Integer, ForeignKey("project_meta.id")),
-    Column("biosample_id", Integer, ForeignKey("biosample_meta.id"))
+    Column("project_id", INTEGER, ForeignKey("project_meta.id")),
+    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id"))
 )
 
 biosample_analysis = Table(
     "biosample_analysis",
     metadata,
-    Column("analysis_id", Integer, ForeignKey("analysis.id")),
-    Column("biosample_id", Integer, ForeignKey("biosample_meta.id"))
+    Column("analysis_id", INTEGER, ForeignKey("analysis.id")),
+    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id"))
 )
 
 
@@ -26,7 +26,7 @@ class ProjectMeta(Base):
     __tablename__ = "project_meta"
 
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     #
     integrated_project = Column(TINYINT(1))
     #
@@ -65,19 +65,20 @@ class ProjectMeta(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
     project_biosample_meta = relationship("BioSampleMeta", secondary=project_biosample, back_populates="biosample_project_meta", cascade="all")
+    project_analysis_meta = relationship("Analysis", back_populates="analysis_project_meta")
 
 
 class BioSampleMeta(Base):
     __tablename__ = "biosample_meta"
 
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     # 外部继承
     external_sample_accesstion = Column(TEXT)
     # 生物样本类型
     biosample_type = Column(String(255))
     # 种类 ID
-    species_id = Column(Integer, ForeignKey("species_meta.id"))
+    species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 捐赠者 ID
     donor_id = Column(INTEGER, ForeignKey("donor_meta.id"))
     # bmi
@@ -234,7 +235,7 @@ class DonorMeta(Base):
     __tablename__ = "donor_meta"
 
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     sex = Column(String(255))
     # 种族
     ethnicity = Column(String(255))
@@ -267,27 +268,30 @@ class DonorMeta(Base):
 class Analysis(Base):
     __tablename__ = "analysis"
 
-    id = Column(Integer, primary_key=True)
-    project_id = Column(Integer)
+    id = Column(INTEGER, primary_key=True)
+    project_id = Column(INTEGER, ForeignKey("project_meta.id"))
     h5ad_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
-    project_status = Column(Integer)
+    project_status = Column(INTEGER)
     analysis_biosample_meta = relationship("BioSampleMeta", secondary=biosample_analysis, back_populates="biosample_analysis_meta")
+    analysis_cell_proportion_meta = relationship("CalcCellClusterProportion", back_populates="cell_proportion_analysis_meta")
+    analysis_project_meta = relationship("ProjectMeta", back_populates="project_analysis_meta")
 
 
 class CalcCellClusterProportion(Base):
     __tablename__ = "calc_cell_cluster_proportion"
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     # 生物样品ID
-    biosample_id = Column(Integer)
+    biosample_id = Column(INTEGER)
+    analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # 细胞类型ID
-    cell_type_id = Column(Integer, ForeignKey("cell_type_meta.id"))
+    cell_type_id = Column(INTEGER, ForeignKey("cell_type_meta.id"))
     # 细胞类型ID比例
     cell_proportion = Column(Double)
     # 细胞类型ID数量
-    cell_number = Column(Integer)
+    cell_number = Column(INTEGER)
     # 细胞集群方法
     cell_cluster_method = Column(String(255))
 
@@ -301,23 +305,24 @@ class CalcCellClusterProportion(Base):
     )
     proportion_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_proportion_meta")
     proportion_gene_expression = relationship("CellClusterGeneExpression", back_populates="gene_expression_proportion_meta")
+    cell_proportion_analysis_meta = relationship("Analysis", back_populates="analysis_cell_proportion_meta")
 
 
 class CellTypeMeta(Base):
     __tablename__ = "cell_type_meta"
 
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     # 物种ID
-    species_id = Column(Integer, ForeignKey("species_meta.id"))
+    species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 标记符号
     marker_gene_symbol = Column(String(255))
     # 细胞分类标识
-    cell_taxonomy_id = Column(Integer)
+    cell_taxonomy_id = Column(INTEGER)
     # 细胞分类URL
     cell_taxonomy_url = Column(String(255))
     # 细胞本体 ID
-    cell_ontology_id = Column(Integer)
+    cell_ontology_id = Column(INTEGER)
     # 细胞类型名称
     cell_type_name = Column(String(255))
     # 细胞类型描述
@@ -340,11 +345,11 @@ class CellTypeMeta(Base):
 class CellClusterGeneExpression(Base):
     __tablename__ = "cell_cluster_gene_expression"
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     # 细胞集群ID
-    calculated_cell_cluster_id = Column(Integer, ForeignKey("calc_cell_cluster_proportion.id"))
+    calculated_cell_cluster_id = Column(INTEGER, ForeignKey("calc_cell_cluster_proportion.id"))
     # 基因组ID
-    gene_id = Column(Integer, ForeignKey("gene_meta.id"))
+    gene_id = Column(INTEGER, ForeignKey("gene_meta.id"))
     # 基因符号
     gene_symbol = Column(String(255))
     # 平均基因表达式
@@ -352,13 +357,13 @@ class CellClusterGeneExpression(Base):
     # 基因的细胞表达比例
     cell_proportion_expression_the_gene = Column(Double)
     # 细胞按比例排序
-    cell_rank_gene_by_proportion = Column(Integer)
+    cell_rank_gene_by_proportion = Column(INTEGER)
     # 细胞表达式的基因排名
-    cell_rank_gene_by_expression = Column(Integer)
+    cell_rank_gene_by_expression = Column(INTEGER)
     # 逐个表达的基因排名
-    gene_rank_cell_by_expression = Column(Integer)
+    gene_rank_cell_by_expression = Column(INTEGER)
     # 基因按比例排序
-    gene_rank_cell_by_proportion = Column(Integer)
+    gene_rank_cell_by_proportion = Column(INTEGER)
     # 用于 FACS 排序的建议表面组蛋白质
     suggested_surfaceome_protein_for_facs_sorting = Column(String(255))
 
@@ -377,11 +382,11 @@ class CellClusterGeneExpression(Base):
 class SpeciesMeta(Base):
     __tablename__ = "species_meta"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     # 品种
     species = Column(String(255))
     # 物种__本体_标签
-    species__ontology_label = Column(TEXT)
+    species_ontology_label = Column(TEXT)
     species_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_species_meta")
     species_gene_meta = relationship("GeneMeta", back_populates="gene_species_meta")
     species_biosample_meta = relationship("BioSampleMeta", back_populates="biosample_species_meta")
@@ -391,9 +396,9 @@ class GeneMeta(Base):
     __tablename__ = "gene_meta"
 
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     # 品种
-    species_id = Column(Integer, ForeignKey("species_meta.id"))
+    species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 人类正源物
     ortholog = Column(String(255))
     # 项目描述
@@ -430,23 +435,23 @@ class GeneMeta(Base):
 class PathwayScore(Base):
     __tablename__ = "pathway_score"
     # ID
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     # 路径源
     pathway_source = Column(String(255))
     # 路径名称
     pathway_name = Column(String(255))
     # 品种
-    species_id = Column(Integer, ForeignKey("species_meta.id"))
+    species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 基因组符号
     geneset_gene_symbols = Column(String(255))
     # 项目编号
-    project_id = Column(Integer, ForeignKey("project_meta.id"))
+    project_id = Column(INTEGER, ForeignKey("project_meta.id"))
     # 生物样本 ID
-    biosample_id = Column(Integer, ForeignKey("biosample_meta.id"))
+    biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
     # 细胞类型名称
     cell_type_name = Column(String(255))
     # 细胞集群标识
-    calculated_cell_cluster_id = Column(Integer, ForeignKey("calc_cell_cluster_proportion.id"))
+    calculated_cell_cluster_id = Column(INTEGER, ForeignKey("calc_cell_cluster_proportion.id"))
     # 得分函数
     score_function = Column(String(255))
     # 得分
@@ -465,13 +470,13 @@ class PathwayScore(Base):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     user_name = Column(String(255), nullable=False, unique=True)
     email_address = Column(VARCHAR(255), nullable=False, unique=True)
     organization = Column(String(255), nullable=False)
     salt = Column(String(255), nullable=False)
     user_password = Column(String(255), nullable=False)
-    state = Column(TINYINT(1), nullable=False)
+    state = Column(INTEGER, nullable=False)
     role = Column(String(255), nullable=False)
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")

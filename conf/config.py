@@ -14,5 +14,6 @@ JWT_SECRET_KEY = "RgFcYtmGEBJHo9x7mXSJgtoO"
 VERIFY_URL = "http://124.223.82.115:5050/users/email/verify?token="
 VERIFY_STATE = 1
 NOT_VERIFY_STATE = 0
+VERIFY_BLOCK = -1
 
 RESET_PASSWORD_URL = "http://124.223.82.115:5050/users/password/reset?token="
