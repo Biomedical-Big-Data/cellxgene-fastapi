@@ -19,3 +19,10 @@ class UserModel(BaseModel):
 class FiterUserModel(BaseModel):
     user_name: str | None
     email_address: str | None
+
+
+class SearchUserListModel(BaseModel):
+    user_name: str
+    organization: str
+    email_address: str
+    create_time: str

@@ -37,9 +37,22 @@ async def get_project_list(search_type: str, external_project_accesstion: Union[
     return ResponseMessage(status="0000", data="ok", message="ok")
 
 
-@router.post("/add", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def add_project(file: UploadFile = File()):
     content = await file.read()
-    df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
-    print(df['T1.project_meta'])
+    all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
+    print(all_sheet_df.keys())
     return ResponseMessage(status="0000", data='ok', message="ok")
+
+
+@router.post("/update", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def update_project(file: UploadFile = File()):
+    content = await file.read()
+    all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
+    print(all_sheet_df.keys())
+    return ResponseMessage(status="0000", data='ok', message="ok")
+
+
+@router.get("/detail", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_project_detail(project_id: int):
+    pass

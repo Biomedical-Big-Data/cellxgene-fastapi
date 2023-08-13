@@ -89,6 +89,11 @@ async def user_login(
         return ResponseMessage(status="0201", data="登录失败，密码错误", message="登录失败，密码错误")
 
 
+@router.get("/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_user_list():
+    pass
+
+
 @router.get('/info', response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def get_user_info(email_address: str,  db: Session = Depends(get_db)):
     user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
