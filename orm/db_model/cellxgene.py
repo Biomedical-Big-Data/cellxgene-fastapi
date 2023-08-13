@@ -472,6 +472,7 @@ class User(Base):
     salt = Column(String(255), nullable=False)
     user_password = Column(String(255), nullable=False)
     state = Column(TINYINT(1), nullable=False)
+    role = Column(String(255), nullable=False)
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )
@@ -487,6 +488,7 @@ class User(Base):
             "email_address": self.email_address,
             "organization": self.organization,
             "state": self.state,
+            "role": self.role,
             "create_at": self.create_at,
             "update_at": self.update_at,
         }

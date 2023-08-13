@@ -25,7 +25,7 @@ def get_project_list(db: Session, filters: List, skip: int = 0, limit: int = 20)
 
 
 def get_project_by_sample(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    return db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+    return db.query(cellxgene.ProjectMeta, cellxgene.BioSampleMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
 
 
 def get_project_by_cell(db: Session, filters: List, skip: int = 0, limit: int = 20):
@@ -92,6 +92,10 @@ def clear_project_biosample_relation(db: Session):
     project_meta = db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
     project_meta.project_biosample_meta.clear()
     db.commit()
+
+
+def get_species_list(db: Session, filters: List | None):
+    return db.query(cellxgene.SpeciesMeta).filter(and_(*filters)).all()
 
 
 if __name__ == "__main__":

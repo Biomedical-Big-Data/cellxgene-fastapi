@@ -31,3 +31,7 @@ class SearchUserListModel(BaseModel):
 class LoginUserModel(BaseModel):
     email_address: str
     user_password: str
+
+
+class PasswordResetModel(BaseModel):
+    email_address: str

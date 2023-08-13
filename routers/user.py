@@ -141,8 +141,8 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
 )
-async def send_reset_user_password_mail(email_address: str, db: Session = Depends(get_db)):
-    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
+async def send_reset_user_password_mail(user: user_model.PasswordResetModel, db: Session = Depends(get_db)):
+    user_dict = crud.get_user(db, [cellxgene.User.email_address == user.email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
     token = auth_util.create_token(
