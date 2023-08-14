@@ -20,13 +20,16 @@ def update_user(db: Session, filters: List, update_dict: Dict):
     db.commit()
 
 
-def get_project_list(db: Session, filters: List, page: int = 0, page_size: int = 20):
+def create_project(db: Session, insert_project_model: cellxgene.ProjectMeta):
+    db.add(insert_project_model)
+    db.commit()
+
+
+def get_project_detail(db: Session, project_id: int):
     return (
-        db.query(cellxgene.ProjectMeta, cellxgene.BioSampleMeta)
-        .filter(and_(*filters))
-        .offset(page)
-        .limit(page_size)
-        .all()
+        db.query(cellxgene.ProjectMeta)
+        .filter(cellxgene.ProjectMeta.id == project_id)
+        .first()
     )
 
 

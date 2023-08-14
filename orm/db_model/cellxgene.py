@@ -85,6 +85,26 @@ class ProjectMeta(Base):
         "Analysis", back_populates="analysis_project_meta"
     )
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "integrated_project": self.integrated_project,
+            "title": self.title,
+            "external_project_accesstion": self.external_project_accesstion,
+            "cell_number": self.cell_number,
+            "description": self.description,
+            "anatomical_entity": self.anatomical_entity,
+            "release_date": self.release_date,
+            "contact": self.contact,
+            "publications": self.publications,
+            "contributors": self.contributors,
+            "collaborating_organizations": self.collaborating_organizations,
+            "citation": self.citation,
+            "data_curators": self.data_curators,
+            "create_at": self.create_at,
+            "update_at": self.update_at
+        }
+
 
 class BioSampleMeta(Base):
     __tablename__ = "biosample_meta"

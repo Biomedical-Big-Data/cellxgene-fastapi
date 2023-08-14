@@ -68,21 +68,21 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def user_login(user: user_model.LoginUserModel, db: Session = Depends(get_db)):
-    user_dict = crud.get_user(db, [cellxgene.User.email_address == user.email_address])
-    if not user_dict:
+    user_info_model = crud.get_user(db, [cellxgene.User.email_address == user.email_address])
+    if not user_info_model:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
     salt, jwt_user_password = auth_util.create_md5_password(
-        salt=user_dict.salt, password=user.user_password
+        salt=user_info_model.salt, password=user.user_password
     )
-    if jwt_user_password == user_dict.user_password:
+    if jwt_user_password == user_info_model.user_password:
         token = auth_util.create_token(
             email_address=user.email_address,
             user_password=jwt_user_password,
             expire_time=60 * 24,
         )
-        return_dict = user_dict.to_dict()
-        return_dict["token"] = token
-        return ResponseMessage(status="0000", data=return_dict, message="登录成功")
+        user_info_dict = user_info_model.to_dict()
+        user_info_dict["token"] = token
+        return ResponseMessage(status="0000", data=user_info_dict, message="登录成功")
     else:
         return ResponseMessage(status="0201", data="登录失败，密码错误", message="登录失败，密码错误")
 
@@ -94,8 +94,8 @@ async def get_user_list():
 
 @router.get("/info", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def get_user_info(email_address: str, db: Session = Depends(get_db)):
-    user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
-    return ResponseMessage(status="0000", data=user_dict.to_dict(), message="success")
+    user_info_model = crud.get_user(db, [cellxgene.User.email_address == email_address])
+    return ResponseMessage(status="0000", data=user_info_model.to_dict(), message="success")
 
 
 @router.post(

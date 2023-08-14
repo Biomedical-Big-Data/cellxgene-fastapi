@@ -10,7 +10,7 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse
 from orm.dependencies import get_db
-from orm.schema import project_model
+from orm.schema.project_model import ProjectModel
 from orm.schema.response import (
     ResponseMessage,
     ResponseBiosampleModel,
@@ -35,28 +35,23 @@ router = APIRouter(
 )
 
 
-@router.get("/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.get("/list/{project_id}", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def get_project_list(
-    search_type: str,
-    external_project_accesstion: Union[str, None] = None,
-    disease: Union[str, None] = None,
-    db: Session = Depends(get_db),
+    project_id: int,
+    db: Session = Depends(get_db)
 ):
-    filter_list = []
-    if search_type == "project":
-        filter_list.append(
-            cellxgene.ProjectMeta.external_project_accesstion
-            == external_project_accesstion
-        )
-        res = crud.get_project_list(db=db, filters=filter_list)
-        for i in res:
-            print(i[0].title, i[1].bmi)
-    elif search_type == "sample":
-        filter_list.append(cellxgene.BioSampleMeta.disease == disease)
-        res = crud.get_project_list(db=db, filters=filter_list)
-        for i in res:
-            print(i[0].title, i[1].bmi)
-    return ResponseMessage(status="0000", data="ok", message="ok")
+    project_info_model = crud.get_project_detail(db=db, project_id=project_id)
+    if not project_info_model:
+        return ResponseMessage(status="0201", data="无此项目", message="无此项目")
+    return ResponseMessage(status="0000", data=project_info_model.to_dict(), message="ok")
+
+
+@router.post("/create", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def create_project(
+    project_model: ProjectModel
+):
+    print(project_model)
+    return ResponseMessage(status="0000", data="项目创建成功", message="项目创建成功")
 
 
 @router.get(
@@ -168,11 +163,6 @@ async def update_project(file: UploadFile = File()):
     content = await file.read()
     all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
     print(all_sheet_df.keys())
-    return ResponseMessage(status="0000", data="ok", message="ok")
-
-
-@router.get("/detail", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def get_project_detail(project_id: int):
     return ResponseMessage(status="0000", data="ok", message="ok")
 
 
