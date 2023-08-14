@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Any, List
-from orm.schema import project_model
+from orm.schema import project_relation_model
 
 
 class ResponseMessage(BaseModel):
@@ -11,17 +11,17 @@ class ResponseMessage(BaseModel):
 
 class ResponseBiosampleModel(BaseModel):
     status: str
-    data: List[project_model.BiosampleModelRelation]
+    data: List[project_relation_model.BiosampleModelRelation]
     message: str
 
 
 class ResponseCellModel(BaseModel):
     status: str
-    data: List[project_model.CellTypeModel]
+    data: List[project_relation_model.CellTypeRelation]
     message: str
 
 
 class ResponseGeneModel(BaseModel):
     status: str
-    data: List[project_model.GeneModel]
+    data: List[project_relation_model.GeneRelation]
     message: str

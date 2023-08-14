@@ -1,4 +1,15 @@
-from sqlalchemy import Column, DateTime, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    String,
+    text,
+    Double,
+    TEXT,
+    VARCHAR,
+    INTEGER,
+    ForeignKey,
+    Table,
+)
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship
 from orm.database import cellxgene_engine
@@ -11,14 +22,14 @@ project_biosample = Table(
     "project_biosample",
     metadata,
     Column("project_id", INTEGER, ForeignKey("project_meta.id")),
-    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id"))
+    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id")),
 )
 
 biosample_analysis = Table(
     "biosample_analysis",
     metadata,
     Column("analysis_id", INTEGER, ForeignKey("analysis.id")),
-    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id"))
+    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id")),
 )
 
 
@@ -64,8 +75,15 @@ class ProjectMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    project_biosample_meta = relationship("BioSampleMeta", secondary=project_biosample, back_populates="biosample_project_meta", cascade="all")
-    project_analysis_meta = relationship("Analysis", back_populates="analysis_project_meta")
+    project_biosample_meta = relationship(
+        "BioSampleMeta",
+        secondary=project_biosample,
+        back_populates="biosample_project_meta",
+        cascade="all",
+    )
+    project_analysis_meta = relationship(
+        "Analysis", back_populates="analysis_project_meta"
+    )
 
 
 class BioSampleMeta(Base):
@@ -225,10 +243,23 @@ class BioSampleMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    biosample_donor_meta = relationship("DonorMeta", back_populates="donor_biosample_meta")
-    biosample_project_meta = relationship("ProjectMeta", secondary=project_biosample, back_populates="project_biosample_meta", cascade="all")
-    biosample_analysis_meta = relationship("Analysis", secondary=biosample_analysis, back_populates="analysis_biosample_meta")
-    biosample_species_meta = relationship("SpeciesMeta", back_populates="species_biosample_meta")
+    biosample_donor_meta = relationship(
+        "DonorMeta", back_populates="donor_biosample_meta"
+    )
+    biosample_project_meta = relationship(
+        "ProjectMeta",
+        secondary=project_biosample,
+        back_populates="project_biosample_meta",
+        cascade="all",
+    )
+    biosample_analysis_meta = relationship(
+        "Analysis",
+        secondary=biosample_analysis,
+        back_populates="analysis_biosample_meta",
+    )
+    biosample_species_meta = relationship(
+        "SpeciesMeta", back_populates="species_biosample_meta"
+    )
 
 
 class DonorMeta(Base):
@@ -262,7 +293,9 @@ class DonorMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    donor_biosample_meta = relationship("BioSampleMeta", back_populates="biosample_donor_meta")
+    donor_biosample_meta = relationship(
+        "BioSampleMeta", back_populates="biosample_donor_meta"
+    )
 
 
 class Analysis(Base):
@@ -274,9 +307,17 @@ class Analysis(Base):
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
     project_status = Column(INTEGER)
-    analysis_biosample_meta = relationship("BioSampleMeta", secondary=biosample_analysis, back_populates="biosample_analysis_meta")
-    analysis_cell_proportion_meta = relationship("CalcCellClusterProportion", back_populates="cell_proportion_analysis_meta")
-    analysis_project_meta = relationship("ProjectMeta", back_populates="project_analysis_meta")
+    analysis_biosample_meta = relationship(
+        "BioSampleMeta",
+        secondary=biosample_analysis,
+        back_populates="biosample_analysis_meta",
+    )
+    analysis_cell_proportion_meta = relationship(
+        "CalcCellClusterProportion", back_populates="cell_proportion_analysis_meta"
+    )
+    analysis_project_meta = relationship(
+        "ProjectMeta", back_populates="project_analysis_meta"
+    )
 
 
 class CalcCellClusterProportion(Base):
@@ -303,9 +344,15 @@ class CalcCellClusterProportion(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    proportion_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_proportion_meta")
-    proportion_gene_expression = relationship("CellClusterGeneExpression", back_populates="gene_expression_proportion_meta")
-    cell_proportion_analysis_meta = relationship("Analysis", back_populates="analysis_cell_proportion_meta")
+    proportion_cell_type_meta = relationship(
+        "CellTypeMeta", back_populates="cell_type_proportion_meta"
+    )
+    proportion_gene_expression = relationship(
+        "CellClusterGeneExpression", back_populates="gene_expression_proportion_meta"
+    )
+    cell_proportion_analysis_meta = relationship(
+        "Analysis", back_populates="analysis_cell_proportion_meta"
+    )
 
 
 class CellTypeMeta(Base):
@@ -338,8 +385,12 @@ class CellTypeMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    cell_type_proportion_meta = relationship("CalcCellClusterProportion", back_populates="proportion_cell_type_meta")
-    cell_type_species_meta = relationship("SpeciesMeta", back_populates="species_cell_type_meta")
+    cell_type_proportion_meta = relationship(
+        "CalcCellClusterProportion", back_populates="proportion_cell_type_meta"
+    )
+    cell_type_species_meta = relationship(
+        "SpeciesMeta", back_populates="species_cell_type_meta"
+    )
 
 
 class CellClusterGeneExpression(Base):
@@ -347,7 +398,9 @@ class CellClusterGeneExpression(Base):
     # ID
     id = Column(INTEGER, primary_key=True)
     # 细胞集群ID
-    calculated_cell_cluster_id = Column(INTEGER, ForeignKey("calc_cell_cluster_proportion.id"))
+    calculated_cell_cluster_id = Column(
+        INTEGER, ForeignKey("calc_cell_cluster_proportion.id")
+    )
     # 基因组ID
     gene_id = Column(INTEGER, ForeignKey("gene_meta.id"))
     # 基因符号
@@ -375,8 +428,12 @@ class CellClusterGeneExpression(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    gene_expression_proportion_meta = relationship("CalcCellClusterProportion", back_populates="proportion_gene_expression")
-    gene_expression_gene_meta = relationship("GeneMeta", back_populates="gene_gene_expression_meta")
+    gene_expression_proportion_meta = relationship(
+        "CalcCellClusterProportion", back_populates="proportion_gene_expression"
+    )
+    gene_expression_gene_meta = relationship(
+        "GeneMeta", back_populates="gene_gene_expression_meta"
+    )
 
 
 class SpeciesMeta(Base):
@@ -387,9 +444,13 @@ class SpeciesMeta(Base):
     species = Column(String(255))
     # 物种_本体_标签
     species_ontology_label = Column(TEXT)
-    species_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_species_meta")
+    species_cell_type_meta = relationship(
+        "CellTypeMeta", back_populates="cell_type_species_meta"
+    )
     species_gene_meta = relationship("GeneMeta", back_populates="gene_species_meta")
-    species_biosample_meta = relationship("BioSampleMeta", back_populates="biosample_species_meta")
+    species_biosample_meta = relationship(
+        "BioSampleMeta", back_populates="biosample_species_meta"
+    )
 
 
 class GeneMeta(Base):
@@ -429,7 +490,9 @@ class GeneMeta(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
     gene_species_meta = relationship("SpeciesMeta", back_populates="species_gene_meta")
-    gene_gene_expression_meta = relationship("CellClusterGeneExpression", back_populates="gene_expression_gene_meta")
+    gene_gene_expression_meta = relationship(
+        "CellClusterGeneExpression", back_populates="gene_expression_gene_meta"
+    )
 
 
 class PathwayScore(Base):
@@ -451,7 +514,9 @@ class PathwayScore(Base):
     # 细胞类型名称
     cell_type_name = Column(String(255))
     # 细胞集群标识
-    calculated_cell_cluster_id = Column(INTEGER, ForeignKey("calc_cell_cluster_proportion.id"))
+    calculated_cell_cluster_id = Column(
+        INTEGER, ForeignKey("calc_cell_cluster_proportion.id")
+    )
     # 得分函数
     score_function = Column(String(255))
     # 得分

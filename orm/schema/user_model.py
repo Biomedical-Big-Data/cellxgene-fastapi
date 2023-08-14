@@ -12,7 +12,7 @@ class UserModel(BaseModel):
             "user_name": self.user_name,
             "email_address": self.email_address,
             "organization": self.organization,
-            "user_password": self.user_password
+            "user_password": self.user_password,
         }
 
 

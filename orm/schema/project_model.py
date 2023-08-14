@@ -88,7 +88,7 @@ class BiosampleModel(BaseModel):
     organ: str | None
     organ_region: str | None
     gene_perturbation: str | None
-    gene_perturbation_direction:str | None
+    gene_perturbation_direction: str | None
     gene_perturbation_dynamics: str | None
     gene_perturbation_method: str | None
     gene_perturbation_time_since: str | None
@@ -133,15 +133,6 @@ class BiosampleModel(BaseModel):
         org_mode = True
 
 
-class BiosampleModelRelation(BiosampleModel):
-    biosample_project_meta: List[ProjectModel]
-    biosample_donor_meta: DonorModel
-    biosample_species_meta: SpeciesModel
-
-    class Config:
-        org_mode = True
-
-
 class AnalysisModel(BaseModel):
     id: int
     project_id: int | None
@@ -149,13 +140,11 @@ class AnalysisModel(BaseModel):
     reference: str | None
     analysis_protocol: str | None
     project_status: int | None
-    analysis_project_meta: ProjectModel
-    analysis_biosample_meta: List[BiosampleModel]
 
     class Config:
         org_mode = True
-        
-        
+
+
 class CellClusterProportionModel(BaseModel):
     id: int
     biosample_id: int | None
@@ -166,7 +155,6 @@ class CellClusterProportionModel(BaseModel):
     cell_cluster_method: str | None
     create_at: datetime
     update_at: datetime
-    cell_proportion_analysis_meta: AnalysisModel
 
     class Config:
         org_mode = True
@@ -189,8 +177,8 @@ class CellClusterGeneExpressionModel(BaseModel):
 
     class Config:
         org_mode = True
-        
-        
+
+
 class CellTypeModel(BaseModel):
     id: int
     species_id: int
@@ -203,49 +191,46 @@ class CellTypeModel(BaseModel):
     cell_type_ontology_label: str | None
     create_at: datetime
     update_at: datetime
-    cell_type_species_meta: SpeciesModel
-    cell_type_proportion_meta: List[CellClusterProportionModel]
-    
+
     class Config:
         org_mode = True
 
 
 class GeneExpression(BaseModel):
     id: int
-    species_id: int
-    ortholog: str
-    gene_symbol: str
-    gene_name: str
-    alias: str
-    gene_ontology: str
-    GPCR: str
-    TF: str
-    surfaceome: str
-    drugbank_drugtarget: str
-    phenotype: str
-    create_at: str
-    update_at: str
+    calculated_cell_cluster_id: int
+    gene_id: int | None
+    gene_symbol: str | None
+    average_gene_expression: float | None
+    cell_proportion_expression_the_gene: float | None
+    cell_rank_gene_by_proportion: int | None
+    cell_rank_gene_by_expression: int | None
+    gene_rank_cell_by_expression: int | None
+    gene_rank_cell_by_proportion: int | None
+    suggested_surfaceome_protein_for_facs_sorting: str | None
+    create_at: datetime
+    update_at: datetime
 
     class Config:
         org_mode = True
-        
+
 
 class GeneModel(BaseModel):
     id: int
     species_id: int
-    ortholog: str
-    gene_symbol: str
-    gene_name: str
-    alias: str
-    gene_ontology: str
-    GPCR: str
-    TF: str
-    surfaceome: str
-    drugbank_drugtarget: str
-    phenotype: str
-    create_at: str
-    update_at: str
-    
+    ortholog: str | None
+    gene_symbol: str | None
+    gene_name: str | None
+    alias: str | None
+    gene_ontology: str | None
+    GPCR: str | None
+    TF: str | None
+    surfaceome: str | None
+    drugbank_drugtarget: str | None
+    phenotype: str | None
+    create_at: datetime
+    update_at: datetime
+
     class Config:
         org_mode = True
 

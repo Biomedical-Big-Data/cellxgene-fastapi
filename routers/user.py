@@ -67,9 +67,7 @@ async def register(user: user_model.UserModel, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def user_login(
-    user: user_model.LoginUserModel, db: Session = Depends(get_db)
-):
+async def user_login(user: user_model.LoginUserModel, db: Session = Depends(get_db)):
     user_dict = crud.get_user(db, [cellxgene.User.email_address == user.email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
@@ -94,26 +92,36 @@ async def get_user_list():
     pass
 
 
-@router.get('/info', response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def get_user_info(email_address: str,  db: Session = Depends(get_db)):
+@router.get("/info", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_user_info(email_address: str, db: Session = Depends(get_db)):
     user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
     return ResponseMessage(status="0000", data=user_dict.to_dict(), message="success")
 
 
-@router.post('/info/edit', response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def edit_user_info(email_address: str, user_info: user_model.UserModel = Body(), db: Session = Depends(get_db)):
+@router.post(
+    "/info/edit", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+)
+async def edit_user_info(
+    email_address: str,
+    user_info: user_model.UserModel = Body(),
+    db: Session = Depends(get_db),
+):
     user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
-    check_user_dict = crud.get_user(db, [cellxgene.User.email_address == user_info.email_address])
+    check_user_dict = crud.get_user(
+        db, [cellxgene.User.email_address == user_info.email_address]
+    )
     if check_user_dict:
         return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=user_dict.salt, password=user_info.user_password
     )
     update_user_dict = user_info.to_dict()
-    update_user_dict['user_password'] = jwt_user_password
-    crud.update_user(db, [cellxgene.User.email_address == email_address], update_user_dict)
+    update_user_dict["user_password"] = jwt_user_password
+    crud.update_user(
+        db, [cellxgene.User.email_address == email_address], update_user_dict
+    )
     return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")
 
 
@@ -141,7 +149,9 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
 )
-async def send_reset_user_password_mail(user: user_model.PasswordResetModel, db: Session = Depends(get_db)):
+async def send_reset_user_password_mail(
+    user: user_model.PasswordResetModel, db: Session = Depends(get_db)
+):
     user_dict = crud.get_user(db, [cellxgene.User.email_address == user.email_address])
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
@@ -186,7 +196,9 @@ async def get_reset_password_template(token: str, db: Session = Depends(get_db))
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
 )
-async def reset_user_password(email_address: str, user_password: str, db: Session = Depends(get_db)):
+async def reset_user_password(
+    email_address: str, user_password: str, db: Session = Depends(get_db)
+):
     if len(user_password) < 6 or len(user_password) > 16:
         return ResponseMessage(
             status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
@@ -201,7 +213,11 @@ async def reset_user_password(email_address: str, user_password: str, db: Sessio
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=user_dict.salt, password=user_password
     )
-    res = crud.update_user(db, [cellxgene.User.email_address == email_address], {"user_password": jwt_user_password})
+    res = crud.update_user(
+        db,
+        [cellxgene.User.email_address == email_address],
+        {"user_password": jwt_user_password},
+    )
     print(type(res), res)
     return ResponseMessage(
         status="0000",
