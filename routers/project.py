@@ -65,9 +65,18 @@ async def get_project_list_by_cell(cell_id: Union[int, None] = None, species_id:
     if genes_positive:
         filter_list.append(cellxgene.CellTypeMeta.marker_gene_symbol)
     cell_type_list = crud.get_project_by_cell(db=db, filters=filter_list)
-    print(cell_type_list[0].cell_type_species_meta)
-    print(cell_type_list[0].cell_type_proportion_meta[0].id)
     return ResponseMessage(status="0000", data=cell_type_list, message="ok")
+
+
+@router.get("/list/by/gene", response_model=ResponseGeneModel, status_code=status.HTTP_200_OK)
+async def get_project_list_by_gene(gene_symbol: Union[str, None] = None, species_id: Union[int, None] = None, page: int = 0, page_size: int = 20, db: Session = Depends(get_db)):
+    filter_list = []
+    if gene_symbol:
+        filter_list.append(cellxgene.GeneMeta.gene_symbol == gene_symbol)
+    if species_id:
+        filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+    gene_meta_list = crud.get_project_by_gene(db=db, filters=filter_list, page=page, page_size=page_size)
+    return ResponseMessage(status="0000", data=gene_meta_list, message="ok")
 
 
 @router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)

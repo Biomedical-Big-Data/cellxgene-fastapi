@@ -63,55 +63,55 @@ class BiosampleModel(BaseModel):
     sample_collection_time: str | None
     geographical_region: str | None
     organism_age: int | None
-    organism_age__unit: int | None
+    organism_age_unit: int | None
     mouse_strain: str | None
     culture_duration: int | None
-    culture_duration__unit: int | None
+    culture_duration_unit: int | None
     development_stage: str | None
     disease: str | None
-    disease__ontology_label: str | None
-    disease__intracellular_pathogen: str | None
-    disease__intracellular_pathogen__ontology_label: str | None
-    disease__time_since_onset: str | None
-    disease__time_since_onset__unit: int | None
-    disease__time_since_onset__unit_label: str | None
-    disease__time_since_treatment_start: str | None
-    disease__time_since_treatment_start__unit: int | None
-    disease__treated: int | None
-    disease__treatment: str | None
+    disease_ontology_label: str | None
+    disease_intracellular_pathogen: str | None
+    disease_intracellular_pathogen_ontology_label: str | None
+    disease_time_since_onset: str | None
+    disease_time_since_onset_unit: int | None
+    disease_time_since_onset_unit_label: str | None
+    disease_time_since_treatment_start: str | None
+    disease_time_since_treatment_start_unit: int | None
+    disease_treated: int | None
+    disease_treatment: str | None
     vaccination: str | None
-    vaccination__adjuvants: str | None
-    vaccination__dosage: str | None
-    vaccination__route: str | None
-    vaccination__time_since: str | None
-    vaccination__time_since__unit: int | None
+    vaccination_adjuvants: str | None
+    vaccination_dosage: str | None
+    vaccination_route: str | None
+    vaccination_time_since: str | None
+    vaccination_time_since_unit: int | None
     organ: str | None
     organ_region: str | None
     gene_perturbation: str | None
-    gene_perturbation__direction:str | None
-    gene_perturbation__dynamics: str | None
-    gene_perturbation__method: str | None
-    gene_perturbation__time_since: str | None
-    gene_perturbation__time_since__unit: int | None
+    gene_perturbation_direction:str | None
+    gene_perturbation_dynamics: str | None
+    gene_perturbation_method: str | None
+    gene_perturbation_time_since: str | None
+    gene_perturbation_time_since_unit: int | None
     biologies_perturbation: str | None
-    biologies_perturbation__concentration: float | None
-    biologies_perturbation__concentration__unit: int | None
-    biologies_perturbation__solvent: str | None
-    biologies_perturbation__source: str | None
-    biologies_perturbation__time_since: str | None
-    biologies_perturbation__time_since__unit: int | None
+    biologies_perturbation_concentration: float | None
+    biologies_perturbation_concentration_unit: int | None
+    biologies_perturbation_solvent: str | None
+    biologies_perturbation_source: str | None
+    biologies_perturbation_time_since: str | None
+    biologies_perturbation_time_since_unit: int | None
     small_molecule_perturbation: str | None
-    small_molecule_perturbation__concentration: float | None
-    small_molecule_perturbation__concentration__unit: int | None
-    small_molecule_perturbation__solvent: str | None
-    small_molecule_perturbation__source: str | None
-    small_molecule_perturbation__time_since: str | None
-    small_molecule_perturbation__time_since__unit: int | None
+    small_molecule_perturbation_concentration: float | None
+    small_molecule_perturbation_concentration_unit: int | None
+    small_molecule_perturbation_solvent: str | None
+    small_molecule_perturbation_source: str | None
+    small_molecule_perturbation_time_since: str | None
+    small_molecule_perturbation_time_since_unit: int | None
     other_perturbation: str | None
-    other_perturbation__time_since: str | None
-    other_perturbation__time_since__unit: int | None
-    enrichment__cell_type: str | None
-    enrichment__facs_markers: str | None
+    other_perturbation_time_since: str | None
+    other_perturbation_time_since_unit: int | None
+    enrichment_cell_type: str | None
+    enrichment_facs_markers: str | None
     enrichment_method: str | None
     preservation_method: str | None
     library_preparation_protocol: str | None
@@ -128,6 +128,12 @@ class BiosampleModel(BaseModel):
     number_of_reads: int | None
     create_at: datetime
     update_at: datetime
+
+    class Config:
+        org_mode = True
+
+
+class BiosampleModelRelation(BiosampleModel):
     biosample_project_meta: List[ProjectModel]
     biosample_donor_meta: DonorModel
     biosample_species_meta: SpeciesModel
@@ -194,7 +200,7 @@ class CellTypeModel(BaseModel):
     cell_ontology_id: int | None
     cell_type_name: str | None
     cell_type_description: str | None
-    cell_type__ontology_label: str | None
+    cell_type_ontology_label: str | None
     create_at: datetime
     update_at: datetime
     cell_type_species_meta: SpeciesModel
@@ -242,3 +248,8 @@ class GeneModel(BaseModel):
     
     class Config:
         org_mode = True
+
+
+if __name__ == "__main__":
+    a = BiosampleModel()
+    print(a.keys())

@@ -11,7 +11,7 @@ class ResponseMessage(BaseModel):
 
 class ResponseBiosampleModel(BaseModel):
     status: str
-    data: List[project_model.BiosampleModel]
+    data: List[project_model.BiosampleModelRelation]
     message: str
 
 

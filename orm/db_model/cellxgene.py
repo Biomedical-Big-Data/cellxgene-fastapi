@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, INTEGER, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey, Table
+from sqlalchemy import Column, DateTime, String, text, Double, TEXT, VARCHAR, INTEGER, ForeignKey, Table
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship
 from orm.database import cellxgene_engine
@@ -92,103 +92,103 @@ class BioSampleMeta(Base):
     # 有机体年龄
     organism_age = Column(INTEGER)
     # 有机体年龄单位
-    organism_age__unit = Column(INTEGER)
+    organism_age_unit = Column(INTEGER)
     # TODO 鼠应变
     mouse_strain = Column(String(255))
     # TODO 持续时间
     culture_duration = Column(INTEGER)
-    # 文化持续时间__单位
-    culture_duration__unit = Column(INTEGER)
+    # 文化持续时间_单位
+    culture_duration_unit = Column(INTEGER)
     # 发展阶段
     development_stage = Column(String(255))
     # 病症
     disease = Column(String(255))
-    # 疾病__本体_标签
-    disease__ontology_label = Column(TEXT)
-    # 疾病__细胞内病原体
-    disease__intracellular_pathogen = Column(String(255))
-    # 疾病__细胞内病原体__病理学__标签
-    disease__intracellular_pathogen__ontology_label = Column(TEXT)
-    # 疾病__发病时间
-    disease__time_since_onset = Column(DateTime)
-    # 疾病__发病时间__单位
-    disease__time_since_onset__unit = Column(INTEGER)
-    # 疾病__发病时间__单位标签
-    disease__time_since_onset__unit_label = Column(TEXT)
-    # 疾病__治疗开始时间
-    disease__time_since_treatment_start = Column(DateTime)
-    # 疾病__治疗开始时间__单位
-    disease__time_since_treatment_start__unit = Column(INTEGER)
-    # 疾病__已治疗
-    disease__treated = Column(TINYINT)
-    # 疾病__治疗
-    disease__treatment = Column(TEXT)
+    # 疾病_本体_标签
+    disease_ontology_label = Column(TEXT)
+    # 疾病_细胞内病原体
+    disease_intracellular_pathogen = Column(String(255))
+    # 疾病_细胞内病原体_病理学_标签
+    disease_intracellular_pathogen_ontology_label = Column(TEXT)
+    # 疾病_发病时间
+    disease_time_since_onset = Column(DateTime)
+    # 疾病_发病时间_单位
+    disease_time_since_onset_unit = Column(INTEGER)
+    # 疾病_发病时间_单位标签
+    disease_time_since_onset_unit_label = Column(TEXT)
+    # 疾病_治疗开始时间
+    disease_time_since_treatment_start = Column(DateTime)
+    # 疾病_治疗开始时间_单位
+    disease_time_since_treatment_start_unit = Column(INTEGER)
+    # 疾病_已治疗
+    disease_treated = Column(TINYINT)
+    # 疾病_治疗
+    disease_treatment = Column(TEXT)
     # 疫苗接种
     vaccination = Column(String(255))
-    # 疫苗__佐剂
-    vaccination__adjuvants = Column(String(255))
-    # 疫苗接种__剂量
-    vaccination__dosage = Column(String(255))
-    # 疫苗接种__路线
-    vaccination__route = Column(String(255))
+    # 疫苗_佐剂
+    vaccination_adjuvants = Column(String(255))
+    # 疫苗接种_剂量
+    vaccination_dosage = Column(String(255))
+    # 疫苗接种_路线
+    vaccination_route = Column(String(255))
     # 接种时间
-    vaccination__time_since = Column(DateTime)
-    # 接种__时间__起__单位
-    vaccination__time_since__unit = Column(INTEGER)
+    vaccination_time_since = Column(DateTime)
+    # 接种_时间_起_单位
+    vaccination_time_since_unit = Column(INTEGER)
     # 器官
     organ = Column(String(255))
     # 器官区域
     organ_region = Column(String(255))
     # 基因扰动
     gene_perturbation = Column(String(255))
-    # 基因扰动__方向
-    gene_perturbation__direction = Column(String(255))
+    # 基因扰动_方向
+    gene_perturbation_direction = Column(String(255))
     # 基因扰动动力学
-    gene_perturbation__dynamics = Column(String(255))
-    # 基因扰动__方法
-    gene_perturbation__method = Column(String(255))
-    # 基因扰动__自时间
-    gene_perturbation__time_since = Column(DateTime)
-    # 基因扰动__时间自__单位
-    gene_perturbation__time_since__unit = Column(INTEGER)
+    gene_perturbation_dynamics = Column(String(255))
+    # 基因扰动_方法
+    gene_perturbation_method = Column(String(255))
+    # 基因扰动_自时间
+    gene_perturbation_time_since = Column(DateTime)
+    # 基因扰动_时间自_单位
+    gene_perturbation_time_since_unit = Column(INTEGER)
     # 生物扰动
     biologies_perturbation = Column(String(255))
-    # 生物扰动__浓度
-    biologies_perturbation__concentration = Column(Double)
-    # 生物扰动__浓度__单位
-    biologies_perturbation__concentration__unit = Column(INTEGER)
-    # 生物扰动__溶剂
-    biologies_perturbation__solvent = Column(String(255))
-    # 生物扰动__源
-    biologies_perturbation__source = Column(String(255))
-    # 生物扰动__开始时间
-    biologies_perturbation__time_since = Column(DateTime)
-    # 生物扰动__时间自__单位
-    biologies_perturbation__time_since__unit = Column(INTEGER)
+    # 生物扰动_浓度
+    biologies_perturbation_concentration = Column(Double)
+    # 生物扰动_浓度_单位
+    biologies_perturbation_concentration_unit = Column(INTEGER)
+    # 生物扰动_溶剂
+    biologies_perturbation_solvent = Column(String(255))
+    # 生物扰动_源
+    biologies_perturbation_source = Column(String(255))
+    # 生物扰动_开始时间
+    biologies_perturbation_time_since = Column(DateTime)
+    # 生物扰动_时间自_单位
+    biologies_perturbation_time_since_unit = Column(INTEGER)
     # 小分子扰动
     small_molecule_perturbation = Column(String(255))
-    # 小分子扰动__浓度
-    small_molecule_perturbation__concentration = Column(Double)
-    # 小分子扰动__浓度__单位
-    small_molecule_perturbation__concentration__unit = Column(INTEGER)
-    # 小分子扰动__溶剂
-    small_molecule_perturbation__solvent = Column(String(255))
-    # 小分子扰动__源
-    small_molecule_perturbation__source = Column(String(255))
-    # 小分子扰动__自时间
-    small_molecule_perturbation__time_since = Column(DateTime)
-    # 小分子扰动__自__单位时间
-    small_molecule_perturbation__time_since__unit = Column(INTEGER)
+    # 小分子扰动_浓度
+    small_molecule_perturbation_concentration = Column(Double)
+    # 小分子扰动_浓度_单位
+    small_molecule_perturbation_concentration_unit = Column(INTEGER)
+    # 小分子扰动_溶剂
+    small_molecule_perturbation_solvent = Column(String(255))
+    # 小分子扰动_源
+    small_molecule_perturbation_source = Column(String(255))
+    # 小分子扰动_自时间
+    small_molecule_perturbation_time_since = Column(DateTime)
+    # 小分子扰动_自_单位时间
+    small_molecule_perturbation_time_since_unit = Column(INTEGER)
     # 其他扰动
     other_perturbation = Column(String(255))
-    # 其他扰动__自时间
-    other_perturbation__time_since = Column(DateTime)
-    # 其他扰动__自__单位时间起
-    other_perturbation__time_since__unit = Column(INTEGER)
-    # 富集__细胞类型
-    enrichment__cell_type = Column(String(255))
-    # 丰富__facs_标记
-    enrichment__facs_markers = Column(String(255))
+    # 其他扰动_自时间
+    other_perturbation_time_since = Column(DateTime)
+    # 其他扰动_自_单位时间起
+    other_perturbation_time_since_unit = Column(INTEGER)
+    # 富集_细胞类型
+    enrichment_cell_type = Column(String(255))
+    # 丰富_facs_标记
+    enrichment_facs_markers = Column(String(255))
     # 浓缩方法
     enrichment_method = Column(String(255))
     # 保存方法
@@ -327,8 +327,8 @@ class CellTypeMeta(Base):
     cell_type_name = Column(String(255))
     # 细胞类型描述
     cell_type_description = Column(String(255))
-    # 细胞类型__本体_标签
-    cell_type__ontology_label = Column(TEXT)
+    # 细胞类型_本体_标签
+    cell_type_ontology_label = Column(TEXT)
 
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
@@ -385,7 +385,7 @@ class SpeciesMeta(Base):
     id = Column(INTEGER, primary_key=True)
     # 品种
     species = Column(String(255))
-    # 物种__本体_标签
+    # 物种_本体_标签
     species_ontology_label = Column(TEXT)
     species_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_species_meta")
     species_gene_meta = relationship("GeneMeta", back_populates="gene_species_meta")

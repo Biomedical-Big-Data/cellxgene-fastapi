@@ -20,20 +20,20 @@ def update_user(db: Session, filters: List, update_dict: Dict):
     db.commit()
 
 
-def get_project_list(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    return db.query(cellxgene.ProjectMeta, cellxgene.BioSampleMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+def get_project_list(db: Session, filters: List, page: int = 0, page_size: int = 20):
+    return db.query(cellxgene.ProjectMeta, cellxgene.BioSampleMeta).filter(and_(*filters)).offset(page).page_size(page_size).all()
 
 
-def get_project_by_sample(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    return db.query(cellxgene.BioSampleMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+def get_project_by_sample(db: Session, filters: List, page: int = 0, page_size: int = 20):
+    return db.query(cellxgene.BioSampleMeta).filter(and_(*filters)).offset(page).page_size(page_size).all()
 
 
-def get_project_by_cell(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    return db.query(cellxgene.CellTypeMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+def get_project_by_cell(db: Session, filters: List, page: int = 0, page_size: int = 20):
+    return db.query(cellxgene.CellTypeMeta).filter(and_(*filters)).offset(page).page_size(page_size).all()
 
 
-def get_project_by_gene(db: Session, filters: List, skip: int = 0, limit: int = 20):
-    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(skip).limit(limit).all()
+def get_project_by_gene(db: Session, filters: List, page: int = 0, page_size: int = 20):
+    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).offset(page).page_size(page_size).all()
 
 
 def create_project_biosample(db: Session):
