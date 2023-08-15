@@ -146,7 +146,6 @@ async def get_project_list_by_gene(
     gene_meta_list = crud.get_project_by_gene(
         db=db, filters=filter_list, page=page, page_size=page_size
     )
-    print(gene_meta_list[0].gene_symbol)
     return ResponseMessage(status="0000", data=gene_meta_list, message="ok")
 
 
