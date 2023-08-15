@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from conf import config
 
-USER_DATABASE_URL = config.TEST_USER_DATABASE_URL
+USER_DATABASE_URL = config.DATABASE_URL
 
 cellxgene_engine = create_engine(
     USER_DATABASE_URL,
