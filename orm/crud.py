@@ -22,7 +22,9 @@ def update_user(db: Session, filters: List, update_dict: Dict):
 
 def create_project(db: Session, insert_project_model: cellxgene.ProjectMeta):
     db.add(insert_project_model)
+    db.flush()
     db.commit()
+    return insert_project_model.id
 
 
 def get_project_detail(db: Session, project_id: int):
@@ -61,6 +63,11 @@ def get_project_by_gene(db: Session, filters: List, page: int, page_size: int):
         .limit(page_size)
         .all()
     )
+
+
+def create_analysis(db: Session, insert_analysis_model: cellxgene.Analysis):
+    db.add(insert_analysis_model)
+    db.commit()
 
 
 def create_project_biosample(db: Session):

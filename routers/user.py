@@ -43,8 +43,8 @@ async def register(user: user_model.RegisterUserModel, db: Session = Depends(get
             salt=salt,
             organization=user.organization,
             user_password=jwt_user_password,
-            state=config.USER_STATE_NOT_VERIFY,
-            role=config.USER_ROLE_FORMAL
+            state=config.UserStateConfig.USER_STATE_NOT_VERIFY,
+            role=config.UserRole.USER_ROLE_FORMAL
         ),
     )
     token = auth_util.create_token(
@@ -143,7 +143,7 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
     crud.update_user(
         db,
         [cellxgene.User.email_address == email_address],
-        {"state": config.USER_STATE_VERIFY},
+        {"state": config.UserStateConfig.USER_STATE_VERIFY},
     )
     return ResponseMessage(status="0000", data="邮箱校验成功", message="邮箱校验成功")
 

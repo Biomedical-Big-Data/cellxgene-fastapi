@@ -19,9 +19,9 @@ def parse_cfg_dict(items):
 cp = configparser.ConfigParser()
 branch = os.popen("cd %s; git branch | grep \\* | awk '{print $2}'" % PROJECT_ROOT).read().replace('\n', '')
 if branch == 'master':
-    cp.read(os.path.join(PROJECT_ROOT, 'conf_master.cfg'))
+    cp.read(os.path.join(PROJECT_ROOT, 'conf_master.cfg'), encoding='utf8')
 else:
-    cp.read(os.path.join(PROJECT_ROOT, 'conf_preview.cfg'))
+    cp.read(os.path.join(PROJECT_ROOT, 'conf_preview.cfg'), encoding='utf8')
 
 
 MAIL_CONFIG = parse_cfg_dict(cp.items('mail_config'))
@@ -42,9 +42,22 @@ DATABASE_URL = DATABASE.get("database_url")
 JWT_SECRET_KEY = JWT_CONFIG.get("jwt_secret_key")
 
 VERIFY_URL = VERIFY_CONFIG.get('verify_url')
-USER_STATE_VERIFY = VERIFY_CONFIG.get('user_state_verify')
-USER_STATE_NOT_VERIFY = VERIFY_CONFIG.get('user_state_not_verify')
-USER_STATE_BLOCK = VERIFY_CONFIG.get('user_state_block')
-USER_ROLE_FORMAL = VERIFY_CONFIG.get('user_role_formal')
-USER_ROLE_ADMIN = VERIFY_CONFIG.get('user_role_admin')
 RESET_PASSWORD_URL = VERIFY_CONFIG.get('reset_password_url')
+
+
+class UserStateConfig:
+    USER_STATE_VERIFY = 1
+    USER_STATE_NOT_VERIFY = 0
+    USER_STATE_BLOCK = -1
+
+
+class UserRole:
+    USER_ROLE_FORMAL = 0
+    USER_ROLE_ADMIN = 1
+
+
+class ProjectStatus:
+    PROJECT_STATUS_DRAFT = 0
+    PROJECT_STATUS_PRIVATE = 1
+    PROJECT_STATUS_NEED_AUDIT = 2
+    PROJECT_STATUS_PUBLIC = 3

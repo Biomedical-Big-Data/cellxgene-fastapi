@@ -48,9 +48,23 @@ async def get_project_list(
 
 @router.post("/create", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def create_project(
-    project_model: ProjectModel
+    title: str = Body(),
+    description: str = Body(),
+    # h5ad_file: UploadFile | None = Body(),
+    tag: str = Body(),
+    project_status: int = Body(),
+    db: Session = Depends(get_db)
 ):
-    print(project_model)
+    insert_project_model = cellxgene.ProjectMeta(
+        title=title,
+        description=description
+    )
+    project_id = crud.create_project(db=db, insert_project_model=insert_project_model)
+    insert_analysis_model = cellxgene.Analysis(
+        project_id=project_id,
+        project_status=project_status
+    )
+    crud.create_analysis(db=db, insert_analysis_model=insert_analysis_model)
     return ResponseMessage(status="0000", data="项目创建成功", message="项目创建成功")
 
 
