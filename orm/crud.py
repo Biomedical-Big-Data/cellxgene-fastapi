@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from orm.schema import user_model
 from orm.db_model import cellxgene
-from orm.dependencies import get_db
+
+# from orm.dependencies import get_db
 from typing import List, AnyStr, Dict
 
 
@@ -180,6 +181,6 @@ if __name__ == "__main__":
     # add_project_biosample_relation(db=next(get_db()))
     # delete_project_biosample_relation(db=next(get_db()))
     # update_project_biosample_relation(db=next(get_db()))
-    res = get_user(db=next(get_db()), filters=[cellxgene.User.email_address == '619589351@qq.com'])
-    print(res)
-    print(res.first().id)
+    # res = get_user(db=next(get_db()), filters=[cellxgene.User.email_address == '619589351@qq.com'])
+    # print(res)
+    # print(res.first().id)

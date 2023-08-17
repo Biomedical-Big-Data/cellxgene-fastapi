@@ -23,6 +23,7 @@ from typing import List, Union
 from io import BytesIO
 import pandas as pd
 from sqlalchemy import and_, or_
+from orm.dependencies import get_current_user
 
 
 router = APIRouter(
@@ -32,36 +33,46 @@ router = APIRouter(
 )
 
 
-@router.get("/list/{project_id}", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.get(
+    "/list/{project_id}", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+)
 async def get_project_list(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
 ):
     project_info_model = crud.get_project_detail(db=db, project_id=project_id)
     if not project_info_model:
         return ResponseMessage(status="0201", data="无此项目", message="无此项目")
-    return ResponseMessage(status="0000", data=project_info_model.to_dict(), message="ok")
+    return ResponseMessage(
+        status="0000", data=project_info_model.to_dict(), message="ok"
+    )
 
 
 @router.post("/create", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def create_project(
-    token: str = Header(),
     title: str = Body(),
     description: str = Body(),
     # h5ad_file: UploadFile | None = Body(),
     tag: str = Body(),
     project_status: str = Body(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
 ):
-    user_email_address: str = auth_util.get_current_user(token=token)
-    owner = crud.get_user(db, [cellxgene.User.email_address == user_email_address]).first().id
-    new_project_status = config.ProjectStatus.INSERT_MAPPING_PROJECT_STATUS_DICT.get(project_status)
+    owner = (
+        crud.get_user(db, [cellxgene.User.email_address == current_user_email_address])
+        .first()
+        .id
+    )
+    new_project_status = config.ProjectStatus.INSERT_MAPPING_PROJECT_STATUS_DICT.get(
+        project_status
+    )
     insert_project_model = cellxgene.ProjectMeta(
         title=title,
         description=description,
         status=new_project_status,
         tag=tag,
-        owner=owner
+        owner=owner,
     )
     insert_analysis_model = cellxgene.Analysis()
     insert_analysis_model.analysis_project_meta = insert_project_model
@@ -86,6 +97,7 @@ async def get_project_list_by_sample(
     page: int = 0,
     page_size: int = 20,
     db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
 ):
     filter_list = []
     if organ:
@@ -122,6 +134,7 @@ async def get_project_list_by_cell(
     page: int = 0,
     page_size: int = 20,
     db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
 ):
     filter_list = []
     if cell_id:
@@ -129,16 +142,22 @@ async def get_project_list_by_cell(
     if species_id:
         filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
     if genes_positive:
-        genes_positive_list = genes_positive.split(',')
+        genes_positive_list = genes_positive.split(",")
         positive_filter_list = []
         for positive in genes_positive_list:
-            positive_filter_list.append(cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive)))
+            positive_filter_list.append(
+                cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
+            )
         filter_list.append(or_(*positive_filter_list))
     if genes_negative:
-        genes_negative_list = genes_negative.split(',')
+        genes_negative_list = genes_negative.split(",")
         negative_filter_list = []
         for negative in genes_negative_list:
-            negative_filter_list.append(cellxgene.CellTypeMeta.marker_gene_symbol.notlike("%{}%".format(negative)))
+            negative_filter_list.append(
+                cellxgene.CellTypeMeta.marker_gene_symbol.notlike(
+                    "%{}%".format(negative)
+                )
+            )
         filter_list.append(and_(*negative_filter_list))
     cell_type_list = crud.get_project_by_cell(
         db=db, filters=filter_list, page=page, page_size=page_size
@@ -155,10 +174,13 @@ async def get_project_list_by_gene(
     page: int = 0,
     page_size: int = 20,
     db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
 ):
     filter_list = []
     if gene_symbol:
-        filter_list.append(cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol)))
+        filter_list.append(
+            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        )
     if species_id:
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = crud.get_project_by_gene(
@@ -168,7 +190,9 @@ async def get_project_list_by_gene(
 
 
 @router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def add_project(file: UploadFile = File()):
+async def add_project(
+    file: UploadFile = File(), current_user_email_address=Depends(get_current_user)
+):
     content = await file.read()
     all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
     print(all_sheet_df.keys())
@@ -176,7 +200,9 @@ async def add_project(file: UploadFile = File()):
 
 
 @router.post("/update", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def update_project(file: UploadFile = File()):
+async def update_project(
+    file: UploadFile = File(), current_user_email_address=Depends(get_current_user)
+):
     content = await file.read()
     all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
     print(all_sheet_df.keys())
@@ -186,6 +212,8 @@ async def update_project(file: UploadFile = File()):
 @router.get(
     "/species/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
-async def get_species_list(db: Session = Depends(get_db)):
+async def get_species_list(
+    db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)
+):
     species_list = crud.get_species_list(db=db, filters=None)
     return ResponseMessage(status="0000", data=species_list, message="ok")

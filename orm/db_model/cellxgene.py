@@ -105,7 +105,7 @@ class ProjectMeta(Base):
             "citation": self.citation,
             "data_curators": self.data_curators,
             "create_at": self.create_at,
-            "update_at": self.update_at
+            "update_at": self.update_at,
         }
 
 

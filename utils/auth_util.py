@@ -6,7 +6,7 @@ from conf import config
 from orm import crud
 from orm.db_model import cellxgene
 from sqlalchemy.orm import Session
-from orm.dependencies import get_db
+from orm.schema.response import ResponseMessage
 
 
 def create_salt(length: int = 8):
@@ -29,8 +29,7 @@ def create_md5_password(salt: str | None, password: str):
 
 def create_token(
     email_address: str,
-    user_password: str,
-    expire_time: int = 30,
+    expire_time: int = config.JWT_EXPIRE_TIME,
     secret_key: str = config.JWT_SECRET_KEY,
 ):
     token_dict = {
@@ -38,40 +37,27 @@ def create_token(
             "%Y-%m-%d %H:%M:%S"
         ),
         "email_address": email_address,
-        "user_password": user_password,
     }
     jwt_token = jwt.encode(token_dict, secret_key, algorithm="HS256")
     return jwt_token
 
 
-def verify_user_token(db: Session, token: str, secret_key: str = config.JWT_SECRET_KEY):
-    try:
-        token_dict = jwt.decode(jwt=token, key=secret_key, algorithms="HS256")
-        email_address = token_dict.get("email_address", "")
-        user_password = token_dict.get("user_password", "")
-        expire_time = token_dict.get("expire_time", "")
-        if not email_address or not user_password or not expire_time:
-            return False, email_address, "用户认证错误，请重新登录"
-        if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
-            return False, email_address, "token已过期"
-        user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address]).first()
-        if not user_dict:
-            return False, email_address, "无用户，请重新登录"
-        if user_dict.user_password != user_password:
-            return False, email_address, "用户密码错误，请重新登陆"
-        return True, email_address, "校验正确"
-    except jwt.ExpiredSignatureError as e:
-        print(e)
-        return False, "", "登录时间过长，请重新登录"
-    except jwt.exceptions.PyJWTError as e:
-        print(e)
-        return False, "", "用户认证错误，请重新登录"
-
-
-def get_current_user(token: str, secret_key: str = config.JWT_SECRET_KEY):
+def check_token_for_verify_email(
+    db: Session, token: str, secret_key: str = config.JWT_SECRET_KEY
+):
     token_dict = jwt.decode(jwt=token, key=secret_key, algorithms="HS256")
-    user_email_address = token_dict.get("email_address", "")
-    return user_email_address
+    email_address = token_dict.get("email_address", "")
+    expire_time = token_dict.get("expire_time", "")
+    if not email_address or not expire_time:
+        return ResponseMessage(status="0201", data="", message="token错误")
+    if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
+        return ResponseMessage(status="0201", data="", message="token已过期")
+    user_info = crud.get_user(
+        db, filters=[cellxgene.User.email_address == email_address]
+    ).first()
+    if not user_info:
+        return ResponseMessage(status="0201", data="", message="用户错误")
+    return email_address
 
 
 if __name__ == "__main__":
@@ -82,7 +68,3 @@ if __name__ == "__main__":
     # print(salt)
     # jwt_token = create_token(email_address="test", user_password='12312', expire_time=30)
     # print(jwt_token)
-    verify_result, email_address, verify_message = verify_user_token(
-        db=next(get_db()),
-        token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVfdGltZSI6IjIwMjMtMDctMjQgMTc6MDA6MjgiLCJlbWFpbF9hZGRyZXNzIjoiNjE5NTg5MzUxQHFxLmNvbSIsInVzZXJfcGFzc3dvcmQiOiI1MGVmYmRkODU3ZWE0YWZmNmRmMGY0NmFiNGU5ZDU3OCJ9.WYcdYoBHXPFC7-Z8wtz5lK14KvJ96gSqJMAqFQoZlvY",
-    )
