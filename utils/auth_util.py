@@ -54,7 +54,7 @@ def verify_user_token(db: Session, token: str, secret_key: str = config.JWT_SECR
             return False, email_address, "用户认证错误，请重新登录"
         if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
             return False, email_address, "token已过期"
-        user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address])
+        user_dict = crud.get_user(db, [cellxgene.User.email_address == email_address]).first()
         if not user_dict:
             return False, email_address, "无用户，请重新登录"
         if user_dict.user_password != user_password:
@@ -66,6 +66,12 @@ def verify_user_token(db: Session, token: str, secret_key: str = config.JWT_SECR
     except jwt.exceptions.PyJWTError as e:
         print(e)
         return False, "", "用户认证错误，请重新登录"
+
+
+def get_current_user(token: str, secret_key: str = config.JWT_SECRET_KEY):
+    token_dict = jwt.decode(jwt=token, key=secret_key, algorithms="HS256")
+    user_email_address = token_dict.get("email_address", "")
+    return user_email_address
 
 
 if __name__ == "__main__":

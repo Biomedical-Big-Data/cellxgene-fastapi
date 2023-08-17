@@ -66,6 +66,9 @@ class ProjectMeta(Base):
     data_curators = Column(String(255))
     # 草稿状态
     # draft = Column(TINYINT(1), nullable=False)
+    status = Column(INTEGER)
+    owner = Column(INTEGER)
+    tag = Column(String(255))
 
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
@@ -82,7 +85,7 @@ class ProjectMeta(Base):
         cascade="all",
     )
     project_analysis_meta = relationship(
-        "Analysis", back_populates="analysis_project_meta"
+        "Analysis", back_populates="analysis_project_meta", cascade="all"
     )
 
     def to_dict(self):
@@ -131,9 +134,9 @@ class BioSampleMeta(Base):
     organism_age = Column(INTEGER)
     # 有机体年龄单位
     organism_age_unit = Column(INTEGER)
-    # TODO 鼠应变
+    # 鼠应变
     mouse_strain = Column(String(255))
-    # TODO 持续时间
+    # 持续时间
     culture_duration = Column(INTEGER)
     # 文化持续时间_单位
     culture_duration_unit = Column(INTEGER)
@@ -326,7 +329,6 @@ class Analysis(Base):
     h5ad_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
-    project_status = Column(INTEGER)
     analysis_biosample_meta = relationship(
         "BioSampleMeta",
         secondary=biosample_analysis,
@@ -336,7 +338,7 @@ class Analysis(Base):
         "CalcCellClusterProportion", back_populates="cell_proportion_analysis_meta"
     )
     analysis_project_meta = relationship(
-        "ProjectMeta", back_populates="project_analysis_meta"
+        "ProjectMeta", back_populates="project_analysis_meta", cascade="all"
     )
 
 

@@ -7,7 +7,7 @@ from typing import List, AnyStr, Dict
 
 
 def get_user(db: Session, filters: List):
-    return db.query(cellxgene.User).filter(or_(*filters)).first()
+    return db.query(cellxgene.User).filter(or_(*filters))
 
 
 def create_user(db: Session, insert_user_model: cellxgene.User):
@@ -179,4 +179,7 @@ if __name__ == "__main__":
     # delete_project_biosample(db=next(get_db()))
     # add_project_biosample_relation(db=next(get_db()))
     # delete_project_biosample_relation(db=next(get_db()))
-    update_project_biosample_relation(db=next(get_db()))
+    # update_project_biosample_relation(db=next(get_db()))
+    res = get_user(db=next(get_db()), filters=[cellxgene.User.email_address == '619589351@qq.com'])
+    print(res)
+    print(res.first().id)

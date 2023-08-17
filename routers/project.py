@@ -1,16 +1,13 @@
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     status,
     Header,
     Body,
     File,
     UploadFile,
 )
-from fastapi.responses import HTMLResponse
 from orm.dependencies import get_db
-from orm.schema.project_model import ProjectModel
 from orm.schema.response import (
     ResponseMessage,
     ResponseBiosampleModel,
@@ -48,24 +45,31 @@ async def get_project_list(
 
 @router.post("/create", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def create_project(
+    token: str = Header(),
     title: str = Body(),
     description: str = Body(),
     # h5ad_file: UploadFile | None = Body(),
     tag: str = Body(),
-    project_status: int = Body(),
+    project_status: str = Body(),
     db: Session = Depends(get_db)
 ):
+    user_email_address: str = auth_util.get_current_user(token=token)
+    owner = crud.get_user(db, [cellxgene.User.email_address == user_email_address]).first().id
+    new_project_status = config.ProjectStatus.INSERT_MAPPING_PROJECT_STATUS_DICT.get(project_status)
     insert_project_model = cellxgene.ProjectMeta(
         title=title,
-        description=description
+        description=description,
+        status=new_project_status,
+        tag=tag,
+        owner=owner
     )
-    project_id = crud.create_project(db=db, insert_project_model=insert_project_model)
-    insert_analysis_model = cellxgene.Analysis(
-        project_id=project_id,
-        project_status=project_status
-    )
-    crud.create_analysis(db=db, insert_analysis_model=insert_analysis_model)
-    return ResponseMessage(status="0000", data="项目创建成功", message="项目创建成功")
+    insert_analysis_model = cellxgene.Analysis()
+    insert_analysis_model.analysis_project_meta = insert_project_model
+    try:
+        crud.create_analysis(db=db, insert_analysis_model=insert_analysis_model)
+        return ResponseMessage(status="0000", data="项目创建成功", message="项目创建成功")
+    except:
+        return ResponseMessage(status="0201", data="项目创建失败", message="项目创建失败")
 
 
 @router.get(

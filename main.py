@@ -42,7 +42,7 @@ async def verify_token(request: Request, call_next):
         | path.startswith("/user/password/reset")
         | path.startswith("/user/password/reset/template")
         | path.startswith("/user/password/reset/mail/send")
-        | path.startswith("/project")
+        # | path.startswith("/project")
     ):
         response = await call_next(request)
         return response
