@@ -38,14 +38,14 @@ def create_token(
         ),
         "email_address": email_address,
     }
-    jwt_token = jwt.encode(token_dict, secret_key, algorithm="HS256")
+    jwt_token = jwt.encode(token_dict, secret_key, algorithm=config.JWT_ALGORITHMS)
     return jwt_token
 
 
 def check_token_for_verify_email(
     db: Session, token: str, secret_key: str = config.JWT_SECRET_KEY
 ) -> str:
-    token_dict = jwt.decode(jwt=token, key=secret_key, algorithms="HS256")
+    token_dict = jwt.decode(jwt=token, key=secret_key, algorithms=config.JWT_ALGORITHMS)
     email_address = token_dict.get("email_address", "")
     expire_time = token_dict.get("expire_time", "")
     if not email_address or not expire_time:

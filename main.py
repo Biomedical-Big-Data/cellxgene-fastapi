@@ -2,7 +2,7 @@ import uvicorn
 import logging
 from fastapi.exceptions import RequestValidationError
 from starlette import status
-from starlette.responses import JSONResponse, PlainTextResponse
+from starlette.responses import JSONResponse
 from orm.schema.response import ResponseMessage
 from routers import user, project
 from fastapi import FastAPI, Request, HTTPException
@@ -23,14 +23,12 @@ app.include_router(project.router)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    logging.error('[RequestValidationError]: {}'.format(str(exc)))
     error_message = ResponseMessage(status="0201", data=exc.errors(), message="RequestValidationError")
     return JSONResponse(error_message.to_dict(), status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    logging.error('[HTTPException]: {}'.format(str(exc)))
     error_message = ResponseMessage(status="0201", data=exc.detail, message="HTTPException")
     return JSONResponse(error_message.to_dict(), status_code=status.HTTP_401_UNAUTHORIZED)
 
