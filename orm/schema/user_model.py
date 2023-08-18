@@ -14,6 +14,9 @@ class UserModel(BaseModel):
     create_at: datetime
     update_at: datetime
 
+    class Config:
+        org_mode = True
+
 
 class RegisterUserModel(BaseModel):
     user_name: str

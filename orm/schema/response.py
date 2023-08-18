@@ -36,5 +36,5 @@ class ResponseGeneModel(BaseModel):
 
 class ResponseUserModel(BaseModel):
     status: str
-    data: Union[project_relation_model.UserProjectRelation, str]
+    data: Union[project_relation_model.UserProjectRelation, List[project_relation_model.UserProjectRelation], str]
     message: str

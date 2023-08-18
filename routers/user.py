@@ -88,9 +88,14 @@ async def user_login(login_data: OAuth2PasswordRequestForm = Depends(), db: Sess
         return ResponseMessage(status="0201", data="登录失败，密码错误", message="登录失败，密码错误")
 
 
-@router.get("/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def get_user_list():
-    pass
+@router.get("/list", response_model=ResponseUserModel, status_code=status.HTTP_200_OK)
+async def get_user_list(page: int = 0, page_size: int = 20, db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)) -> ResponseMessage:
+    current_user_model = crud.get_user(db, [cellxgene.User.email_address == current_user_email_address]).first()
+    if current_user_model.role != config.UserRole.USER_ROLE_ADMIN:
+        return ResponseMessage(
+            status="0201", data="无权查看用户列表", message="无权查看用户列表")
+    user_model_list = crud.get_user(db, []).offset(page).limit(page_size).all()
+    return ResponseMessage(status="0000", data=user_model_list, message="success")
 
 
 @router.get("/{user_id}", response_model=ResponseUserModel, status_code=status.HTTP_200_OK)
@@ -119,33 +124,44 @@ async def get_user_info(user_id: Union[str, int], db: Session = Depends(get_db),
 
 
 @router.post(
-    "/info/edit", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/{user_id}/edit", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
 async def edit_user_info(
+    user_id: Union[str, int],
     user_info: user_model.EditInfoUserModel = Body(),
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    user_dict = crud.get_user(
+    user_info_model = crud.get_user(
         db, [cellxgene.User.email_address == current_user_email_address]
     ).first()
-    if user_info.email_address != user_dict.email_address:
+    if user_id != "me" and user_info_model.role != config.UserRole.USER_ROLE_ADMIN:
+        return ResponseMessage(
+            status="0201", data="无权修改用户信息", message="无权修改用户信息")
+    else:
         check_user_dict = crud.get_user(
             db, [cellxgene.User.email_address == user_info.email_address]
         ).first()
         if check_user_dict:
             return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
-    update_user_dict = user_info.to_dict()
-    if user_info.user_password:
-        salt, jwt_user_password = auth_util.create_md5_password(
-            salt=user_dict.salt, password=user_info.user_password
-        )
-        update_user_dict["user_password"] = jwt_user_password
-    crud.update_user(
-        db,
-        [cellxgene.User.email_address == current_user_email_address],
-        update_user_dict,
-    )
+        update_user_dict = user_info.to_dict()
+        if user_info.user_password:
+            salt, jwt_user_password = auth_util.create_md5_password(
+                salt=user_info_model.salt, password=user_info.user_password
+            )
+            update_user_dict["user_password"] = jwt_user_password
+        if user_id == "me":
+            crud.update_user(
+                db,
+                [cellxgene.User.email_address == current_user_email_address],
+                update_user_dict,
+            )
+        else:
+            crud.update_user(
+                db,
+                [cellxgene.User.id == user_id],
+                update_user_dict,
+            )
     return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")
 
 

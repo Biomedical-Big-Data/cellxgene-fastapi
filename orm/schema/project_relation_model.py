@@ -62,3 +62,6 @@ class GeneRelation(GeneModel):
 
 class UserProjectRelation(UserModel):
     user_project_meta: List[ProjectModel]
+
+    class Config:
+        org_mode = True
