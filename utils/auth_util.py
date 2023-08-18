@@ -6,7 +6,7 @@ from conf import config
 from orm import crud
 from orm.db_model import cellxgene
 from sqlalchemy.orm import Session
-from orm.dependencies import CREDENTIALS_EXCEPTION
+from orm.schema.exception_model import CREDENTIALS_EXCEPTION
 
 
 def create_salt(length: int = 8):

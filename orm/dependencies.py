@@ -1,21 +1,16 @@
 import jwt
 import logging
-from fastapi import HTTPException, Depends
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from starlette import status
 from orm.database import SessionLocal
 from conf import config
 from datetime import datetime
 from orm import crud
 from orm.db_model import cellxgene
+from orm.schema.exception_model import CREDENTIALS_EXCEPTION, USERBLOCK_EXCEPTION
 
 
 OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="/user/login")
-CREDENTIALS_EXCEPTION = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authenticate Error",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
 
 
 def get_db():
@@ -37,11 +32,13 @@ async def get_current_user(token: str = Depends(OAUTH2_SCHEME)):
             raise CREDENTIALS_EXCEPTION
         if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
             raise CREDENTIALS_EXCEPTION
-        user_dict = crud.get_user(
+        user_info_model = crud.get_user(
             next(get_db()), [cellxgene.User.email_address == email_address]
         ).first()
-        if not user_dict:
+        if not user_info_model:
             raise CREDENTIALS_EXCEPTION
+        if user_info_model.state != config.UserStateConfig.USER_STATE_VERIFY:
+            raise USERBLOCK_EXCEPTION
         return email_address
     except jwt.ExpiredSignatureError as e:
         logging.error('[ExpiredSignatureError]: {}'.format(str(e)))
