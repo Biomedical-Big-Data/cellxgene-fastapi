@@ -40,7 +40,7 @@ async def get_project_list(
     project_id: int,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-):
+) -> ResponseMessage:
     project_info_model = crud.get_project_detail(db=db, project_id=project_id)
     if not project_info_model:
         return ResponseMessage(status="0201", data="无此项目", message="无此项目")
@@ -58,7 +58,7 @@ async def create_project(
     project_status: str = Body(),
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-):
+) -> ResponseMessage:
     owner = (
         crud.get_user(db, [cellxgene.User.email_address == current_user_email_address])
         .first()
@@ -98,7 +98,7 @@ async def get_project_list_by_sample(
     page_size: int = 20,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-):
+) -> ResponseMessage:
     filter_list = []
     if organ:
         filter_list.append(cellxgene.BioSampleMeta.organ == organ)
@@ -135,7 +135,7 @@ async def get_project_list_by_cell(
     page_size: int = 20,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-):
+) -> ResponseMessage:
     filter_list = []
     if cell_id:
         filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
@@ -175,7 +175,7 @@ async def get_project_list_by_gene(
     page_size: int = 20,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-):
+) -> ResponseMessage:
     filter_list = []
     if gene_symbol:
         filter_list.append(
@@ -192,7 +192,7 @@ async def get_project_list_by_gene(
 @router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def add_project(
     file: UploadFile = File(), current_user_email_address=Depends(get_current_user)
-):
+) -> ResponseMessage:
     content = await file.read()
     all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
     print(all_sheet_df.keys())
@@ -202,7 +202,7 @@ async def add_project(
 @router.post("/update", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def update_project(
     file: UploadFile = File(), current_user_email_address=Depends(get_current_user)
-):
+) -> ResponseMessage:
     content = await file.read()
     all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
     print(all_sheet_df.keys())
@@ -214,6 +214,6 @@ async def update_project(
 )
 async def get_species_list(
     db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)
-):
+) -> ResponseMessage:
     species_list = crud.get_species_list(db=db, filters=None)
     return ResponseMessage(status="0000", data=species_list, message="ok")

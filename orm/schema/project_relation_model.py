@@ -10,6 +10,7 @@ from orm.schema.project_model import (
     GeneModel,
     GeneExpression,
 )
+from orm.schema.user_model import UserModel
 
 
 class BiosampleModelRelation(BiosampleModel):
@@ -57,3 +58,7 @@ class GeneRelation(GeneModel):
 
     class Config:
         org_mode = True
+
+
+class UserProjectRelation(UserModel):
+    user_project_meta: List[ProjectModel]

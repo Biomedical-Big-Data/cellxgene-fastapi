@@ -1,14 +1,17 @@
 import re
-from fastapi import APIRouter, Depends, HTTPException, status, Header, Body
+from typing import Union
+
+from fastapi import APIRouter, Depends, status, Body
 from fastapi.responses import HTMLResponse
 from orm.dependencies import get_db, get_current_user
 from orm.schema import user_model
-from orm.schema.response import ResponseMessage
+from orm.schema.response import ResponseMessage, ResponseUserModel
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
 from utils import auth_util, mail_util
 from conf import config
+from fastapi.security import OAuth2PasswordRequestForm
 
 
 router = APIRouter(
@@ -21,7 +24,7 @@ router = APIRouter(
 @router.post(
     "/register", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
-async def register(user: user_model.RegisterUserModel, db: Session = Depends(get_db)):
+async def register(user: user_model.RegisterUserModel, db: Session = Depends(get_db)) -> ResponseMessage:
     if len(user.user_password) < 6 or len(user.user_password) > 16:
         return ResponseMessage(
             status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
@@ -66,23 +69,21 @@ async def register(user: user_model.RegisterUserModel, db: Session = Depends(get
 
 
 @router.post("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def user_login(user: user_model.LoginUserModel, db: Session = Depends(get_db)):
+async def user_login(login_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> ResponseMessage:
     user_info_model = crud.get_user(
-        db, [cellxgene.User.email_address == user.email_address]
+        db, [cellxgene.User.email_address == login_data.username]
     ).first()
     if not user_info_model:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
     salt, jwt_user_password = auth_util.create_md5_password(
-        salt=user_info_model.salt, password=user.user_password
+        salt=user_info_model.salt, password=login_data.password
     )
     if jwt_user_password == user_info_model.user_password:
         token = auth_util.create_token(
-            email_address=user.email_address,
-            expire_time=60 * 24,
+            email_address=login_data.username,
+            expire_time=config.JWT_LOGIN_EXPIRE_TIME,
         )
-        user_info_dict = user_info_model.to_dict()
-        user_info_dict["token"] = token
-        return ResponseMessage(status="0000", data=user_info_dict, message="登录成功")
+        return ResponseMessage(status="0000", data={"access_token": token,  "token_type": "bearer"}, message="登录成功")
     else:
         return ResponseMessage(status="0201", data="登录失败，密码错误", message="登录失败，密码错误")
 
@@ -92,25 +93,39 @@ async def get_user_list():
     pass
 
 
-@router.get("/info", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def get_user_info(email_address: str, db: Session = Depends(get_db)):
+@router.get("/{user_id}", response_model=ResponseUserModel, status_code=status.HTTP_200_OK)
+async def get_user_info(user_id: Union[str, int], db: Session = Depends(get_db), current_user_email_address: str = Depends(get_current_user)) -> ResponseMessage:
     user_info_model = crud.get_user(
-        db, [cellxgene.User.email_address == email_address]
+        db, [cellxgene.User.email_address == current_user_email_address]
     ).first()
-    return ResponseMessage(
-        status="0000", data=user_info_model.to_dict(), message="success"
-    )
+    if user_id == 'me':
+        return ResponseMessage(
+            status="0000", data=user_info_model, message="success"
+        )
+    else:
+        if user_info_model.role != config.UserRole.USER_ROLE_ADMIN:
+            return ResponseMessage(
+                status="0201", data="无权查看用户信息", message="无权查看用户信息")
+        else:
+            search_user_info_model = crud.get_user(db, [cellxgene.User.id == user_id]).first()
+            if search_user_info_model:
+                return ResponseMessage(
+                    status="0000", data=search_user_info_model, message="success"
+                )
+            else:
+                return ResponseMessage(
+                    status="0201", data="用户不存在", message="用户不存在"
+                )
 
 
 @router.post(
     "/info/edit", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
 async def edit_user_info(
-    token: str = Header(),
     user_info: user_model.EditInfoUserModel = Body(),
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-):
+) -> ResponseMessage:
     user_dict = crud.get_user(
         db, [cellxgene.User.email_address == current_user_email_address]
     ).first()
@@ -137,7 +152,7 @@ async def edit_user_info(
 @router.get(
     "/email/verify", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
-async def verify_user_email(token: str, db: Session = Depends(get_db)):
+async def verify_user_email(token: str, db: Session = Depends(get_db)) -> ResponseMessage:
     email_address = auth_util.check_token_for_verify_email(db=db, token=token)
     crud.update_user(
         db,
@@ -154,7 +169,7 @@ async def verify_user_email(token: str, db: Session = Depends(get_db)):
 )
 async def send_reset_user_password_mail(
     user: user_model.PasswordResetModel, db: Session = Depends(get_db)
-):
+) -> ResponseMessage:
     user_dict = crud.get_user(
         db, [cellxgene.User.email_address == user.email_address]
     ).first()
@@ -185,7 +200,7 @@ async def send_reset_user_password_mail(
     response_class=HTMLResponse,
     status_code=status.HTTP_200_OK,
 )
-async def get_reset_password_template(token: str, db: Session = Depends(get_db)):
+async def get_reset_password_template(token: str, db: Session = Depends(get_db)) -> ResponseMessage:
     email_address = auth_util.check_token_for_verify_email(db=db, token=token)
     return ResponseMessage(status="0000", data="密码修改成功", message="密码修改成功")
 
@@ -196,30 +211,31 @@ async def get_reset_password_template(token: str, db: Session = Depends(get_db))
     status_code=status.HTTP_200_OK,
 )
 async def reset_user_password(
-    reset_password_model: user_model.LoginUserModel, db: Session = Depends(get_db)
-):
+    user_data: OAuth2PasswordRequestForm = Depends()
+    , db: Session = Depends(get_db)
+) -> ResponseMessage:
     if (
-        len(reset_password_model.user_password) < 6
-        or len(reset_password_model.user_password) > 16
+        len(user_data.password) < 6
+        or len(user_data.password) > 16
     ):
         return ResponseMessage(
             status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
         )
-    if not re.search("^[1-9a-zA-Z]", reset_password_model.user_password):
+    if not re.search("^[1-9a-zA-Z]", user_data.password):
         return ResponseMessage(
             status="0201", data="密码应包含数字及大小写字母", message="密码应包含数字及大小写字母"
         )
     user_dict = crud.get_user(
-        db, [cellxgene.User.email_address == reset_password_model.email_address]
+        db, [cellxgene.User.email_address == user_data.username]
     ).first()
     if not user_dict:
         return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
     salt, jwt_user_password = auth_util.create_md5_password(
-        salt=user_dict.salt, password=reset_password_model.user_password
+        salt=user_dict.salt, password=user_data.password
     )
     res = crud.update_user(
         db,
-        [cellxgene.User.email_address == reset_password_model.email_address],
+        [cellxgene.User.email_address == user_data.username],
         {"user_password": jwt_user_password},
     )
     print(type(res), res)

@@ -6,7 +6,7 @@ from conf import config
 from orm import crud
 from orm.db_model import cellxgene
 from sqlalchemy.orm import Session
-from orm.schema.response import ResponseMessage
+from orm.dependencies import CREDENTIALS_EXCEPTION
 
 
 def create_salt(length: int = 8):
@@ -29,9 +29,9 @@ def create_md5_password(salt: str | None, password: str):
 
 def create_token(
     email_address: str,
-    expire_time: int = config.JWT_EXPIRE_TIME,
+    expire_time: int = config.JWT_VERIFY_EXPIRE_TIME,
     secret_key: str = config.JWT_SECRET_KEY,
-):
+) -> str:
     token_dict = {
         "expire_time": (datetime.now() + timedelta(minutes=expire_time)).strftime(
             "%Y-%m-%d %H:%M:%S"
@@ -44,19 +44,19 @@ def create_token(
 
 def check_token_for_verify_email(
     db: Session, token: str, secret_key: str = config.JWT_SECRET_KEY
-):
+) -> str:
     token_dict = jwt.decode(jwt=token, key=secret_key, algorithms="HS256")
     email_address = token_dict.get("email_address", "")
     expire_time = token_dict.get("expire_time", "")
     if not email_address or not expire_time:
-        return ResponseMessage(status="0201", data="", message="token错误")
+        raise CREDENTIALS_EXCEPTION
     if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
-        return ResponseMessage(status="0201", data="", message="token已过期")
+        raise CREDENTIALS_EXCEPTION
     user_info = crud.get_user(
         db, filters=[cellxgene.User.email_address == email_address]
     ).first()
     if not user_info:
-        return ResponseMessage(status="0201", data="", message="用户错误")
+        raise CREDENTIALS_EXCEPTION
     return email_address
 
 

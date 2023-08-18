@@ -1,4 +1,5 @@
 import jwt
+import logging
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from starlette import status
@@ -9,8 +10,12 @@ from orm import crud
 from orm.db_model import cellxgene
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-JWT_SECRET = config.JWT_SECRET_KEY
+OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="/user/login")
+CREDENTIALS_EXCEPTION = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authenticate Error",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def get_db():
@@ -23,29 +28,24 @@ def get_db():
         db.close()
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+async def get_current_user(token: str = Depends(OAUTH2_SCHEME)):
     try:
-        token_dict = jwt.decode(jwt=token, key=JWT_SECRET, algorithms="HS256")
+        token_dict = jwt.decode(jwt=token, key=config.JWT_SECRET_KEY, algorithms="HS256")
         email_address = token_dict.get("email_address", "")
         expire_time = token_dict.get("expire_time", "")
         if not email_address or not expire_time:
-            raise credentials_exception
+            raise CREDENTIALS_EXCEPTION
         if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
-            raise credentials_exception
+            raise CREDENTIALS_EXCEPTION
         user_dict = crud.get_user(
             next(get_db()), [cellxgene.User.email_address == email_address]
         ).first()
         if not user_dict:
-            raise credentials_exception
+            raise CREDENTIALS_EXCEPTION
         return email_address
     except jwt.ExpiredSignatureError as e:
-        print(e)
-        raise credentials_exception
+        logging.error('[ExpiredSignatureError]: {}'.format(str(e)))
+        raise CREDENTIALS_EXCEPTION
     except jwt.exceptions.PyJWTError as e:
-        print(e)
-        raise credentials_exception
+        logging.error('[PyJWTError]: {}'.format(str(e)))
+        raise CREDENTIALS_EXCEPTION

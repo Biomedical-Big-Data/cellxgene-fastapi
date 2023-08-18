@@ -67,7 +67,7 @@ class ProjectMeta(Base):
     # 草稿状态
     # draft = Column(TINYINT(1), nullable=False)
     status = Column(INTEGER)
-    owner = Column(INTEGER)
+    owner = Column(INTEGER, ForeignKey("users.id"))
     tag = Column(String(255))
 
     create_at = Column(
@@ -87,6 +87,7 @@ class ProjectMeta(Base):
     project_analysis_meta = relationship(
         "Analysis", back_populates="analysis_project_meta", cascade="all"
     )
+    project_user_meta = relationship("User", back_populates="user_project_meta")
 
     def to_dict(self):
         return {
@@ -564,7 +565,7 @@ class User(Base):
     salt = Column(String(255), nullable=False)
     user_password = Column(String(255), nullable=False)
     state = Column(INTEGER, nullable=False)
-    role = Column(String(255), nullable=False)
+    role = Column(INTEGER, nullable=False)
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )
@@ -573,17 +574,7 @@ class User(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-
-    def to_dict(self):
-        return {
-            "user_name": self.user_name,
-            "email_address": self.email_address,
-            "organization": self.organization,
-            "state": self.state,
-            "role": self.role,
-            "create_at": self.create_at,
-            "update_at": self.update_at,
-        }
+    user_project_meta = relationship("ProjectMeta", back_populates="project_user_meta")
 
 
 if __name__ == "__main__":

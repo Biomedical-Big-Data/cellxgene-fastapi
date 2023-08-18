@@ -1,4 +1,18 @@
 from pydantic import BaseModel
+from datetime import datetime
+
+
+class UserModel(BaseModel):
+    id: int
+    user_name: str
+    email_address: str
+    organization: str
+    # salt: str
+    # user_password: str
+    state: int
+    role: int
+    create_at: datetime
+    update_at: datetime
 
 
 class RegisterUserModel(BaseModel):
@@ -6,23 +20,6 @@ class RegisterUserModel(BaseModel):
     user_password: str
     organization: str
     email_address: str
-
-
-class FiterUserModel(BaseModel):
-    user_name: str | None
-    email_address: str | None
-
-
-class SearchUserListModel(BaseModel):
-    user_name: str
-    organization: str
-    email_address: str
-    create_time: str
-
-
-class LoginUserModel(BaseModel):
-    email_address: str
-    user_password: str
 
 
 class PasswordResetModel(BaseModel):

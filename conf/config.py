@@ -44,7 +44,8 @@ TEST_EMAIL_ADDRESS = MAIL_CONFIG.get("test_email_address")
 DATABASE_URL = DATABASE.get("database_url")
 
 JWT_SECRET_KEY = JWT_CONFIG.get("jwt_secret_key")
-JWT_EXPIRE_TIME = JWT_CONFIG.get("jwt_expire_time")
+JWT_VERIFY_EXPIRE_TIME = JWT_CONFIG.get("jwt_verify_expire_time")
+JWT_LOGIN_EXPIRE_TIME = JWT_CONFIG.get("jwt_login_expire_time")
 
 VERIFY_URL = VERIFY_CONFIG.get("verify_url")
 RESET_PASSWORD_URL = VERIFY_CONFIG.get("reset_password_url")
