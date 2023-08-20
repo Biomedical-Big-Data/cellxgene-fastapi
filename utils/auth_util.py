@@ -45,19 +45,24 @@ def create_token(
 def check_token_for_verify_email(
     db: Session, token: str, secret_key: str = config.JWT_SECRET_KEY
 ) -> str:
-    token_dict = jwt.decode(jwt=token, key=secret_key, algorithms=config.JWT_ALGORITHMS)
-    email_address = token_dict.get("email_address", "")
-    expire_time = token_dict.get("expire_time", "")
-    if not email_address or not expire_time:
+    try:
+        token_dict = jwt.decode(jwt=token, key=secret_key, algorithms=config.JWT_ALGORITHMS)
+        email_address = token_dict.get("email_address", "")
+        expire_time = token_dict.get("expire_time", "")
+        if not email_address or not expire_time:
+            raise CREDENTIALS_EXCEPTION
+        if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
+            raise CREDENTIALS_EXCEPTION
+        user_info = crud.get_user(
+            db, filters=[cellxgene.User.email_address == email_address]
+        ).first()
+        if not user_info:
+            raise CREDENTIALS_EXCEPTION
+        return email_address
+    except jwt.ExpiredSignatureError as e:
         raise CREDENTIALS_EXCEPTION
-    if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
+    except jwt.exceptions.PyJWTError as e:
         raise CREDENTIALS_EXCEPTION
-    user_info = crud.get_user(
-        db, filters=[cellxgene.User.email_address == email_address]
-    ).first()
-    if not user_info:
-        raise CREDENTIALS_EXCEPTION
-    return email_address
 
 
 if __name__ == "__main__":
