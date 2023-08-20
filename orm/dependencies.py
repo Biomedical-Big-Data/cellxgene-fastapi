@@ -114,7 +114,7 @@ async def get_current_admin(token: str = Depends(OAUTH2_SCHEME)):
                     email_address, expire_time
                 )
             )
-            raise USERBLOCK_EXCEPTION
+            raise USER_NOT_VERIFY_EXCEPTION
         if user_info_model.role != config.UserRole.USER_ROLE_ADMIN:
             raise NOT_ADMIN_USER_EXCEPTION
         return email_address

@@ -33,12 +33,33 @@ router = APIRouter(
     "/user/list", response_model=ResponseUserModel, status_code=status.HTTP_200_OK
 )
 async def get_user_list(
+    email_address: Union[str, None] = None,
+    user_name: Union[str, None] = None,
+    organization: Union[str, None] = None,
+    state: Union[int, None] = None,
+    create_at: Union[str, None] = None,
     page: int = 0,
     page_size: int = 20,
+    asc: int = 1,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
-    user_model_list = crud.get_user(db, []).order_by(cellxgene.User.id.asc()).offset(page).limit(page_size)
+    filter_list = []
+    if email_address is not None:
+        filter_list.append(cellxgene.User.email_address.like("%{}%".format(email_address)))
+    if user_name is not None:
+        filter_list.append(cellxgene.User.user_name.like("%{}%".format(user_name)))
+    if organization is not None:
+        filter_list.append(cellxgene.User.organization.like("%{}%".format(user_name)))
+    if state is not None:
+        filter_list.append(cellxgene.User.state == state)
+    if create_at is not None:
+        filter_list.append(cellxgene.User.create_at.like("%{}%".format(create_at)))
+    if asc is not None:
+        user_model_list = crud.get_user(db, filters=filter_list).order_by(cellxgene.User.id.asc()).offset(page).limit(page_size)
+    else:
+        user_model_list = crud.get_user(db, filters=filter_list).order_by(cellxgene.User.id.desc()).offset(page).limit(
+            page_size)
     return ResponseMessage(status="0000", data=user_model_list, message="success")
 
 
