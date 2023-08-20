@@ -45,6 +45,7 @@ DATABASE_URL = DATABASE.get("database_url")
 
 JWT_SECRET_KEY = JWT_CONFIG.get("jwt_secret_key")
 JWT_VERIFY_EXPIRE_TIME = JWT_CONFIG.get("jwt_verify_expire_time")
+JWT_RESET_PASSWORD_EXPIRE_TIME = JWT_CONFIG.get("jwt_reset_password_expire_time")
 JWT_LOGIN_EXPIRE_TIME = JWT_CONFIG.get("jwt_login_expire_time")
 JWT_ALGORITHMS = JWT_CONFIG.get("jwt_algorithms")
 

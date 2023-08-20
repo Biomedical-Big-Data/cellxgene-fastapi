@@ -52,7 +52,7 @@ async def register(
             role=config.UserRole.USER_ROLE_FORMAL,
         ),
     )
-    token = auth_util.create_token(email_address=user.email_address)
+    token = auth_util.create_token(email_address=user.email_address, expire_time=config.JWT_VERIFY_EXPIRE_TIME)
     verify_url = "{}".format(config.VERIFY_URL + token)
     mail_template = mail_util.verify_mail_template(
         user_name=user.user_name, verify_url=verify_url
@@ -160,7 +160,7 @@ async def send_reset_user_password_mail(
     ).first()
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
-    token = auth_util.create_token(email_address=user_dict.email_address)
+    token = auth_util.create_token(email_address=user_dict.email_address, expire_time=config.JWT_RESET_PASSWORD_EXPIRE_TIME)
     reset_password_url = "{}".format(config.RESET_PASSWORD_URL + token)
     mail_template = mail_util.reset_password_mail_template(
         user_name=user_dict.user_name, reset_password_url=reset_password_url
@@ -180,25 +180,13 @@ async def send_reset_user_password_mail(
         )
 
 
-@router.get(
-    "/password/reset/check",
-    response_class=HTMLResponse,
-    status_code=status.HTTP_200_OK,
-)
-async def get_reset_password_template(
-    token: str, db: Session = Depends(get_db)
-) -> ResponseMessage:
-    email_address = auth_util.check_token_for_verify_email(db=db, token=token)
-    return ResponseMessage(status="0000", data="密码修改成功", message="密码修改成功")
-
-
 @router.post(
     "/password/reset",
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
 )
 async def reset_user_password(
-    user_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    user_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db), current_user_email_address: str = Depends(get_current_user)
 ) -> ResponseMessage:
     if len(user_data.password) < 6 or len(user_data.password) > 16:
         return ResponseMessage(
@@ -208,22 +196,23 @@ async def reset_user_password(
         return ResponseMessage(
             status="0201", data="密码应包含数字及大小写字母", message="密码应包含数字及大小写字母"
         )
-    user_dict = crud.get_user(
-        db, [cellxgene.User.email_address == user_data.username]
-    ).first()
-    if not user_dict:
-        return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
     salt, jwt_user_password = auth_util.create_md5_password(
-        salt=user_dict.salt, password=user_data.password
+        salt=None, password=user_data.password
     )
-    res = crud.update_user(
-        db,
-        [cellxgene.User.email_address == user_data.username],
-        {"user_password": jwt_user_password},
-    )
-    print(type(res), res)
-    return ResponseMessage(
-        status="0000",
-        data="重置成功",
-        message="重置成功",
-    )
+    try:
+        crud.update_user(
+            db,
+            [cellxgene.User.email_address == current_user_email_address],
+            {"user_password": jwt_user_password},
+        )
+        return ResponseMessage(
+            status="0000",
+            data="重置成功",
+            message="重置成功",
+        )
+    except:
+        return ResponseMessage(
+            status="0201",
+            data="重置失败",
+            message="重置失败",
+        )
