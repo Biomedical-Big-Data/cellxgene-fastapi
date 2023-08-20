@@ -33,6 +33,14 @@ biosample_analysis = Table(
 )
 
 
+project_user = Table(
+    "project_user",
+    metadata,
+    Column("user_id", INTEGER, ForeignKey("users.id")),
+    Column("project_id", INTEGER, ForeignKey("biosample_meta.id")),
+)
+
+
 class ProjectMeta(Base):
     __tablename__ = "project_meta"
 

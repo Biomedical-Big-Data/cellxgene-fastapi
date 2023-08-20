@@ -30,10 +30,10 @@ class PasswordResetModel(BaseModel):
 
 
 class EditInfoUserModel(BaseModel):
-    user_name: str
-    user_password: str | None
-    organization: str
-    email_address: str
+    user_name: str | None = None
+    user_password: str | None = None
+    organization: str | None = None
+    email_address: str | None = None
 
     def to_dict(self):
         return {

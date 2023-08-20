@@ -6,7 +6,7 @@ from orm.schema import project_relation_model
 class ResponseMessage(BaseModel):
     status: str
     data: Any
-    message: str
+    message: Any
 
     def to_dict(self):
         return {"status": self.status, "data": self.data, "message": self.message}
