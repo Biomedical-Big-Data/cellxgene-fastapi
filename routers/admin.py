@@ -99,12 +99,18 @@ async def edit_user_info(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
-    check_user_model = crud.get_user(
-        db, [cellxgene.User.email_address == user_info.email_address]
-    ).first()
-    if check_user_model:
-        return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
-    update_user_dict = user_info.to_dict()
+    if not user_info:
+        return ResponseMessage(status="0201", data="无更新内容", message="无更新内容")
+    if user_info.email_address:
+        check_user_model = crud.get_user(
+            db, [cellxgene.User.email_address == user_info.email_address]
+        ).first()
+        if check_user_model:
+            return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
+    update_user_dict = {}
+    for key, value in user_info.to_dict().items():
+        if value:
+            update_user_dict[key] = value
     if user_info.user_password:
         salt, jwt_user_password = auth_util.create_md5_password(
             salt=None, password=user_info.user_password

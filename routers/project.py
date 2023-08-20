@@ -91,11 +91,12 @@ async def get_project_list_by_sample(
     external_sample_accesstion: Union[str, None] = None,
     disease: Union[str, None] = None,
     development_stage: Union[str, None] = None,
-    page: int = 0,
+    page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
+    search_page = page - 1
     filter_list = []
     if organ:
         filter_list.append(cellxgene.BioSampleMeta.organ == organ)
@@ -116,7 +117,7 @@ async def get_project_list_by_sample(
         )
     biosample_list = crud.get_project_by_sample(
         db=db, filters=filter_list
-    ).offset(page).limit(page_size).all()
+    ).offset(search_page).limit(page_size).all()
     total = crud.get_project_by_sample(
         db=db, filters=filter_list
     ).count()
@@ -137,11 +138,12 @@ async def get_project_list_by_cell(
     species_id: Union[int, None] = None,
     genes_positive: Union[str, None] = None,
     genes_negative: Union[str, None] = None,
-    page: int = 0,
+    page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
+    search_page = page - 1
     filter_list = []
     if cell_id:
         filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
@@ -167,7 +169,7 @@ async def get_project_list_by_cell(
         filter_list.append(and_(*negative_filter_list))
     cell_type_list = crud.get_project_by_cell(
         db=db, filters=filter_list
-    ).offset(page).limit(page_size).all()
+    ).offset(search_page).limit(page_size).all()
     total = crud.get_project_by_cell(
         db=db, filters=filter_list
     ).count()
@@ -186,11 +188,12 @@ async def get_project_list_by_cell(
 async def get_project_list_by_gene(
     gene_symbol: Union[str, None] = None,
     species_id: Union[int, None] = None,
-    page: int = 0,
+    page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
+    search_page = page - 1
     filter_list = []
     if gene_symbol:
         filter_list.append(
@@ -200,7 +203,7 @@ async def get_project_list_by_gene(
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = crud.get_project_by_gene(
         db=db, filters=filter_list
-    ).offset(page).limit(page_size).all()
+    ).offset(search_page).limit(page_size).all()
     total = crud.get_project_by_gene(
         db=db, filters=filter_list
     ).count()

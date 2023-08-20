@@ -45,12 +45,12 @@ class EditInfoUserModel(BaseModel):
 
 
 class AdminEditInfoUserModel(BaseModel):
-    user_name: str
-    email_address: str
-    organization: str
-    user_password: str
-    state: int
-    role: int
+    user_name: str | None = None
+    email_address: str | None = None
+    organization: str | None = None
+    user_password: str | None = None
+    state: int | None = None
+    role: int | None = None
 
     def to_dict(self):
         return {
