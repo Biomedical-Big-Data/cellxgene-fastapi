@@ -81,6 +81,7 @@ async def edit_user_info(
             salt=None, password=user_info.user_password
         )
         update_user_dict["user_password"] = jwt_user_password
+        update_user_dict["salt"] = salt
     crud.update_user(
         db,
         [cellxgene.User.id == user_id],

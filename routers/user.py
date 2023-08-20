@@ -124,6 +124,7 @@ async def edit_user_info(
             salt=None, password=user_info.user_password
         )
         update_user_dict["user_password"] = jwt_user_password
+        update_user_dict["salt"] = salt
     crud.update_user(
         db,
         [cellxgene.User.email_address == current_user_email_address],
@@ -204,7 +205,7 @@ async def reset_user_password(
         crud.update_user(
             db,
             [cellxgene.User.email_address == email_address],
-            {"user_password": jwt_user_password},
+            {"user_password": jwt_user_password, "salt": salt},
         )
         return ResponseMessage(
             status="0000",
