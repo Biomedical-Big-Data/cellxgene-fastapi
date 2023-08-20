@@ -30,11 +30,24 @@ class ResponseGeneModel(BaseModel):
     message: str
 
 
+class UserInfoListModel(BaseModel):
+    user_list: Union[
+            project_relation_model.UserProjectRelation,
+            List[project_relation_model.UserProjectRelation],
+            str
+        ]
+    total: int
+    page: int
+    page_size: int
+
+
 class ResponseUserModel(BaseModel):
     status: str
     data: Union[
-        project_relation_model.UserProjectRelation,
-        List[project_relation_model.UserProjectRelation],
-        str
-    ]
+            UserInfoListModel,
+            project_relation_model.UserProjectRelation,
+            List[project_relation_model.UserProjectRelation],
+            str
+        ]
     message: str
+

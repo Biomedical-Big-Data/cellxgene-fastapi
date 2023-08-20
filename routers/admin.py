@@ -56,11 +56,18 @@ async def get_user_list(
     if create_at is not None:
         filter_list.append(cellxgene.User.create_at.like("%{}%".format(create_at)))
     if asc is not None:
-        user_model_list = crud.get_user(db, filters=filter_list).order_by(cellxgene.User.id.asc()).offset(page).limit(page_size)
+        user_model_list = crud.get_user(db, filters=filter_list).order_by(cellxgene.User.id.asc()).offset(page).limit(page_size).all()
     else:
         user_model_list = crud.get_user(db, filters=filter_list).order_by(cellxgene.User.id.desc()).offset(page).limit(
-            page_size)
-    return ResponseMessage(status="0000", data=user_model_list, message="success")
+            page_size).all()
+    total = crud.get_user(db, filters=filter_list).count()
+    res_dict = {
+        "user_list": user_model_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="success")
 
 
 @router.get(
