@@ -186,23 +186,24 @@ async def send_reset_user_password_mail(
     status_code=status.HTTP_200_OK,
 )
 async def reset_user_password(
-    user_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db), current_user_email_address: str = Depends(get_current_user)
+    password: str = Body(), token: str = Body(), db: Session = Depends(get_db)
 ) -> ResponseMessage:
-    if len(user_data.password) < 6 or len(user_data.password) > 16:
+    email_address = auth_util.check_token_for_verify_email(db=db, token=token)
+    if len(password) < 6 or len(password) > 16:
         return ResponseMessage(
             status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
         )
-    if not re.search("^[1-9a-zA-Z]", user_data.password):
+    if not re.search("^[1-9a-zA-Z]", password):
         return ResponseMessage(
             status="0201", data="密码应包含数字及大小写字母", message="密码应包含数字及大小写字母"
         )
     salt, jwt_user_password = auth_util.create_md5_password(
-        salt=None, password=user_data.password
+        salt=None, password=password
     )
     try:
         crud.update_user(
             db,
-            [cellxgene.User.email_address == current_user_email_address],
+            [cellxgene.User.email_address == email_address],
             {"user_password": jwt_user_password},
         )
         return ResponseMessage(
