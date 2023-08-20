@@ -576,6 +576,17 @@ class User(Base):
     )
     user_project_meta = relationship("ProjectMeta", back_populates="project_user_meta")
 
+    def to_dict(self):
+        return {
+            "user_name": self.user_name,
+            "email_address": self.email_address,
+            "organization": self.organization,
+            "state": self.state,
+            "role": self.role,
+            "create_at": self.create_at,
+            "update_at": self.update_at,
+        }
+
 
 if __name__ == "__main__":
     metadata.create_all(cellxgene_engine)

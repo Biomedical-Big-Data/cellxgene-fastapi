@@ -89,7 +89,8 @@ async def user_login(
         )
         return ResponseMessage(
             status="0000",
-            data={"access_token": token, "token_type": "bearer"},
+            data={"access_token": token, "token_type": "bearer", "user_info": user_info_model.to_dict()
+                  },
             message="登录成功",
         )
     else:
