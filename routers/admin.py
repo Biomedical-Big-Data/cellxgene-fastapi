@@ -50,7 +50,7 @@ async def get_user_list(
     if user_name is not None:
         filter_list.append(cellxgene.User.user_name.like("%{}%".format(user_name)))
     if organization is not None:
-        filter_list.append(cellxgene.User.organization.like("%{}%".format(user_name)))
+        filter_list.append(cellxgene.User.organization.like("%{}%".format(organization)))
     if state is not None:
         filter_list.append(cellxgene.User.state == state)
     if create_at is not None:

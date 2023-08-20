@@ -12,21 +12,16 @@ class ResponseMessage(BaseModel):
         return {"status": self.status, "data": self.data, "message": self.message}
 
 
-class ResponseBiosampleModel(BaseModel):
+class ProjectListModel(BaseModel):
+    project_list: Union[List[project_relation_model.GeneRelation], List[project_relation_model.CellTypeRelation], List[project_relation_model.BiosampleModelRelation]]
+    total: int
+    page: int
+    page_size: int
+
+
+class ResponseProjectModel(BaseModel):
     status: str
-    data: List[project_relation_model.BiosampleModelRelation]
-    message: str
-
-
-class ResponseCellModel(BaseModel):
-    status: str
-    data: List[project_relation_model.CellTypeRelation]
-    message: str
-
-
-class ResponseGeneModel(BaseModel):
-    status: str
-    data: List[project_relation_model.GeneRelation]
+    data: ProjectListModel
     message: str
 
 

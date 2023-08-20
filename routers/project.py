@@ -9,10 +9,7 @@ from fastapi import (
 )
 from orm.dependencies import get_db
 from orm.schema.response import (
-    ResponseMessage,
-    ResponseBiosampleModel,
-    ResponseCellModel,
-    ResponseGeneModel,
+    ResponseMessage, ResponseProjectModel
 )
 from orm import crud
 from sqlalchemy.orm import Session
@@ -85,7 +82,7 @@ async def create_project(
 
 @router.get(
     "/list/by/sample",
-    response_model=ResponseBiosampleModel,
+    response_model=ResponseProjectModel,
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_sample(
@@ -118,13 +115,22 @@ async def get_project_list_by_sample(
             )
         )
     biosample_list = crud.get_project_by_sample(
-        db=db, filters=filter_list, page=page, page_size=page_size
-    )
-    return ResponseMessage(status="0000", data=biosample_list, message="ok")
+        db=db, filters=filter_list
+    ).offset(page).limit(page_size).all()
+    total = crud.get_project_by_sample(
+        db=db, filters=filter_list
+    ).count()
+    res_dict = {
+        "project_list": biosample_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
 @router.get(
-    "/list/by/cell", response_model=ResponseCellModel, status_code=status.HTTP_200_OK
+    "/list/by/cell", response_model=ResponseProjectModel, status_code=status.HTTP_200_OK
 )
 async def get_project_list_by_cell(
     cell_id: Union[int, None] = None,
@@ -160,13 +166,22 @@ async def get_project_list_by_cell(
             )
         filter_list.append(and_(*negative_filter_list))
     cell_type_list = crud.get_project_by_cell(
-        db=db, filters=filter_list, page=page, page_size=page_size
-    )
-    return ResponseMessage(status="0000", data=cell_type_list, message="ok")
+        db=db, filters=filter_list
+    ).offset(page).limit(page_size).all()
+    total = crud.get_project_by_cell(
+        db=db, filters=filter_list
+    ).count()
+    res_dict = {
+        "project_list": cell_type_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
 @router.get(
-    "/list/by/gene", response_model=ResponseGeneModel, status_code=status.HTTP_200_OK
+    "/list/by/gene", response_model=ResponseProjectModel, status_code=status.HTTP_200_OK
 )
 async def get_project_list_by_gene(
     gene_symbol: Union[str, None] = None,
@@ -184,9 +199,18 @@ async def get_project_list_by_gene(
     if species_id:
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = crud.get_project_by_gene(
-        db=db, filters=filter_list, page=page, page_size=page_size
-    )
-    return ResponseMessage(status="0000", data=gene_meta_list, message="ok")
+        db=db, filters=filter_list
+    ).offset(page).limit(page_size).all()
+    total = crud.get_project_by_gene(
+        db=db, filters=filter_list
+    ).count()
+    res_dict = {
+        "project_list": gene_meta_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
 @router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)

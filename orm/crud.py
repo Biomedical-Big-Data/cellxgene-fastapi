@@ -36,33 +36,24 @@ def get_project_detail(db: Session, project_id: int):
     )
 
 
-def get_project_by_sample(db: Session, filters: List, page: int, page_size: int):
+def get_project_by_sample(db: Session, filters: List):
     return (
         db.query(cellxgene.BioSampleMeta)
         .filter(and_(*filters))
-        .offset(page)
-        .limit(page_size)
-        .all()
     )
 
 
-def get_project_by_cell(db: Session, filters: List, page: int, page_size: int):
+def get_project_by_cell(db: Session, filters: List):
     return (
         db.query(cellxgene.CellTypeMeta)
         .filter(and_(*filters))
-        .offset(page)
-        .limit(page_size)
-        .all()
     )
 
 
-def get_project_by_gene(db: Session, filters: List, page: int, page_size: int):
+def get_project_by_gene(db: Session, filters: List):
     return (
         db.query(cellxgene.GeneMeta)
         .filter(and_(*filters))
-        .offset(page)
-        .limit(page_size)
-        .all()
     )
 
 
