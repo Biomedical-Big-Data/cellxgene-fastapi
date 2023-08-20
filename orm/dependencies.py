@@ -11,6 +11,7 @@ from orm.schema.exception_model import (
     CREDENTIALS_EXCEPTION,
     USERBLOCK_EXCEPTION,
     NOT_ADMIN_USER_EXCEPTION,
+    USER_NOT_VERIFY_EXCEPTION
 )
 
 
@@ -64,7 +65,7 @@ async def get_current_user(token: str = Depends(OAUTH2_SCHEME)):
                     email_address, expire_time
                 )
             )
-            raise USERBLOCK_EXCEPTION
+            raise USER_NOT_VERIFY_EXCEPTION
         return email_address
     except jwt.ExpiredSignatureError as e:
         logging.error(
