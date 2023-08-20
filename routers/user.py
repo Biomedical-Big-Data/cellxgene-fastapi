@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, status, Body
 from fastapi.responses import HTMLResponse
 from orm.dependencies import get_db, get_current_user
 from orm.schema import user_model
+from orm.schema.exception_model import USER_NOT_VERIFY_EXCEPTION, USERBLOCK_EXCEPTION
 from orm.schema.response import ResponseMessage, ResponseUserModel
 from orm import crud
 from sqlalchemy.orm import Session
@@ -79,6 +80,10 @@ async def user_login(
     ).first()
     if not user_info_model:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
+    if user_info_model.state == config.UserStateConfig.USER_STATE_NOT_VERIFY:
+        raise USER_NOT_VERIFY_EXCEPTION
+    if user_info_model.state == config.UserStateConfig.USER_STATE_BLOCK:
+        raise USERBLOCK_EXCEPTION
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=user_info_model.salt, password=login_data.password
     )
