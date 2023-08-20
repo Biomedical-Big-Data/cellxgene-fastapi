@@ -4,7 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette import status
 from starlette.responses import JSONResponse
 from orm.schema.response import ResponseMessage
-from routers import user, project
+from routers import user, project, admin
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,18 +19,29 @@ app.add_middleware(
 )
 app.include_router(user.router)
 app.include_router(project.router)
+app.include_router(admin.router)
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    error_message = ResponseMessage(status="0201", data=exc.errors(), message="RequestValidationError")
-    return JSONResponse(error_message.to_dict(), status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    error_message = ResponseMessage(
+        status="0201", data=exc.errors(), message="RequestValidationError"
+    )
+    return JSONResponse(
+        error_message.to_dict(), status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+    )
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    error_message = ResponseMessage(status="0201", data=exc.detail, message="HTTPException")
-    return JSONResponse(error_message.to_dict(), status_code=status.HTTP_401_UNAUTHORIZED)
+    error_message = ResponseMessage(
+        status="0201", data=exc.detail, message="HTTPException"
+    )
+    return JSONResponse(
+        error_message.to_dict(), status_code=status.HTTP_401_UNAUTHORIZED
+    )
 
 
 @app.get("/")
@@ -51,6 +62,6 @@ def static_main_action():
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,  # 设置记录级别
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'  # 设置日志格式
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # 设置日志格式
     )
     uvicorn.run(app, host="0.0.0.0", port=5050)

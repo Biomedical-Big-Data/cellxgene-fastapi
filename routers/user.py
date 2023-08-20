@@ -24,7 +24,9 @@ router = APIRouter(
 @router.post(
     "/register", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
-async def register(user: user_model.RegisterUserModel, db: Session = Depends(get_db)) -> ResponseMessage:
+async def register(
+    user: user_model.RegisterUserModel, db: Session = Depends(get_db)
+) -> ResponseMessage:
     if len(user.user_password) < 6 or len(user.user_password) > 16:
         return ResponseMessage(
             status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
@@ -69,7 +71,9 @@ async def register(user: user_model.RegisterUserModel, db: Session = Depends(get
 
 
 @router.post("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def user_login(login_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)) -> ResponseMessage:
+async def user_login(
+    login_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+) -> ResponseMessage:
     user_info_model = crud.get_user(
         db, [cellxgene.User.email_address == login_data.username]
     ).first()
@@ -83,92 +87,57 @@ async def user_login(login_data: OAuth2PasswordRequestForm = Depends(), db: Sess
             email_address=login_data.username,
             expire_time=config.JWT_LOGIN_EXPIRE_TIME,
         )
-        return ResponseMessage(status="0000", data={"access_token": token,  "token_type": "bearer"}, message="登录成功")
+        return ResponseMessage(
+            status="0000",
+            data={"access_token": token, "token_type": "bearer"},
+            message="登录成功",
+        )
     else:
         return ResponseMessage(status="0201", data="登录失败，密码错误", message="登录失败，密码错误")
 
 
-@router.get("/list", response_model=ResponseUserModel, status_code=status.HTTP_200_OK)
-async def get_user_list(page: int = 0, page_size: int = 20, db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)) -> ResponseMessage:
-    current_user_model = crud.get_user(db, [cellxgene.User.email_address == current_user_email_address]).first()
-    if current_user_model.role != config.UserRole.USER_ROLE_ADMIN:
-        return ResponseMessage(
-            status="0201", data="无权查看用户列表", message="无权查看用户列表")
-    user_model_list = crud.get_user(db, []).offset(page).limit(page_size).all()
-    return ResponseMessage(status="0000", data=user_model_list, message="success")
-
-
-@router.get("/{user_id}", response_model=ResponseUserModel, status_code=status.HTTP_200_OK)
-async def get_user_info(user_id: Union[str, int], db: Session = Depends(get_db), current_user_email_address: str = Depends(get_current_user)) -> ResponseMessage:
-    user_info_model = crud.get_user(
-        db, [cellxgene.User.email_address == current_user_email_address]
-    ).first()
-    if user_id == 'me':
-        return ResponseMessage(
-            status="0000", data=user_info_model, message="success"
-        )
-    else:
-        if user_info_model.role != config.UserRole.USER_ROLE_ADMIN:
-            return ResponseMessage(
-                status="0201", data="无权查看用户信息", message="无权查看用户信息")
-        else:
-            search_user_info_model = crud.get_user(db, [cellxgene.User.id == user_id]).first()
-            if search_user_info_model:
-                return ResponseMessage(
-                    status="0000", data=search_user_info_model, message="success"
-                )
-            else:
-                return ResponseMessage(
-                    status="0201", data="用户不存在", message="用户不存在"
-                )
-
-
-@router.post(
-    "/{user_id}/edit", response_model=ResponseMessage, status_code=status.HTTP_200_OK
-)
-async def edit_user_info(
-    user_id: Union[str, int],
-    user_info: user_model.EditInfoUserModel = Body(),
+@router.get("/me", response_model=ResponseUserModel, status_code=status.HTTP_200_OK)
+async def get_user_info(
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_user),
+    current_user_email_address: str = Depends(get_current_user),
 ) -> ResponseMessage:
     user_info_model = crud.get_user(
         db, [cellxgene.User.email_address == current_user_email_address]
     ).first()
-    if user_id != "me" and user_info_model.role != config.UserRole.USER_ROLE_ADMIN:
-        return ResponseMessage(
-            status="0201", data="无权修改用户信息", message="无权修改用户信息")
-    else:
-        check_user_dict = crud.get_user(
-            db, [cellxgene.User.email_address == user_info.email_address]
-        ).first()
-        if check_user_dict:
-            return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
-        update_user_dict = user_info.to_dict()
-        if user_info.user_password:
-            salt, jwt_user_password = auth_util.create_md5_password(
-                salt=user_info_model.salt, password=user_info.user_password
-            )
-            update_user_dict["user_password"] = jwt_user_password
-        if user_id == "me":
-            crud.update_user(
-                db,
-                [cellxgene.User.email_address == current_user_email_address],
-                update_user_dict,
-            )
-        else:
-            crud.update_user(
-                db,
-                [cellxgene.User.id == user_id],
-                update_user_dict,
-            )
+    return ResponseMessage(status="0000", data=user_info_model, message="success")
+
+
+@router.post("/me/edit", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def edit_user_info(
+    user_info: user_model.EditInfoUserModel = Body(),
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+) -> ResponseMessage:
+    check_user_dict = crud.get_user(
+        db, [cellxgene.User.email_address == user_info.email_address]
+    ).first()
+    if check_user_dict:
+        return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
+    update_user_dict = user_info.to_dict()
+    if user_info.user_password:
+        salt, jwt_user_password = auth_util.create_md5_password(
+            salt=None, password=user_info.user_password
+        )
+        update_user_dict["user_password"] = jwt_user_password
+    crud.update_user(
+        db,
+        [cellxgene.User.email_address == current_user_email_address],
+        update_user_dict,
+    )
     return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")
 
 
 @router.get(
     "/email/verify", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
-async def verify_user_email(token: str, db: Session = Depends(get_db)) -> ResponseMessage:
+async def verify_user_email(
+    token: str, db: Session = Depends(get_db)
+) -> ResponseMessage:
     email_address = auth_util.check_token_for_verify_email(db=db, token=token)
     crud.update_user(
         db,
@@ -216,7 +185,9 @@ async def send_reset_user_password_mail(
     response_class=HTMLResponse,
     status_code=status.HTTP_200_OK,
 )
-async def get_reset_password_template(token: str, db: Session = Depends(get_db)) -> ResponseMessage:
+async def get_reset_password_template(
+    token: str, db: Session = Depends(get_db)
+) -> ResponseMessage:
     email_address = auth_util.check_token_for_verify_email(db=db, token=token)
     return ResponseMessage(status="0000", data="密码修改成功", message="密码修改成功")
 
@@ -227,13 +198,9 @@ async def get_reset_password_template(token: str, db: Session = Depends(get_db))
     status_code=status.HTTP_200_OK,
 )
 async def reset_user_password(
-    user_data: OAuth2PasswordRequestForm = Depends()
-    , db: Session = Depends(get_db)
+    user_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ) -> ResponseMessage:
-    if (
-        len(user_data.password) < 6
-        or len(user_data.password) > 16
-    ):
+    if len(user_data.password) < 6 or len(user_data.password) > 16:
         return ResponseMessage(
             status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
         )

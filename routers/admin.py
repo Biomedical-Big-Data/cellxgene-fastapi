@@ -10,8 +10,8 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse
 from orm.dependencies import get_db
-from orm.schema import project_model
-from orm.schema.response import ResponseMessage
+from orm.schema import project_model, user_model
+from orm.schema.response import ResponseMessage, ResponseUserModel
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
@@ -20,7 +20,7 @@ from conf import config
 from typing import List, Union
 from io import BytesIO
 import pandas as pd
-
+from orm.dependencies import get_db, get_current_admin
 
 router = APIRouter(
     prefix="/admin",
@@ -30,7 +30,60 @@ router = APIRouter(
 
 
 @router.get(
-    "/gateway/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/user/list", response_model=ResponseUserModel, status_code=status.HTTP_200_OK
 )
-async def get_gateway_list():
-    pass
+async def get_user_list(
+    page: int = 0,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_admin),
+) -> ResponseMessage:
+    user_model_list = crud.get_user(db, []).order_by(cellxgene.User.id.asc()).offset(page).limit(page_size)
+    return ResponseMessage(status="0000", data=user_model_list, message="success")
+
+
+@router.get(
+    "/user/{user_id}", response_model=ResponseUserModel, status_code=status.HTTP_200_OK
+)
+async def get_user_info(
+    user_id: Union[str, int],
+    db: Session = Depends(get_db),
+    current_user_email_address: str = Depends(get_current_admin),
+) -> ResponseMessage:
+    search_user_info_model = crud.get_user(db, [cellxgene.User.id == user_id]).first()
+    if search_user_info_model:
+        return ResponseMessage(
+            status="0000", data=search_user_info_model, message="success"
+        )
+    else:
+        return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
+
+
+@router.post(
+    "/user/{user_id}/edit",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
+async def edit_user_info(
+    user_id: Union[str, int],
+    user_info: user_model.AdminEditInfoUserModel = Body(),
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_admin),
+) -> ResponseMessage:
+    check_user_model = crud.get_user(
+        db, [cellxgene.User.email_address == user_info.email_address]
+    ).first()
+    if check_user_model:
+        return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
+    update_user_dict = user_info.to_dict()
+    if user_info.user_password:
+        salt, jwt_user_password = auth_util.create_md5_password(
+            salt=None, password=user_info.user_password
+        )
+        update_user_dict["user_password"] = jwt_user_password
+    crud.update_user(
+        db,
+        [cellxgene.User.id == user_id],
+        update_user_dict,
+    )
+    return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")

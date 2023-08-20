@@ -42,3 +42,22 @@ class EditInfoUserModel(BaseModel):
             "organization": self.organization,
             "user_password": self.user_password,
         }
+
+
+class AdminEditInfoUserModel(BaseModel):
+    user_name: str
+    email_address: str
+    organization: str
+    user_password: str
+    state: int
+    role: int
+
+    def to_dict(self):
+        return {
+            "user_name": self.user_name,
+            "email_address": self.email_address,
+            "organization": self.organization,
+            "user_password": self.user_password,
+            "state": self.state,
+            "role": self.role,
+        }

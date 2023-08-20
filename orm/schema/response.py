@@ -9,11 +9,7 @@ class ResponseMessage(BaseModel):
     message: str
 
     def to_dict(self):
-        return {
-            "status": self.status,
-            "data": self.data,
-            "message": self.message
-        }
+        return {"status": self.status, "data": self.data, "message": self.message}
 
 
 class ResponseBiosampleModel(BaseModel):
@@ -36,5 +32,9 @@ class ResponseGeneModel(BaseModel):
 
 class ResponseUserModel(BaseModel):
     status: str
-    data: Union[project_relation_model.UserProjectRelation, List[project_relation_model.UserProjectRelation], str]
+    data: Union[
+        project_relation_model.UserProjectRelation,
+        List[project_relation_model.UserProjectRelation],
+        str
+    ]
     message: str
