@@ -33,14 +33,6 @@ biosample_analysis = Table(
 )
 
 
-project_user = Table(
-    "project_user",
-    metadata,
-    Column("user_id", INTEGER, ForeignKey("users.id")),
-    Column("project_id", INTEGER, ForeignKey("biosample_meta.id")),
-)
-
-
 class ProjectMeta(Base):
     __tablename__ = "project_meta"
 
@@ -95,7 +87,7 @@ class ProjectMeta(Base):
     project_analysis_meta = relationship(
         "Analysis", back_populates="analysis_project_meta", cascade="all"
     )
-    project_user_meta = relationship("User", back_populates="user_project_meta")
+    project_project_user_meta = relationship("ProjectUser", back_populates="project_user_project_meta", cascade="all")
 
     def to_dict(self):
         return {
@@ -582,7 +574,8 @@ class User(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    user_project_meta = relationship("ProjectMeta", back_populates="project_user_meta")
+
+    user_project_user_meta = relationship("ProjectUser", back_populates="project_user_user_meta", cascade="all")
 
     def to_dict(self):
         return {
@@ -594,6 +587,17 @@ class User(Base):
             "create_at": self.create_at,
             "update_at": self.update_at,
         }
+
+
+class ProjectUser(Base):
+    __tablename__ = "project_user"
+
+    id = Column(INTEGER, primary_key=True)
+    project_id = Column(INTEGER, ForeignKey("project_meta.id"))
+    user_id = Column(INTEGER, ForeignKey("users.id"))
+
+    project_user_project_meta = relationship("ProjectMeta", back_populates="project_project_user_meta", cascade="all")
+    project_user_user_meta = relationship("User", back_populates="user_project_user_meta", cascade="all")
 
 
 if __name__ == "__main__":

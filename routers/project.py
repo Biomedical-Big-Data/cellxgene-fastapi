@@ -64,6 +64,7 @@ async def create_project(
     new_project_status = config.ProjectStatus.INSERT_MAPPING_PROJECT_STATUS_DICT.get(
         project_status
     )
+    project_user_model = cellxgene.ProjectUser(user_id=owner)
     insert_project_model = cellxgene.ProjectMeta(
         title=title,
         description=description,
@@ -71,12 +72,14 @@ async def create_project(
         tag=tag,
         owner=owner,
     )
+    insert_project_model.project_project_user_meta.append(project_user_model)
     insert_analysis_model = cellxgene.Analysis()
     insert_analysis_model.analysis_project_meta = insert_project_model
     try:
         crud.create_analysis(db=db, insert_analysis_model=insert_analysis_model)
         return ResponseMessage(status="0000", data="项目创建成功", message="项目创建成功")
-    except:
+    except Exception as e:
+        print(e)
         return ResponseMessage(status="0201", data="项目创建失败", message="项目创建失败")
 
 
@@ -115,6 +118,7 @@ async def get_project_list_by_sample(
                 "%{}%".format(development_stage)
             )
         )
+    # filter_list.append(cellxgene.BioSampleMeta.biosample_project_meta.project_project_user_meta.project_user_user_meta.email_address == current_user_email_address)
     biosample_list = crud.get_project_by_sample(
         db=db, filters=filter_list
     ).offset(search_page).limit(page_size).all()

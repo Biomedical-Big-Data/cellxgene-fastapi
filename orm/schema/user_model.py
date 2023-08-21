@@ -18,6 +18,15 @@ class UserModel(BaseModel):
         org_mode = True
 
 
+class ProjectUserModel(BaseModel):
+    id: int
+    project_id: int
+    user_id: int
+
+    class Config:
+        org_mode = True
+
+
 class RegisterUserModel(BaseModel):
     user_name: str
     user_password: str

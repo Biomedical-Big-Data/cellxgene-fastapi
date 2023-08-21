@@ -10,11 +10,18 @@ from orm.schema.project_model import (
     GeneModel,
     GeneExpression,
 )
-from orm.schema.user_model import UserModel
+from orm.schema.user_model import UserModel, ProjectUserModel
+
+
+class ProjectUserRelation(ProjectUserModel):    project_user_user_meta: UserModel
+
+
+class ProjectRelation(ProjectModel):
+    project_project_user_meta: List[ProjectUserRelation]
 
 
 class BiosampleModelRelation(BiosampleModel):
-    biosample_project_meta: List[ProjectModel]
+    biosample_project_meta: List[ProjectRelation]
     biosample_donor_meta: DonorModel
     biosample_species_meta: SpeciesModel
 
