@@ -22,7 +22,7 @@ class ProjectBioSample(Base):
 
     id = Column(INTEGER, primary_key=True)
     project_id = Column(INTEGER, ForeignKey("project_meta.id"))
-    biosample_id = Column(INTEGER,  ForeignKey("biosample_meta.id"))
+    biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
 
     project_biosample_project_meta = relationship(
         "ProjectMeta",
@@ -40,7 +40,7 @@ class BioSampleAnalysis(Base):
     __tablename__ = "biosample_analysis"
 
     id = Column(INTEGER, primary_key=True)
-    biosample_id = Column(INTEGER,  ForeignKey("biosample_meta.id"))
+    biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
     analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
 
     biosample_analysis_biosample_meta = relationship(
@@ -108,7 +108,9 @@ class ProjectMeta(Base):
     project_analysis_meta = relationship(
         "Analysis", back_populates="analysis_project_meta", cascade="all"
     )
-    project_project_user_meta = relationship("ProjectUser", back_populates="project_user_project_meta")
+    project_project_user_meta = relationship(
+        "ProjectUser", back_populates="project_user_project_meta"
+    )
 
     def to_dict(self):
         return {
@@ -292,12 +294,10 @@ class BioSampleMeta(Base):
         "DonorMeta", back_populates="donor_biosample_meta"
     )
     biosample_project_biosample_meta = relationship(
-        "ProjectBioSample",
-        back_populates="project_biosample_biosample_meta"
+        "ProjectBioSample", back_populates="project_biosample_biosample_meta"
     )
     biosample_biosample_analysis_meta = relationship(
-        "BioSampleAnalysis",
-        back_populates="biosample_analysis_biosample_meta"
+        "BioSampleAnalysis", back_populates="biosample_analysis_biosample_meta"
     )
     biosample_species_meta = relationship(
         "SpeciesMeta", back_populates="species_biosample_meta"
@@ -593,7 +593,9 @@ class User(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
 
-    user_project_user_meta = relationship("ProjectUser", back_populates="project_user_user_meta")
+    user_project_user_meta = relationship(
+        "ProjectUser", back_populates="project_user_user_meta"
+    )
 
     def to_dict(self):
         return {
@@ -614,8 +616,12 @@ class ProjectUser(Base):
     project_id = Column(INTEGER, ForeignKey("project_meta.id"))
     user_id = Column(INTEGER, ForeignKey("users.id"))
 
-    project_user_project_meta = relationship("ProjectMeta", back_populates="project_project_user_meta", cascade="all")
-    project_user_user_meta = relationship("User", back_populates="user_project_user_meta", cascade="all")
+    project_user_project_meta = relationship(
+        "ProjectMeta", back_populates="project_project_user_meta", cascade="all"
+    )
+    project_user_user_meta = relationship(
+        "User", back_populates="user_project_user_meta", cascade="all"
+    )
 
 
 if __name__ == "__main__":

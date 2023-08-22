@@ -53,7 +53,9 @@ async def register(
             role=config.UserRole.USER_ROLE_FORMAL,
         ),
     )
-    token = auth_util.create_token(email_address=user.email_address, expire_time=config.JWT_VERIFY_EXPIRE_TIME)
+    token = auth_util.create_token(
+        email_address=user.email_address, expire_time=config.JWT_VERIFY_EXPIRE_TIME
+    )
     verify_url = "{}".format(config.VERIFY_URL + token)
     mail_template = mail_util.verify_mail_template(
         user_name=user.user_name, verify_url=verify_url
@@ -94,8 +96,11 @@ async def user_login(
         )
         return ResponseMessage(
             status="0000",
-            data={"access_token": token, "token_type": "bearer", "user_info": user_info_model.to_dict()
-                  },
+            data={
+                "access_token": token,
+                "token_type": "bearer",
+                "user_info": user_info_model.to_dict(),
+            },
             message="登录成功",
         )
     else:
@@ -173,7 +178,10 @@ async def send_reset_user_password_mail(
     ).first()
     if not user_dict:
         return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
-    token = auth_util.create_token(email_address=user_dict.email_address, expire_time=config.JWT_RESET_PASSWORD_EXPIRE_TIME)
+    token = auth_util.create_token(
+        email_address=user_dict.email_address,
+        expire_time=config.JWT_RESET_PASSWORD_EXPIRE_TIME,
+    )
     reset_password_url = "{}".format(config.RESET_PASSWORD_URL + token)
     mail_template = mail_util.reset_password_mail_template(
         user_name=user_dict.user_name, reset_password_url=reset_password_url

@@ -13,13 +13,18 @@ class ResponseMessage(BaseModel):
 
 
 class ProjectListModel(BaseModel):
-    project_list: Union[List[project_relation_model.GeneRelation], List[project_relation_model.CellTypeRelation], List[project_relation_model.BiosampleModelRelation]]
+    project_list: Union[
+        List[project_relation_model.GeneRelation],
+        List[project_relation_model.CellTypeRelation],
+        List[project_relation_model.BiosampleModelRelation],
+        List[project_relation_model.ProjectRelation],
+    ]
     total: int
     page: int
     page_size: int
 
 
-class ResponseProjectModel(BaseModel):
+class ResponseProjectListModel(BaseModel):
     status: str
     data: ProjectListModel
     message: str
@@ -27,10 +32,10 @@ class ResponseProjectModel(BaseModel):
 
 class UserInfoListModel(BaseModel):
     user_list: Union[
-            project_relation_model.UserProjectRelation,
-            List[project_relation_model.UserProjectRelation],
-            str
-        ]
+        project_relation_model.UserProjectRelation,
+        List[project_relation_model.UserProjectRelation],
+        str,
+    ]
     total: int
     page: int
     page_size: int
@@ -39,10 +44,19 @@ class UserInfoListModel(BaseModel):
 class ResponseUserModel(BaseModel):
     status: str
     data: Union[
-            UserInfoListModel,
-            project_relation_model.UserProjectRelation,
-            List[project_relation_model.UserProjectRelation],
-            str
-        ]
+        UserInfoListModel,
+        project_relation_model.UserProjectRelation,
+        List[project_relation_model.UserProjectRelation],
+        str,
+    ]
     message: str
 
+
+class ResponseProjectDetailModel(BaseModel):
+    status: str
+    data: Union[
+        project_relation_model.ProjectRelation,
+        ProjectListModel,
+        str,
+    ]
+    message: str

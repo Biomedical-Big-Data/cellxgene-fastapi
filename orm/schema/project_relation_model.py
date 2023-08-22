@@ -10,20 +10,13 @@ from orm.schema.project_model import (
     GeneModel,
     GeneExpression,
     ProjectBiosampleModel,
-    BiosampleAnalysisModel
+    BiosampleAnalysisModel,
 )
 from orm.schema.user_model import UserModel, ProjectUserModel
 
 
-class ProjectUserRelation(ProjectUserModel):
-    project_user_user_meta: UserModel
-
-    class Config:
-        org_mode = True
-
-
 class ProjectRelation(ProjectModel):
-    project_project_user_meta: List[ProjectUserRelation]
+    project_analysis_meta: List[AnalysisModel]
 
     class Config:
         org_mode = True

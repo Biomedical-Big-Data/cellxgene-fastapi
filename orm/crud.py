@@ -28,33 +28,20 @@ def create_project(db: Session, insert_project_model: cellxgene.ProjectMeta):
     return insert_project_model.id
 
 
-def get_project_detail(db: Session, project_id: int):
-    return (
-        db.query(cellxgene.ProjectMeta)
-        .filter(cellxgene.ProjectMeta.id == project_id)
-        .first()
-    )
+def get_project(db: Session, filters: List):
+    return db.query(cellxgene.ProjectMeta).filter(and_(*filters))
 
 
 def get_project_by_sample(db: Session, filters: List):
-    return (
-        db.query(cellxgene.BioSampleMeta)
-        .filter(and_(*filters))
-    )
+    return db.query(cellxgene.BioSampleMeta).filter(and_(*filters))
 
 
 def get_project_by_cell(db: Session, filters: List):
-    return (
-        db.query(cellxgene.CellTypeMeta)
-        .filter(and_(*filters))
-    )
+    return db.query(cellxgene.CellTypeMeta).filter(and_(*filters))
 
 
 def get_project_by_gene(db: Session, filters: List):
-    return (
-        db.query(cellxgene.GeneMeta)
-        .filter(and_(*filters))
-    )
+    return db.query(cellxgene.GeneMeta).filter(and_(*filters))
 
 
 def create_analysis(db: Session, insert_analysis_model: cellxgene.Analysis):

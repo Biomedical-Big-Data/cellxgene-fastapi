@@ -26,9 +26,7 @@ app.include_router(admin.router)
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    error_message = ResponseMessage(
-        status="0201", data="", message=exc.errors()
-    )
+    error_message = ResponseMessage(status="0201", data="", message=exc.errors())
     return JSONResponse(
         error_message.to_dict(), status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
     )
@@ -36,9 +34,7 @@ async def validation_exception_handler(
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    error_message = ResponseMessage(
-        status="0201", data="", message=exc.detail
-    )
+    error_message = ResponseMessage(status="0201", data="", message=exc.detail)
     return JSONResponse(
         error_message.to_dict(), status_code=status.HTTP_401_UNAUTHORIZED
     )

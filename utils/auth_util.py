@@ -46,7 +46,9 @@ def check_token_for_verify_email(
     db: Session, token: str, secret_key: str = config.JWT_SECRET_KEY
 ) -> str:
     try:
-        token_dict = jwt.decode(jwt=token, key=secret_key, algorithms=config.JWT_ALGORITHMS)
+        token_dict = jwt.decode(
+            jwt=token, key=secret_key, algorithms=config.JWT_ALGORITHMS
+        )
         email_address = token_dict.get("email_address", "")
         expire_time = token_dict.get("expire_time", "")
         if not email_address or not expire_time:

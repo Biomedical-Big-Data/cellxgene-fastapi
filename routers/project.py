@@ -9,7 +9,9 @@ from fastapi import (
 )
 from orm.dependencies import get_db
 from orm.schema.response import (
-    ResponseMessage, ResponseProjectModel
+    ResponseMessage,
+    ResponseProjectListModel,
+    ResponseProjectDetailModel,
 )
 from orm import crud
 from sqlalchemy.orm import Session
@@ -31,19 +33,25 @@ router = APIRouter(
 
 
 @router.get(
-    "/list/{project_id}", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/{project_id}",
+    response_model=ResponseProjectDetailModel,
+    status_code=status.HTTP_200_OK,
 )
 async def get_project_list(
     project_id: int,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    project_info_model = crud.get_project_detail(db=db, project_id=project_id)
+    filter_list = [
+        cellxgene.ProjectMeta.id == project_id,
+        cellxgene.ProjectMeta.id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
+    project_info_model = crud.get_project(db=db, filters=filter_list).first()
     if not project_info_model:
-        return ResponseMessage(status="0201", data="无此项目", message="无此项目")
-    return ResponseMessage(
-        status="0000", data=project_info_model.to_dict(), message="ok"
-    )
+        return ResponseMessage(status="0201", data="无权限查看此项目", message="无权限查看此项目")
+    return ResponseMessage(status="0000", data=project_info_model, message="ok")
 
 
 @router.post("/create", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
@@ -85,7 +93,7 @@ async def create_project(
 
 @router.get(
     "/list/by/sample",
-    response_model=ResponseProjectModel,
+    response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_sample(
@@ -100,10 +108,12 @@ async def get_project_list_by_sample(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = page - 1
-    filter_list = [cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
-                   cellxgene.ProjectBioSample.project_id == cellxgene.ProjectUser.project_id,
-                   cellxgene.ProjectUser.user_id == cellxgene.User.id,
-                   cellxgene.User.email_address == current_user_email_address]
+    filter_list = [
+        cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+        cellxgene.ProjectBioSample.project_id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
     if organ:
         filter_list.append(cellxgene.BioSampleMeta.organ == organ)
     if species_id:
@@ -122,23 +132,26 @@ async def get_project_list_by_sample(
             )
         )
     # filter_list.append(cellxgene.BioSampleMeta.biosample_project_meta.project_project_user_meta.project_user_user_meta.email_address == current_user_email_address)
-    biosample_list = crud.get_project_by_sample(
-        db=db, filters=filter_list
-    ).offset(search_page).limit(page_size).all()
-    total = crud.get_project_by_sample(
-        db=db, filters=filter_list
-    ).count()
+    biosample_list = (
+        crud.get_project_by_sample(db=db, filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_project_by_sample(db=db, filters=filter_list).count()
     res_dict = {
         "project_list": biosample_list,
         "total": total,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
 @router.get(
-    "/list/by/cell", response_model=ResponseProjectModel, status_code=status.HTTP_200_OK
+    "/list/by/cell",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_cell(
     cell_id: Union[int, None] = None,
@@ -151,11 +164,13 @@ async def get_project_list_by_cell(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = page - 1
-    filter_list = [cellxgene.CellTypeMeta.id == cellxgene.CalcCellClusterProportion.cell_type_id,
-                   cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
-                   cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
-                   cellxgene.ProjectUser.user_id == cellxgene.User.id,
-                   cellxgene.User.email_address == current_user_email_address]
+    filter_list = [
+        cellxgene.CellTypeMeta.id == cellxgene.CalcCellClusterProportion.cell_type_id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
     if cell_id:
         filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
     if species_id:
@@ -178,23 +193,26 @@ async def get_project_list_by_cell(
                 )
             )
         filter_list.append(and_(*negative_filter_list))
-    cell_type_list = crud.get_project_by_cell(
-        db=db, filters=filter_list
-    ).offset(search_page).limit(page_size).all()
-    total = crud.get_project_by_cell(
-        db=db, filters=filter_list
-    ).count()
+    cell_type_list = (
+        crud.get_project_by_cell(db=db, filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_project_by_cell(db=db, filters=filter_list).count()
     res_dict = {
         "project_list": cell_type_list,
         "total": total,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
 @router.get(
-    "/list/by/gene", response_model=ResponseProjectModel, status_code=status.HTTP_200_OK
+    "/list/by/gene",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_gene(
     gene_symbol: Union[str, None] = None,
@@ -205,29 +223,33 @@ async def get_project_list_by_gene(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = page - 1
-    filter_list = [cellxgene.GeneMeta.id == cellxgene.CellClusterGeneExpression.gene_id,
-                   cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id == cellxgene.CalcCellClusterProportion.id,
-                   cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
-                   cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
-                   cellxgene.ProjectUser.user_id == cellxgene.User.id,
-                   cellxgene.User.email_address == current_user_email_address]
+    filter_list = [
+        cellxgene.GeneMeta.id == cellxgene.CellClusterGeneExpression.gene_id,
+        cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
+        == cellxgene.CalcCellClusterProportion.id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
     if gene_symbol:
         filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         )
     if species_id:
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
-    gene_meta_list = crud.get_project_by_gene(
-        db=db, filters=filter_list
-    ).offset(search_page).limit(page_size).all()
-    total = crud.get_project_by_gene(
-        db=db, filters=filter_list
-    ).count()
+    gene_meta_list = (
+        crud.get_project_by_gene(db=db, filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_project_by_gene(db=db, filters=filter_list).count()
     res_dict = {
         "project_list": gene_meta_list,
         "total": total,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
