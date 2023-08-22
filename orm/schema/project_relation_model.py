@@ -9,19 +9,42 @@ from orm.schema.project_model import (
     CellTypeModel,
     GeneModel,
     GeneExpression,
+    ProjectBiosampleModel,
+    BiosampleAnalysisModel
 )
 from orm.schema.user_model import UserModel, ProjectUserModel
 
 
-class ProjectUserRelation(ProjectUserModel):    project_user_user_meta: UserModel
+class ProjectUserRelation(ProjectUserModel):
+    project_user_user_meta: UserModel
+
+    class Config:
+        org_mode = True
 
 
 class ProjectRelation(ProjectModel):
     project_project_user_meta: List[ProjectUserRelation]
 
+    class Config:
+        org_mode = True
+
+
+class ProjectBiosampleRelation(ProjectBiosampleModel):
+    project_biosample_project_meta: ProjectModel
+
+    class Config:
+        org_mode = True
+
+
+class BiosampleAnalysisRelation(BiosampleAnalysisModel):
+    biosample_analysis_biosample_meta: BiosampleModel
+
+    class Config:
+        org_mode = True
+
 
 class BiosampleModelRelation(BiosampleModel):
-    biosample_project_meta: List[ProjectRelation]
+    biosample_project_biosample_meta: List[ProjectBiosampleRelation]
     biosample_donor_meta: DonorModel
     biosample_species_meta: SpeciesModel
 
@@ -31,7 +54,7 @@ class BiosampleModelRelation(BiosampleModel):
 
 class AnalysisRelation(AnalysisModel):
     analysis_project_meta: ProjectModel
-    analysis_biosample_meta: List[BiosampleModel]
+    analysis_biosample_analysis_meta: List[BiosampleAnalysisRelation]
 
     class Config:
         org_mode = True

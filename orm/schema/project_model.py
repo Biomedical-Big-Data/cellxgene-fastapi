@@ -237,6 +237,24 @@ class GeneModel(BaseModel):
         org_mode = True
 
 
+class ProjectBiosampleModel(BaseModel):
+    id: int
+    project_id: int
+    biosample_id: int
+
+    class Config:
+        org_mode = True
+
+
+class BiosampleAnalysisModel(BaseModel):
+    id: int
+    biosample_id: int
+    analysis_id: int
+
+    class Config:
+        org_mode = True
+
+
 if __name__ == "__main__":
     a = BiosampleModel()
     print(a.keys())

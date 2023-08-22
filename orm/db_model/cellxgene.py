@@ -8,7 +8,6 @@ from sqlalchemy import (
     VARCHAR,
     INTEGER,
     ForeignKey,
-    Table,
 )
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship
@@ -18,19 +17,42 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
-project_biosample = Table(
-    "project_biosample",
-    metadata,
-    Column("project_id", INTEGER, ForeignKey("project_meta.id")),
-    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id")),
-)
+class ProjectBioSample(Base):
+    __tablename__ = "project_biosample"
 
-biosample_analysis = Table(
-    "biosample_analysis",
-    metadata,
-    Column("analysis_id", INTEGER, ForeignKey("analysis.id")),
-    Column("biosample_id", INTEGER, ForeignKey("biosample_meta.id")),
-)
+    id = Column(INTEGER, primary_key=True)
+    project_id = Column(INTEGER, ForeignKey("project_meta.id"))
+    biosample_id = Column(INTEGER,  ForeignKey("biosample_meta.id"))
+
+    project_biosample_project_meta = relationship(
+        "ProjectMeta",
+        back_populates="project_project_biosample_meta",
+        cascade="all",
+    )
+    project_biosample_biosample_meta = relationship(
+        "BioSampleMeta",
+        back_populates="biosample_project_biosample_meta",
+        cascade="all",
+    )
+
+
+class BioSampleAnalysis(Base):
+    __tablename__ = "biosample_analysis"
+
+    id = Column(INTEGER, primary_key=True)
+    biosample_id = Column(INTEGER,  ForeignKey("biosample_meta.id"))
+    analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
+
+    biosample_analysis_biosample_meta = relationship(
+        "BioSampleMeta",
+        back_populates="biosample_biosample_analysis_meta",
+        cascade="all",
+    )
+    biosample_analysis_analysis_meta = relationship(
+        "Analysis",
+        back_populates="analysis_biosample_analysis_meta",
+        cascade="all",
+    )
 
 
 class ProjectMeta(Base):
@@ -78,16 +100,15 @@ class ProjectMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    project_biosample_meta = relationship(
-        "BioSampleMeta",
-        secondary=project_biosample,
-        back_populates="biosample_project_meta",
+    project_project_biosample_meta = relationship(
+        "ProjectBioSample",
+        back_populates="project_biosample_project_meta",
         cascade="all",
     )
     project_analysis_meta = relationship(
         "Analysis", back_populates="analysis_project_meta", cascade="all"
     )
-    project_project_user_meta = relationship("ProjectUser", back_populates="project_user_project_meta", cascade="all")
+    project_project_user_meta = relationship("ProjectUser", back_populates="project_user_project_meta")
 
     def to_dict(self):
         return {
@@ -270,16 +291,13 @@ class BioSampleMeta(Base):
     biosample_donor_meta = relationship(
         "DonorMeta", back_populates="donor_biosample_meta"
     )
-    biosample_project_meta = relationship(
-        "ProjectMeta",
-        secondary=project_biosample,
-        back_populates="project_biosample_meta",
-        cascade="all",
+    biosample_project_biosample_meta = relationship(
+        "ProjectBioSample",
+        back_populates="project_biosample_biosample_meta"
     )
-    biosample_analysis_meta = relationship(
-        "Analysis",
-        secondary=biosample_analysis,
-        back_populates="analysis_biosample_meta",
+    biosample_biosample_analysis_meta = relationship(
+        "BioSampleAnalysis",
+        back_populates="biosample_analysis_biosample_meta"
     )
     biosample_species_meta = relationship(
         "SpeciesMeta", back_populates="species_biosample_meta"
@@ -330,10 +348,10 @@ class Analysis(Base):
     h5ad_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
-    analysis_biosample_meta = relationship(
-        "BioSampleMeta",
-        secondary=biosample_analysis,
-        back_populates="biosample_analysis_meta",
+    analysis_biosample_analysis_meta = relationship(
+        "BioSampleAnalysis",
+        back_populates="biosample_analysis_analysis_meta",
+        cascade="all",
     )
     analysis_cell_proportion_meta = relationship(
         "CalcCellClusterProportion", back_populates="cell_proportion_analysis_meta"
@@ -575,7 +593,7 @@ class User(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
 
-    user_project_user_meta = relationship("ProjectUser", back_populates="project_user_user_meta", cascade="all")
+    user_project_user_meta = relationship("ProjectUser", back_populates="project_user_user_meta")
 
     def to_dict(self):
         return {

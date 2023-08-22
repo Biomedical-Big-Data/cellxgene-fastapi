@@ -100,7 +100,10 @@ async def get_project_list_by_sample(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = page - 1
-    filter_list = []
+    filter_list = [cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+                   cellxgene.ProjectBioSample.project_id == cellxgene.ProjectUser.project_id,
+                   cellxgene.ProjectUser.user_id == cellxgene.User.id,
+                   cellxgene.User.email_address == current_user_email_address]
     if organ:
         filter_list.append(cellxgene.BioSampleMeta.organ == organ)
     if species_id:
@@ -148,7 +151,11 @@ async def get_project_list_by_cell(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = page - 1
-    filter_list = []
+    filter_list = [cellxgene.CellTypeMeta.id == cellxgene.CalcCellClusterProportion.cell_type_id,
+                   cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+                   cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+                   cellxgene.ProjectUser.user_id == cellxgene.User.id,
+                   cellxgene.User.email_address == current_user_email_address]
     if cell_id:
         filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
     if species_id:
@@ -198,7 +205,12 @@ async def get_project_list_by_gene(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = page - 1
-    filter_list = []
+    filter_list = [cellxgene.GeneMeta.id == cellxgene.CellClusterGeneExpression.gene_id,
+                   cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id == cellxgene.CalcCellClusterProportion.id,
+                   cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+                   cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+                   cellxgene.ProjectUser.user_id == cellxgene.User.id,
+                   cellxgene.User.email_address == current_user_email_address]
     if gene_symbol:
         filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
