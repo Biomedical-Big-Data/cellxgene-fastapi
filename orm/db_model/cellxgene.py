@@ -100,13 +100,13 @@ class ProjectMeta(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+    project_user_meta = relationship("User", back_populates="user_project_meta")
     project_project_biosample_meta = relationship(
         "ProjectBioSample",
         back_populates="project_biosample_project_meta",
-        cascade="all",
     )
     project_analysis_meta = relationship(
-        "Analysis", back_populates="analysis_project_meta", cascade="all"
+        "Analysis", back_populates="analysis_project_meta"
     )
     project_project_user_meta = relationship(
         "ProjectUser", back_populates="project_user_project_meta"
@@ -593,6 +593,7 @@ class User(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
 
+    user_project_meta = relationship("ProjectMeta", back_populates="project_user_meta")
     user_project_user_meta = relationship(
         "ProjectUser", back_populates="project_user_user_meta"
     )

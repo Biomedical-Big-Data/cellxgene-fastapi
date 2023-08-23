@@ -94,7 +94,7 @@ async def get_user_list(
     "/user/{user_id}", response_model=ResponseUserModel, status_code=status.HTTP_200_OK
 )
 async def get_user_info(
-    user_id: Union[str, int],
+    user_id: int,
     db: Session = Depends(get_db),
     current_user_email_address: str = Depends(get_current_admin),
 ) -> ResponseMessage:
@@ -113,7 +113,7 @@ async def get_user_info(
     status_code=status.HTTP_200_OK,
 )
 async def edit_user_info(
-    user_id: Union[str, int],
+    user_id: int,
     user_info: user_model.AdminEditInfoUserModel = Body(),
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_admin),

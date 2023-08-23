@@ -8,7 +8,7 @@ from typing import List, AnyStr, Dict
 
 
 def get_user(db: Session, filters: List):
-    return db.query(cellxgene.User).filter(or_(*filters))
+    return db.query(cellxgene.User).filter(and_(*filters))
 
 
 def create_user(db: Session, insert_user_model: cellxgene.User):
@@ -23,9 +23,12 @@ def update_user(db: Session, filters: List, update_dict: Dict):
 
 def create_project(db: Session, insert_project_model: cellxgene.ProjectMeta):
     db.add(insert_project_model)
-    db.flush()
     db.commit()
-    return insert_project_model.id
+
+
+def update_project(db: Session, filters: List, update_dict: Dict):
+    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).update(update_dict)
+    db.commit()
 
 
 def get_project(db: Session, filters: List):

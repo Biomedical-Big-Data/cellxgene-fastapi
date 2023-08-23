@@ -255,6 +255,10 @@ class BiosampleAnalysisModel(BaseModel):
         org_mode = True
 
 
+class TransferProjectModel(BaseModel):
+    transfer_to_email_address: str
+
+
 if __name__ == "__main__":
     a = BiosampleModel()
     print(a.keys())
