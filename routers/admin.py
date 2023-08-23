@@ -8,16 +8,16 @@ from fastapi import (
     File,
     UploadFile,
 )
-from fastapi.responses import HTMLResponse
-from orm.dependencies import get_db
 from orm.schema import project_model, user_model
 from orm.schema.response import (
     ResponseMessage,
     ResponseUserModel,
     ResponseProjectDetailModel,
+    ResponseProjectListModel,
 )
 from orm import crud
 from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
 from orm.db_model import cellxgene
 from utils import auth_util, mail_util
 from conf import config
@@ -46,7 +46,7 @@ async def get_user_list(
     page_size: int = 20,
     asc: int = 1,
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_admin),
+    current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     filter_list = []
     search_page = page - 1
@@ -96,7 +96,7 @@ async def get_user_list(
 async def get_user_info(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user_email_address: str = Depends(get_current_admin),
+    current_admin_email_address: str = Depends(get_current_admin),
 ) -> ResponseMessage:
     search_user_info_model = crud.get_user(db, [cellxgene.User.id == user_id]).first()
     if search_user_info_model:
@@ -116,7 +116,7 @@ async def edit_user_info(
     user_id: int,
     user_info: user_model.AdminEditInfoUserModel = Body(),
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_admin),
+    current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     if not user_info:
         return ResponseMessage(status="0201", data="无更新内容", message="无更新内容")
@@ -156,7 +156,7 @@ async def get_project_list(
     page_size: int = 20,
     asc: int = 1,
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_admin),
+    current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     search_page = page - 1
     filter_list = []
@@ -196,7 +196,7 @@ async def get_project_list(
 async def get_project_list(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_admin),
+    current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     filter_list = [
         cellxgene.ProjectMeta.id == project_id,
@@ -205,3 +205,113 @@ async def get_project_list(
     if not project_info_model:
         return ResponseMessage(status="0201", data="无此项目", message="无此项目")
     return ResponseMessage(status="0000", data=project_info_model, message="ok")
+
+
+@router.post(
+    "/project/{project_id}/status/update",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK
+)
+async def update_project(
+    project_id: int,
+    project_status: project_model.UpdateProjectModel = Body(),
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    try:
+        crud.update_project(db=db, filters=[cellxgene.ProjectMeta.id == project_id], update_dict={"status": project_status})
+        return ResponseMessage(status="0000", data="项目状态更新成功", message="项目状态更新成功")
+    except:
+        return ResponseMessage(status="0201", data="项目状态更新失败", message="项目状态更新失败")
+    
+    
+@router.get(
+    "/cell/list",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK
+)
+async def get_cell_list(
+    cell_id: Union[int, None] = None,
+    species_id: Union[int, None] = None,
+    genes_positive: Union[str, None] = None,
+    genes_negative: Union[str, None] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    filter_list = []
+    search_page = page - 1
+    if cell_id is not None:
+        filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
+    if species_id is not None:
+        filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
+    if genes_positive is not None:
+        genes_positive_list = genes_positive.split(",")
+        positive_filter_list = []
+        for positive in genes_positive_list:
+            positive_filter_list.append(
+                cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
+            )
+        filter_list.append(or_(*positive_filter_list))
+    if genes_negative is not None:
+        genes_negative_list = genes_negative.split(",")
+        negative_filter_list = []
+        for negative in genes_negative_list:
+            negative_filter_list.append(
+                cellxgene.CellTypeMeta.marker_gene_symbol.notlike(
+                    "%{}%".format(negative)
+                )
+            )
+        filter_list.append(and_(*negative_filter_list))
+    cell_type_list = (
+        crud.get_project_by_cell(db=db, filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_project_by_cell(db=db, filters=filter_list).count()
+    res_dict = {
+        "cell_type_list": cell_type_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
+    "/gene/list",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_project_list_by_gene(
+    gene_symbol: Union[str, None] = None,
+    species_id: Union[int, None] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin()),
+) -> ResponseMessage:
+    search_page = page - 1
+    filter_list = []
+    if gene_symbol is not None:
+        filter_list.append(
+            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        )
+    if species_id is not None:
+        filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+    gene_meta_list = (
+        crud.get_project_by_gene(db=db, filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_project_by_gene(db=db, filters=filter_list).count()
+    res_dict = {
+        "gene_meta_list": gene_meta_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")

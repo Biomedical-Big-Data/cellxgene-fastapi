@@ -115,18 +115,18 @@ async def get_project_list_by_sample(
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
-    if organ:
+    if organ is not None:
         filter_list.append(cellxgene.BioSampleMeta.organ == organ)
-    if species_id:
+    if species_id is not None:
         filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
-    if external_sample_accesstion:
+    if external_sample_accesstion is not None:
         filter_list.append(
             cellxgene.BioSampleMeta.external_sample_accesstion
             == external_sample_accesstion
         )
-    if disease:
+    if disease is not None:
         filter_list.append(cellxgene.BioSampleMeta.disease.like("%{}%".format(disease)))
-    if development_stage:
+    if development_stage is not None:
         filter_list.append(
             cellxgene.BioSampleMeta.development_stage.like(
                 "%{}%".format(development_stage)
@@ -172,11 +172,11 @@ async def get_project_list_by_cell(
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
-    if cell_id:
+    if cell_id is not None:
         filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
-    if species_id:
+    if species_id is not None:
         filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
-    if genes_positive:
+    if genes_positive is not None:
         genes_positive_list = genes_positive.split(",")
         positive_filter_list = []
         for positive in genes_positive_list:
@@ -184,7 +184,7 @@ async def get_project_list_by_cell(
                 cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
             )
         filter_list.append(or_(*positive_filter_list))
-    if genes_negative:
+    if genes_negative is not None:
         genes_negative_list = genes_negative.split(",")
         negative_filter_list = []
         for negative in genes_negative_list:
@@ -233,11 +233,11 @@ async def get_project_list_by_gene(
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
-    if gene_symbol:
+    if gene_symbol is not None:
         filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         )
-    if species_id:
+    if species_id is not None:
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = (
         crud.get_project_by_gene(db=db, filters=filter_list)

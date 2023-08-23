@@ -259,6 +259,10 @@ class TransferProjectModel(BaseModel):
     transfer_to_email_address: str
 
 
+class UpdateProjectModel(BaseModel):
+    project_status: int
+
+
 if __name__ == "__main__":
     a = BiosampleModel()
     print(a.keys())

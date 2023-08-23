@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Any, List, Union
-from orm.schema import project_relation_model
+from orm.schema import project_relation_model, project_model
 
 
 class ResponseMessage(BaseModel):
@@ -10,6 +10,20 @@ class ResponseMessage(BaseModel):
 
     def to_dict(self):
         return {"status": self.status, "data": self.data, "message": self.message}
+
+
+class CellTypeListModel(BaseModel):
+    cell_type_list: List[project_model.CellTypeModel]
+    total: int
+    page: int
+    page_size: int
+
+
+class GeneListModel(BaseModel):
+    gene_list: List[project_model.GeneModel]
+    total: int
+    page: int
+    page_size: int
 
 
 class ProjectListModel(BaseModel):
@@ -26,7 +40,10 @@ class ProjectListModel(BaseModel):
 
 class ResponseProjectListModel(BaseModel):
     status: str
-    data: ProjectListModel
+    data: Union[ProjectListModel,
+                CellTypeListModel,
+                GeneListModel
+                ]
     message: str
 
 
