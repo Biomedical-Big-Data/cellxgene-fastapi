@@ -24,6 +24,7 @@ import pandas as pd
 from sqlalchemy import and_, or_
 from orm.dependencies import get_current_user
 from orm.schema.project_model import TransferProjectModel
+from fastapi.responses import RedirectResponse
 
 
 router = APIRouter(
@@ -132,7 +133,6 @@ async def get_project_list_by_sample(
                 "%{}%".format(development_stage)
             )
         )
-    # filter_list.append(cellxgene.BioSampleMeta.biosample_project_meta.project_project_user_meta.project_user_user_meta.email_address == current_user_email_address)
     biosample_list = (
         crud.get_project_by_sample(db=db, filters=filter_list)
         .offset(search_page)
@@ -255,29 +255,48 @@ async def get_project_list_by_gene(
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
-@router.post("/{project_id}/transfer", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.post(
+    "/{project_id}/transfer",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
 async def transfer_project(
     project_id: int,
     transfer_to: TransferProjectModel = Body(),
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
-    transfer_to_user_info = crud.get_user(db=db, filters=[cellxgene.User.email_address == transfer_to.transfer_to_email_address]).first()
+    transfer_to_user_info = crud.get_user(
+        db=db,
+        filters=[cellxgene.User.email_address == transfer_to.transfer_to_email_address],
+    ).first()
     if not transfer_to_user_info:
-        return ResponseMessage(status="0201", data="转移对象的账号不存在，请确认邮箱是否正确", message="转移对象的账号不存在，请确认邮箱是否正确")
-    project_info = crud.get_project(db=db, filters=[cellxgene.ProjectMeta.id == project_id]).first()
+        return ResponseMessage(
+            status="0201", data="转移对象的账号不存在，请确认邮箱是否正确", message="转移对象的账号不存在，请确认邮箱是否正确"
+        )
+    project_info = crud.get_project(
+        db=db, filters=[cellxgene.ProjectMeta.id == project_id]
+    ).first()
     if not project_info:
         return ResponseMessage(status="0201", data="项目不存在", message="项目不存在")
     if project_info.project_user_meta.email_address != current_user_email_address:
-        return ResponseMessage(status="0201", data="您不是项目的拥有者，无法转移此项目", message="您不是项目的拥有者，无法转移此项目")
+        return ResponseMessage(
+            status="0201", data="您不是项目的拥有者，无法转移此项目", message="您不是项目的拥有者，无法转移此项目"
+        )
     try:
-        crud.update_project(db=db, filters=[cellxgene.ProjectMeta.id == project_id], update_dict={"owner": transfer_to_user_info.id})
+        crud.update_project(
+            db=db,
+            filters=[cellxgene.ProjectMeta.id == project_id],
+            update_dict={"owner": transfer_to_user_info.id},
+        )
         return ResponseMessage(status="0000", data="项目转移成功", message="项目转移成功")
     except:
         return ResponseMessage(status="0201", data="项目转移失败", message="项目转移失败")
 
 
-@router.post("/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.post(
+    "/file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+)
 async def add_project(
     file: UploadFile = File(), current_user_email_address=Depends(get_current_user)
 ) -> ResponseMessage:
@@ -305,3 +324,23 @@ async def get_species_list(
 ) -> ResponseMessage:
     species_list = crud.get_species_list(db=db, filters=None)
     return ResponseMessage(status="0000", data=species_list, message="ok")
+
+
+@router.get("/view/{h5ad_id}", status_code=status.HTTP_200_OK)
+async def project_view_h5ad(
+    h5ad_id: str,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    filter_list = [
+        cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
+        cellxgene.Analysis.h5ad_id == h5ad_id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
+    analysis_info = crud.get_analysis(db=db, filters=filter_list).first()
+    if analysis_info:
+        return RedirectResponse("www.baidu.com")
+    else:
+        return ResponseMessage(status="0201", data="无法查看此项目", message="无法查看此项目")

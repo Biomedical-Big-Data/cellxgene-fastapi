@@ -210,7 +210,7 @@ async def get_project_list(
 @router.post(
     "/project/{project_id}/status/update",
     response_model=ResponseMessage,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 async def update_project(
     project_id: int,
@@ -219,16 +219,20 @@ async def update_project(
     current_admin_email_address=Depends(get_current_admin),
 ):
     try:
-        crud.update_project(db=db, filters=[cellxgene.ProjectMeta.id == project_id], update_dict={"status": project_status})
+        crud.update_project(
+            db=db,
+            filters=[cellxgene.ProjectMeta.id == project_id],
+            update_dict={"status": project_status},
+        )
         return ResponseMessage(status="0000", data="项目状态更新成功", message="项目状态更新成功")
     except:
         return ResponseMessage(status="0201", data="项目状态更新失败", message="项目状态更新失败")
-    
-    
+
+
 @router.get(
     "/cell/list",
     response_model=ResponseProjectListModel,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 async def get_cell_list(
     cell_id: Union[int, None] = None,
@@ -291,7 +295,7 @@ async def get_project_list_by_gene(
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
-    current_admin_email_address=Depends(get_current_admin()),
+    current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     search_page = page - 1
     filter_list = []
