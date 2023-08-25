@@ -6,6 +6,7 @@ from fastapi import (
     Body,
     File,
     UploadFile,
+    Request,
 )
 from orm.dependencies import get_db
 from orm.schema.response import (
@@ -326,9 +327,11 @@ async def get_species_list(
     return ResponseMessage(status="0000", data=species_list, message="ok")
 
 
-@router.get("/view/{h5ad_id}", status_code=status.HTTP_200_OK)
+@router.get("/view/{h5ad_id}/{url_path:path}", status_code=status.HTTP_200_OK)
 async def project_view_h5ad(
     h5ad_id: str,
+    url_path: str,
+    request_param: Request,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
@@ -341,6 +344,6 @@ async def project_view_h5ad(
     ]
     analysis_info = crud.get_analysis(db=db, filters=filter_list).first()
     if analysis_info:
-        return RedirectResponse("www.baidu.com")
+        return RedirectResponse("http://localhost:5005/view/{}/{}".format(h5ad_id, url_path) + "?" + str(request_param.query_params))
     else:
         return ResponseMessage(status="0201", data="无法查看此项目", message="无法查看此项目")

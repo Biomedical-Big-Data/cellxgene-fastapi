@@ -8,6 +8,7 @@ from fastapi import (
     File,
     UploadFile,
 )
+from fastapi.responses import RedirectResponse
 from orm.schema import project_model, user_model
 from orm.schema.response import (
     ResponseMessage,
@@ -230,7 +231,7 @@ async def update_project(
 
 
 @router.get(
-    "/cell/list",
+    "/project/cell/list",
     response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
 )
@@ -285,7 +286,7 @@ async def get_cell_list(
 
 
 @router.get(
-    "/gene/list",
+    "/project/gene/list",
     response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
 )
@@ -319,3 +320,18 @@ async def get_project_list_by_gene(
         "page_size": page_size,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get("/project/process/cache_status", status_code=status.HTTP_200_OK)
+async def get_project_cache_status(
+    current_admin_email_address=Depends(get_current_admin),
+):
+    return RedirectResponse("http://localhost:5005/cache_status")
+
+
+@router.get("/project/process/{h5ad_id}/terminate", status_code=status.HTTP_200_OK)
+async def terminate_project_process(
+    h5ad_id: str,
+    current_admin_email_address=Depends(get_current_admin),
+):
+    return RedirectResponse("http://localhost:5005/terminate/{}".format(h5ad_id) + "?source_name=local")
