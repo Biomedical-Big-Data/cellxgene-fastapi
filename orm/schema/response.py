@@ -28,8 +28,8 @@ class GeneListModel(BaseModel):
 
 class ProjectListModel(BaseModel):
     project_list: Union[
-        List[project_relation_model.GeneRelation],
-        List[project_relation_model.CellTypeRelation],
+        List[project_relation_model.GeneExpressionRelation],
+        List[project_relation_model.CellClusterProportionRelation],
         List[project_relation_model.BiosampleModelRelation],
         List[project_relation_model.ProjectRelation],
     ]

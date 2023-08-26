@@ -29,17 +29,25 @@ class ProjectBiosampleRelation(ProjectBiosampleModel):
         org_mode = True
 
 
-class BiosampleAnalysisRelation(BiosampleAnalysisModel):
-    biosample_analysis_biosample_meta: BiosampleModel
+class BiosampleModelRelation(BiosampleModel):
+    biosample_project_biosample_meta: List[ProjectBiosampleRelation]
+    biosample_donor_meta: DonorModel
+    biosample_species_meta: SpeciesModel
 
     class Config:
         org_mode = True
 
 
-class BiosampleModelRelation(BiosampleModel):
-    biosample_project_biosample_meta: List[ProjectBiosampleRelation]
+class BiosampleModelRelationForCell(BiosampleModel):
     biosample_donor_meta: DonorModel
     biosample_species_meta: SpeciesModel
+
+    class Config:
+        org_mode = True
+
+
+class BiosampleAnalysisRelation(BiosampleAnalysisModel):
+    biosample_analysis_biosample_meta: BiosampleModelRelationForCell
 
     class Config:
         org_mode = True

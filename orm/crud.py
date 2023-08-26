@@ -42,13 +42,13 @@ def get_project_by_sample(db: Session, filters: List, public_filter_list: List):
 
 
 def get_project_by_cell(db: Session, filters: List, public_filter_list: List):
-    return db.query(cellxgene.CellTypeMeta).filter(
+    return db.query(cellxgene.CalcCellClusterProportion).filter(
         or_((and_(*filters)), (and_(*public_filter_list)))
     )
 
 
 def get_project_by_gene(db: Session, filters: List, public_filter_list: List):
-    return db.query(cellxgene.GeneMeta).filter(
+    return db.query(cellxgene.CellClusterGeneExpression).filter(
         or_((and_(*filters)), (and_(*public_filter_list)))
     )
 

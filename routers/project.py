@@ -215,13 +215,14 @@ async def get_project_list_by_sample(
         crud.get_project_by_sample(
             db=db, filters=filter_list, public_filter_list=public_filter_list
         )
+        .distinct()
         .offset(search_page)
         .limit(page_size)
         .all()
     )
     total = crud.get_project_by_sample(
         db=db, filters=filter_list, public_filter_list=public_filter_list
-    ).count()
+    ).distinct().count()
     res_dict = {
         "project_list": biosample_list,
         "total": total,
@@ -290,13 +291,14 @@ async def get_project_list_by_cell(
         crud.get_project_by_cell(
             db=db, filters=filter_list, public_filter_list=public_filter_list
         )
+        .distinct()
         .offset(search_page)
         .limit(page_size)
         .all()
     )
     total = crud.get_project_by_cell(
         db=db, filters=filter_list, public_filter_list=public_filter_list
-    ).count()
+    ).distinct().count()
     res_dict = {
         "project_list": cell_type_list,
         "total": total,
@@ -351,13 +353,14 @@ async def get_project_list_by_gene(
         crud.get_project_by_gene(
             db=db, filters=filter_list, public_filter_list=public_filter_list
         )
+        .distinct()
         .offset(search_page)
         .limit(page_size)
         .all()
     )
     total = crud.get_project_by_gene(
         db=db, filters=filter_list, public_filter_list=public_filter_list
-    ).count()
+    ).distinct().count()
     res_dict = {
         "project_list": gene_meta_list,
         "total": total,
