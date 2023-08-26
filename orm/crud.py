@@ -51,6 +51,10 @@ def get_organ_list(db: Session, filters: List):
     return db.query(cellxgene.BioSampleMeta.organ).filter(and_(*filters))
 
 
+def get_gene_symbol_list(db: Session, filters: List):
+    return db.query(cellxgene.GeneMeta.gene_symbol).filter(and_(*filters))
+
+
 def get_analysis(db: Session, filters: List):
     return db.query(cellxgene.Analysis).filter(and_(*filters))
 

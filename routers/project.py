@@ -114,6 +114,26 @@ async def get_organ_list(
     return ResponseMessage(status="0000", data=return_organ_list, message="ok")
 
 
+@router.get("/gene_symbol/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_gene_symbol_list(
+    gene_symbol: Union[str, None] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    search_page = page - 1
+    filter_list = []
+    if gene_symbol:
+        filter_list.append(cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol)))
+    gene_symbol_list = crud.get_gene_symbol_list(db=db, filters=filter_list).distinct().offset(search_page).limit(page_size).all()
+    return_gene_symbol_list = []
+    for return_gene_symbol_info in gene_symbol_list:
+        if return_gene_symbol_info.gene_symbol is not None:
+            return_gene_symbol_list.append(return_gene_symbol_info.gene_symbol)
+    return ResponseMessage(status="0000", data=return_gene_symbol_list, message="ok")
+
+
 @router.get(
     "/list/by/sample",
     response_model=ResponseProjectListModel,
