@@ -71,6 +71,7 @@ class ResponseProjectDetailModel(BaseModel):
     data: Union[
         project_relation_model.ProjectRelation,
         ProjectListModel,
+        project_relation_model.AnalysisRelation,
         str,
     ]
     message: str

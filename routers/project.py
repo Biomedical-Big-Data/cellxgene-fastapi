@@ -57,6 +57,28 @@ async def get_project_list(
     return ResponseMessage(status="0000", data=project_info_model, message="ok")
 
 
+@router.get(
+    "/analysis/{analysis_id}",
+    response_model=ResponseProjectDetailModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_project_list(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+) -> ResponseMessage:
+    filter_list = [
+        cellxgene.Analysis.id == analysis_id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
+    analysis_info_model = crud.get_analysis(db=db, filters=filter_list).first()
+    if not analysis_info_model:
+        return ResponseMessage(status="0201", data="无权限查看此项目", message="无权限查看此项目")
+    return ResponseMessage(status="0000", data=analysis_info_model, message="ok")
+
+
 @router.post("/create", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def create_project(
     title: str = Body(),
