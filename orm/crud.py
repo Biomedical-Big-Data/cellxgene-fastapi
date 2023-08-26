@@ -47,6 +47,10 @@ def get_project_by_gene(db: Session, filters: List):
     return db.query(cellxgene.GeneMeta).filter(and_(*filters))
 
 
+def get_organ_list(db: Session, filters: List):
+    return db.query(cellxgene.BioSampleMeta.organ).filter(and_(*filters))
+
+
 def get_analysis(db: Session, filters: List):
     return db.query(cellxgene.Analysis).filter(and_(*filters))
 

@@ -22,7 +22,7 @@ from conf import config
 from typing import List, Union
 from io import BytesIO
 import pandas as pd
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, distinct
 from orm.dependencies import get_current_user
 from orm.schema.project_model import TransferProjectModel
 from fastapi.responses import RedirectResponse
@@ -92,6 +92,26 @@ async def create_project(
     except Exception as e:
         print(e)
         return ResponseMessage(status="0201", data="项目创建失败", message="项目创建失败")
+
+
+@router.get("/organ/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_organ_list(
+    organ: Union[str, None] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    search_page = page - 1
+    filter_list = []
+    if organ:
+        filter_list.append(cellxgene.BioSampleMeta.organ.like("%{}%".format(organ)))
+    organ_list = crud.get_organ_list(db=db, filters=filter_list).distinct().offset(search_page).limit(page_size).all()
+    return_organ_list = []
+    for organ_info in organ_list:
+        if organ_info.organ is not None:
+            return_organ_list.append(organ_info.organ)
+    return ResponseMessage(status="0000", data=return_organ_list, message="ok")
 
 
 @router.get(
