@@ -94,7 +94,9 @@ async def create_project(
         return ResponseMessage(status="0201", data="项目创建失败", message="项目创建失败")
 
 
-@router.get("/organ/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.get(
+    "/organ/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+)
 async def get_organ_list(
     organ: Union[str, None] = None,
     page: int = 1,
@@ -106,7 +108,13 @@ async def get_organ_list(
     filter_list = []
     if organ:
         filter_list.append(cellxgene.BioSampleMeta.organ.like("%{}%".format(organ)))
-    organ_list = crud.get_organ_list(db=db, filters=filter_list).distinct().offset(search_page).limit(page_size).all()
+    organ_list = (
+        crud.get_organ_list(db=db, filters=filter_list)
+        .distinct()
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
     return_organ_list = []
     for organ_info in organ_list:
         if organ_info.organ is not None:
@@ -114,7 +122,9 @@ async def get_organ_list(
     return ResponseMessage(status="0000", data=return_organ_list, message="ok")
 
 
-@router.get("/gene_symbol/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.get(
+    "/gene_symbol/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+)
 async def get_gene_symbol_list(
     gene_symbol: Union[str, None] = None,
     page: int = 1,
@@ -125,8 +135,16 @@ async def get_gene_symbol_list(
     search_page = page - 1
     filter_list = []
     if gene_symbol:
-        filter_list.append(cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol)))
-    gene_symbol_list = crud.get_gene_symbol_list(db=db, filters=filter_list).distinct().offset(search_page).limit(page_size).all()
+        filter_list.append(
+            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        )
+    gene_symbol_list = (
+        crud.get_gene_symbol_list(db=db, filters=filter_list)
+        .distinct()
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
     return_gene_symbol_list = []
     for return_gene_symbol_info in gene_symbol_list:
         if return_gene_symbol_info.gene_symbol is not None:
@@ -157,30 +175,53 @@ async def get_project_list_by_sample(
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
+    public_filter_list = [
+        cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+        cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.status == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
     if organ is not None:
         filter_list.append(cellxgene.BioSampleMeta.organ == organ)
+        public_filter_list.append(cellxgene.BioSampleMeta.organ == organ)
     if species_id is not None:
         filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
+        public_filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
     if external_sample_accesstion is not None:
         filter_list.append(
             cellxgene.BioSampleMeta.external_sample_accesstion
             == external_sample_accesstion
         )
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.external_sample_accesstion
+            == external_sample_accesstion
+        )
     if disease is not None:
         filter_list.append(cellxgene.BioSampleMeta.disease.like("%{}%".format(disease)))
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.disease.like("%{}%".format(disease))
+        )
     if development_stage is not None:
         filter_list.append(
             cellxgene.BioSampleMeta.development_stage.like(
                 "%{}%".format(development_stage)
             )
         )
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.development_stage.like(
+                "%{}%".format(development_stage)
+            )
+        )
     biosample_list = (
-        crud.get_project_by_sample(db=db, filters=filter_list)
+        crud.get_project_by_sample(
+            db=db, filters=filter_list, public_filter_list=public_filter_list
+        )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_project_by_sample(db=db, filters=filter_list).count()
+    total = crud.get_project_by_sample(
+        db=db, filters=filter_list, public_filter_list=public_filter_list
+    ).count()
     res_dict = {
         "project_list": biosample_list,
         "total": total,
@@ -213,10 +254,18 @@ async def get_project_list_by_cell(
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
+    public_filter_list = [
+        cellxgene.CellTypeMeta.id == cellxgene.CalcCellClusterProportion.cell_type_id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.status == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
     if cell_id is not None:
         filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
+        public_filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
     if species_id is not None:
         filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
+        public_filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
     if genes_positive is not None:
         genes_positive_list = genes_positive.split(",")
         positive_filter_list = []
@@ -225,6 +274,7 @@ async def get_project_list_by_cell(
                 cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
             )
         filter_list.append(or_(*positive_filter_list))
+        public_filter_list.append(or_(*positive_filter_list))
     if genes_negative is not None:
         genes_negative_list = genes_negative.split(",")
         negative_filter_list = []
@@ -235,13 +285,18 @@ async def get_project_list_by_cell(
                 )
             )
         filter_list.append(and_(*negative_filter_list))
+        public_filter_list.append(and_(*negative_filter_list))
     cell_type_list = (
-        crud.get_project_by_cell(db=db, filters=filter_list)
+        crud.get_project_by_cell(
+            db=db, filters=filter_list, public_filter_list=public_filter_list
+        )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_project_by_cell(db=db, filters=filter_list).count()
+    total = crud.get_project_by_cell(
+        db=db, filters=filter_list, public_filter_list=public_filter_list
+    ).count()
     res_dict = {
         "project_list": cell_type_list,
         "total": total,
@@ -274,19 +329,35 @@ async def get_project_list_by_gene(
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
+    public_filter_list = [
+        cellxgene.GeneMeta.id == cellxgene.CellClusterGeneExpression.gene_id,
+        cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
+        == cellxgene.CalcCellClusterProportion.id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.status == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
     if gene_symbol is not None:
         filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         )
+        public_filter_list.append(
+            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        )
     if species_id is not None:
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+        public_filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = (
-        crud.get_project_by_gene(db=db, filters=filter_list)
+        crud.get_project_by_gene(
+            db=db, filters=filter_list, public_filter_list=public_filter_list
+        )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_project_by_gene(db=db, filters=filter_list).count()
+    total = crud.get_project_by_gene(
+        db=db, filters=filter_list, public_filter_list=public_filter_list
+    ).count()
     res_dict = {
         "project_list": gene_meta_list,
         "total": total,
@@ -384,6 +455,10 @@ async def project_view_h5ad(
     ]
     analysis_info = crud.get_analysis(db=db, filters=filter_list).first()
     if analysis_info:
-        return RedirectResponse("http://localhost:5005/view/{}/{}".format(h5ad_id, url_path) + "?" + str(request_param.query_params))
+        return RedirectResponse(
+            "http://localhost:5005/view/{}/{}".format(h5ad_id, url_path)
+            + "?"
+            + str(request_param.query_params)
+        )
     else:
         return ResponseMessage(status="0201", data="无法查看此项目", message="无法查看此项目")

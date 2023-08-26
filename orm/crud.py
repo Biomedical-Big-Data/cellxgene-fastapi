@@ -35,16 +35,22 @@ def get_project(db: Session, filters: List):
     return db.query(cellxgene.ProjectMeta).filter(and_(*filters))
 
 
-def get_project_by_sample(db: Session, filters: List):
-    return db.query(cellxgene.BioSampleMeta).filter(and_(*filters))
+def get_project_by_sample(db: Session, filters: List, public_filter_list: List):
+    return db.query(cellxgene.BioSampleMeta).filter(
+        or_((and_(*filters)), (and_(*public_filter_list)))
+    )
 
 
-def get_project_by_cell(db: Session, filters: List):
-    return db.query(cellxgene.CellTypeMeta).filter(and_(*filters))
+def get_project_by_cell(db: Session, filters: List, public_filter_list: List):
+    return db.query(cellxgene.CellTypeMeta).filter(
+        or_((and_(*filters)), (and_(*public_filter_list)))
+    )
 
 
-def get_project_by_gene(db: Session, filters: List):
-    return db.query(cellxgene.GeneMeta).filter(and_(*filters))
+def get_project_by_gene(db: Session, filters: List, public_filter_list: List):
+    return db.query(cellxgene.GeneMeta).filter(
+        or_((and_(*filters)), (and_(*public_filter_list)))
+    )
 
 
 def get_organ_list(db: Session, filters: List):

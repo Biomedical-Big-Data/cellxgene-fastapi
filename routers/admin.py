@@ -270,12 +270,14 @@ async def get_cell_list(
             )
         filter_list.append(and_(*negative_filter_list))
     cell_type_list = (
-        crud.get_project_by_cell(db=db, filters=filter_list)
+        crud.get_project_by_cell(db=db, filters=filter_list, public_filter_list=[])
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_project_by_cell(db=db, filters=filter_list).count()
+    total = crud.get_project_by_cell(
+        db=db, filters=filter_list, public_filter_list=[]
+    ).count()
     res_dict = {
         "cell_type_list": cell_type_list,
         "total": total,
@@ -307,12 +309,14 @@ async def get_project_list_by_gene(
     if species_id is not None:
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = (
-        crud.get_project_by_gene(db=db, filters=filter_list)
+        crud.get_project_by_gene(db=db, filters=filter_list, public_filter_list=[])
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_project_by_gene(db=db, filters=filter_list).count()
+    total = crud.get_project_by_gene(
+        db=db, filters=filter_list, public_filter_list=[]
+    ).count()
     res_dict = {
         "gene_meta_list": gene_meta_list,
         "total": total,
@@ -334,4 +338,6 @@ async def terminate_project_process(
     h5ad_id: str,
     current_admin_email_address=Depends(get_current_admin),
 ):
-    return RedirectResponse("http://localhost:5005/terminate/{}".format(h5ad_id) + "?source_name=local")
+    return RedirectResponse(
+        "http://localhost:5005/terminate/{}".format(h5ad_id) + "?source_name=local"
+    )
