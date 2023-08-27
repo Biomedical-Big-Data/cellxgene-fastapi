@@ -88,9 +88,10 @@ class ProjectMeta(Base):
     data_curators = Column(String(255))
     # 草稿状态
     # draft = Column(TINYINT(1), nullable=False)
-    status = Column(INTEGER)
+    is_publish = Column(INTEGER)
+    is_private = Column(INTEGER)
     owner = Column(INTEGER, ForeignKey("users.id"))
-    tag = Column(String(255))
+    tags = Column(String(255))
 
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
@@ -348,16 +349,23 @@ class Analysis(Base):
     h5ad_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
+    create_at = Column(
+        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
+    update_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    )
+
     analysis_biosample_analysis_meta = relationship(
-        "BioSampleAnalysis",
-        back_populates="biosample_analysis_analysis_meta",
-        cascade="all",
+        "BioSampleAnalysis", back_populates="biosample_analysis_analysis_meta"
     )
     analysis_cell_proportion_meta = relationship(
         "CalcCellClusterProportion", back_populates="cell_proportion_analysis_meta"
     )
     analysis_project_meta = relationship(
-        "ProjectMeta", back_populates="project_analysis_meta", cascade="all"
+        "ProjectMeta", back_populates="project_analysis_meta"
     )
 
 

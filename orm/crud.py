@@ -67,104 +67,71 @@ def get_analysis(db: Session, filters: List):
 
 def create_analysis(db: Session, insert_analysis_model: cellxgene.Analysis):
     db.add(insert_analysis_model)
+    db.flush()
+    db.commit()
+    return insert_analysis_model.id, insert_analysis_model.project_id
+
+
+def create_biosample(db: Session, insert_biosample_model: cellxgene.BioSampleMeta):
+    db.add(insert_biosample_model)
+    db.flush()
+    db.commit()
+    return insert_biosample_model.id
+
+
+def update_biosample(db: Session, filters: List, update_dict: Dict):
+    db.query(cellxgene.BioSampleMeta).filter(and_(*filters)).update(update_dict)
     db.commit()
 
 
-def create_project_biosample(db: Session):
-    project_meta = cellxgene.ProjectMeta(
-        integrated_project=0, title="ghjfgdh", external_project_accesstion="ioyuiu"
-    )
-    biosample_meta = cellxgene.BioSampleMeta(
-        external_sample_accesstion="asdasd",
-        species_id=1,
-        donor_id=1,
-        bmi=30,
-        disease="4656745",
-    )
-    biosample_meta2 = cellxgene.BioSampleMeta(
-        external_sample_accesstion="iiiii",
-        species_id=1,
-        donor_id=1,
-        bmi=55,
-        disease="dedad",
-    )
-    project_meta.project_biosample_meta.append(biosample_meta)
-    project_meta.project_biosample_meta.append(biosample_meta2)
-    db.add(project_meta)
-    db.commit()
+def create_project_user(
+    db: Session, insert_project_user_model_list: List[cellxgene.ProjectUser]
+):
+    db.add_all(insert_project_user_model_list)
+    # db.commit()
 
 
-def update_project_biosample(db: Session):
-    db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).update(
-        {"id": 3}
+def delete_project_user(db: Session, filters: List):
+    db.query(cellxgene.ProjectUser).filter(and_(*filters)).delete()
+    # db.commit()
+
+
+def update_project_for_transaction(db: Session, filters: List, update_dict: Dict):
+    db.query(cellxgene.ProjectMeta).filter(and_(*filters)).update(update_dict)
+
+
+def update_biosample_for_transaction(db: Session, filters: List, update_dict: Dict):
+    db.query(cellxgene.BioSampleMeta).filter(and_(*filters)).update(update_dict)
+
+
+def update_analysis_for_transaction(db: Session, filters: List, update_dict: Dict):
+    db.query(cellxgene.Analysis).filter(and_(*filters)).update(update_dict)
+
+
+def project_update_transaction(
+    db: Session,
+    delete_project_user_filters: List,
+    insert_project_user_model_list: List[cellxgene.ProjectUser],
+    update_project_filters: List,
+    update_project_dict: Dict,
+    update_biosample_filters: List,
+    update_biosample_dict: Dict,
+    update_analysis_filters: List,
+    update_analysis_dict: Dict,
+):
+    delete_project_user(db=db, filters=delete_project_user_filters)
+    create_project_user(
+        db=db, insert_project_user_model_list=insert_project_user_model_list
     )
-    db.commit()
-
-
-def delete_project_biosample(db: Session):
-    db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 2).delete()
-    db.commit()
-
-
-def add_project_biosample_relation(db: Session):
-    project_meta = (
-        db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
+    update_project_for_transaction(
+        db=db, filters=update_project_filters, update_dict=update_project_dict
     )
-    biosample_meta_list = (
-        db.query(cellxgene.BioSampleMeta)
-        .filter(cellxgene.BioSampleMeta.id.in_([2, 6, 7]))
-        .all()
+    update_biosample_for_transaction(
+        db=db, filters=update_biosample_filters, update_dict=update_biosample_dict
     )
-    print(project_meta)
-    print(biosample_meta_list)
-    for i in biosample_meta_list:
-        project_meta.project_biosample_meta.append(i)
-    db.commit()
-
-
-def update_project_biosample_relation(db: Session):
-    project_meta = (
-        db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 5).first()
+    update_analysis_for_transaction(
+        db=db, filters=update_analysis_filters, update_dict=update_analysis_dict
     )
-    biosample_meta_list = (
-        db.query(cellxgene.BioSampleMeta)
-        .filter(cellxgene.BioSampleMeta.id.in_([11, 13]))
-        .all()
-    )
-    biosample_meta2 = cellxgene.BioSampleMeta(
-        external_sample_accesstion="rewrtrt",
-        species_id=1,
-        donor_id=1,
-        bmi=1,
-        disease="head",
-    )
-    biosample_meta_list.append(biosample_meta2)
-    print(project_meta)
-    print(biosample_meta_list)
-    # for i in biosample_meta_list:
-    project_meta.project_biosample_meta = biosample_meta_list
-    db.commit()
-
-
-def delete_project_biosample_relation(db: Session):
-    project_meta = (
-        db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
-    )
-    biosample_meta_list = (
-        db.query(cellxgene.BioSampleMeta)
-        .filter(cellxgene.BioSampleMeta.id.in_([6, 7]))
-        .all()
-    )
-    for i in biosample_meta_list:
-        project_meta.project_biosample_meta.remove(i)
-    db.commit()
-
-
-def clear_project_biosample_relation(db: Session):
-    project_meta = (
-        db.query(cellxgene.ProjectMeta).filter(cellxgene.ProjectMeta.id == 1).first()
-    )
-    project_meta.project_biosample_meta.clear()
     db.commit()
 
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from orm.schema.project_model import (
     BiosampleModel,
     ProjectModel,
@@ -15,14 +15,28 @@ from orm.schema.project_model import (
 from orm.schema.user_model import UserModel, ProjectUserModel
 
 
-class ProjectRelation(ProjectModel):
-    project_analysis_meta: List[AnalysisModel]
+class ProjectBiosampleRelation(ProjectBiosampleModel):
+    project_biosample_biosample_meta: BiosampleModel
 
     class Config:
         org_mode = True
 
 
-class ProjectBiosampleRelation(ProjectBiosampleModel):
+class ProjectUserRelation(ProjectUserModel):
+    project_user_user_meta: UserModel
+
+
+class ProjectRelation(ProjectModel):
+    project_analysis_meta: Union[List[AnalysisModel], None]
+    project_user_meta: Union[UserModel, None]
+    project_project_biosample_meta: Union[List[ProjectBiosampleRelation], None]
+    project_project_user_meta: Union[List[ProjectUserRelation], None]
+
+    class Config:
+        org_mode = True
+
+
+class BiosampleProjectRelation(ProjectBiosampleModel):
     project_biosample_project_meta: ProjectModel
 
     class Config:
@@ -30,8 +44,8 @@ class ProjectBiosampleRelation(ProjectBiosampleModel):
 
 
 class BiosampleModelRelation(BiosampleModel):
-    biosample_project_biosample_meta: List[ProjectBiosampleRelation]
-    biosample_donor_meta: DonorModel
+    biosample_project_biosample_meta: List[BiosampleProjectRelation]
+    biosample_donor_meta: Union[DonorModel, None]
     biosample_species_meta: SpeciesModel
 
     class Config:
@@ -63,6 +77,7 @@ class AnalysisRelation(AnalysisModel):
 
 class CellClusterProportionRelation(CellClusterProportionModel):
     cell_proportion_analysis_meta: AnalysisRelation
+    proportion_cell_type_meta: CellTypeModel
 
     class Config:
         org_mode = True

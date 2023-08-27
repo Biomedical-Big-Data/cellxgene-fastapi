@@ -32,6 +32,7 @@ MAIL_CONFIG = parse_cfg_dict(cp.items("mail_config"))
 DATABASE = parse_cfg_dict(cp.items("database"))
 JWT_CONFIG = parse_cfg_dict(cp.items("jwt_config"))
 VERIFY_CONFIG = parse_cfg_dict(cp.items("verify_config"))
+CELLXGENE_GATEWAY_CONFIG = parse_cfg_dict(cp.items("cellxgene_gateway"))
 
 
 SMTP_SERVER = MAIL_CONFIG.get("smtp_server")
@@ -52,6 +53,8 @@ JWT_ALGORITHMS = JWT_CONFIG.get("jwt_algorithms")
 VERIFY_URL = VERIFY_CONFIG.get("verify_url")
 RESET_PASSWORD_URL = VERIFY_CONFIG.get("reset_password_url")
 
+CELLXGENE_GATEWAY_URL = CELLXGENE_GATEWAY_CONFIG.get("url")
+
 
 class UserStateConfig:
     USER_STATE_VERIFY = 1
@@ -67,13 +70,8 @@ class UserRole:
 class ProjectStatus:
     PROJECT_STATUS_UNAVAILABLE = -1
     PROJECT_STATUS_DRAFT = 0
-    PROJECT_STATUS_PRIVATE = 1
-    PROJECT_STATUS_NEED_AUDIT = 2
-    PROJECT_STATUS_PUBLIC = 3
+    PROJECT_STATUS_NEED_AUDIT = 1
+    PROJECT_STATUS_AVAILABLE = 2
 
-    INSERT_MAPPING_PROJECT_STATUS_DICT = {
-        "-1": PROJECT_STATUS_UNAVAILABLE,
-        "0": PROJECT_STATUS_DRAFT,
-        "1": PROJECT_STATUS_PRIVATE,
-        "3": PROJECT_STATUS_NEED_AUDIT,
-    }
+    PROJECT_STATUS_PRIVATE = 1
+    PROJECT_STATUS_PUBLIC = 0

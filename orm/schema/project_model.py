@@ -45,9 +45,10 @@ class ProjectModel(BaseModel):
     collaborating_organizations: str | None
     citation: str | None
     data_curators: str | None
-    status: int | None
+    is_publish: int | None
+    is_private: int | None
     owner: int | None
-    tag: str | None
+    tags: str | None
     create_at: datetime
     update_at: datetime
 
@@ -142,6 +143,8 @@ class AnalysisModel(BaseModel):
     h5ad_id: str | None
     reference: str | None
     analysis_protocol: str | None
+    create_at: datetime
+    update_at: datetime
 
     class Config:
         org_mode = True

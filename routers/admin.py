@@ -105,7 +105,7 @@ async def get_user_info(
             status="0000", data=search_user_info_model, message="success"
         )
     else:
-        return ResponseMessage(status="0201", data="用户不存在", message="用户不存在")
+        return ResponseMessage(status="0201", data={}, message="用户不存在")
 
 
 @router.post(
@@ -120,13 +120,13 @@ async def edit_user_info(
     current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     if not user_info:
-        return ResponseMessage(status="0201", data="无更新内容", message="无更新内容")
+        return ResponseMessage(status="0201", data={}, message="无更新内容")
     if user_info.email_address:
         check_user_model = crud.get_user(
             db, [cellxgene.User.email_address == user_info.email_address]
         ).first()
         if check_user_model:
-            return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
+            return ResponseMessage(status="0201", data={}, message="此邮箱已有账号")
     update_user_dict = {}
     for key, value in user_info.to_dict().items():
         if value:
@@ -142,7 +142,7 @@ async def edit_user_info(
         [cellxgene.User.id == user_id],
         update_user_dict,
     )
-    return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")
+    return ResponseMessage(status="0000", data={}, message="用户信息更新成功")
 
 
 @router.get(
@@ -151,7 +151,7 @@ async def edit_user_info(
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list(
-    status: Union[str, None] = None,
+    is_publish: Union[int, None] = None,
     create_at: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
@@ -161,8 +161,8 @@ async def get_project_list(
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
     filter_list = []
-    if status is not None:
-        filter_list.append(cellxgene.ProjectMeta.status == status)
+    if is_publish is not None:
+        filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
     if asc:
         project_info_model_list = (
             crud.get_project(db=db, filters=filter_list)
@@ -204,7 +204,7 @@ async def get_project_list(
     ]
     project_info_model = crud.get_project(db=db, filters=filter_list).first()
     if not project_info_model:
-        return ResponseMessage(status="0201", data="无此项目", message="无此项目")
+        return ResponseMessage(status="0201", data={}, message="无此项目")
     return ResponseMessage(status="0000", data=project_info_model, message="ok")
 
 
@@ -225,9 +225,9 @@ async def update_project(
             filters=[cellxgene.ProjectMeta.id == project_id],
             update_dict={"status": project_status},
         )
-        return ResponseMessage(status="0000", data="项目状态更新成功", message="项目状态更新成功")
+        return ResponseMessage(status="0000", data={}, message="项目状态更新成功")
     except:
-        return ResponseMessage(status="0201", data="项目状态更新失败", message="项目状态更新失败")
+        return ResponseMessage(status="0201", data={}, message="项目状态更新失败")
 
 
 @router.get(

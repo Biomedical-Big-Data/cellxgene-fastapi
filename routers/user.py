@@ -30,14 +30,14 @@ async def register(
 ) -> ResponseMessage:
     if len(user.user_password) < 6 or len(user.user_password) > 16:
         return ResponseMessage(
-            status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
+            status="0201", data={}, message="密码应大于6位或小于16位"
         )
     if not re.search("^[1-9a-zA-Z]", user.user_password):
         return ResponseMessage(
-            status="0201", data="密码应包含数字及大小写字母", message="密码应包含数字及大小写字母"
+            status="0201", data={}, message="密码应包含数字及大小写字母"
         )
     if crud.get_user(db, [cellxgene.User.email_address == user.email_address]).first():
-        return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
+        return ResponseMessage(status="0201", data={}, message="此邮箱已有账号")
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=None, password=user.user_password
     )
@@ -65,11 +65,11 @@ async def register(
     )
     if send_mail_result:
         return ResponseMessage(
-            status="0000", data="注册成功，请到邮箱点击验证链接", message="注册成功，请到邮箱点击验证链接"
+            status="0000", data={}, message="注册成功，请到邮箱点击验证链接"
         )
     else:
         return ResponseMessage(
-            status="0201", data="注册成功，验证邮件发送失败，请点击重新发送", message="注册成功，验证邮件发送失败，请点击重新发送"
+            status="0201", data={}, message="注册成功，验证邮件发送失败，请点击重新发送"
         )
 
 
@@ -81,7 +81,7 @@ async def user_login(
         db, [cellxgene.User.email_address == login_data.username]
     ).first()
     if not user_info_model:
-        return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
+        return ResponseMessage(status="0201", data={}, message="用户名错误")
     if user_info_model.state == config.UserStateConfig.USER_STATE_NOT_VERIFY:
         raise USER_NOT_VERIFY_EXCEPTION
     if user_info_model.state == config.UserStateConfig.USER_STATE_BLOCK:
@@ -104,7 +104,7 @@ async def user_login(
             message="登录成功",
         )
     else:
-        return ResponseMessage(status="0201", data="登录失败，密码错误", message="登录失败，密码错误")
+        return ResponseMessage(status="0201", data={}, message="登录失败，密码错误")
 
 
 @router.get("/me", response_model=ResponseUserModel, status_code=status.HTTP_200_OK)
@@ -125,13 +125,13 @@ async def edit_user_info(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     if not user_info:
-        return ResponseMessage(status="0201", data="无更新内容", message="无更新内容")
+        return ResponseMessage(status="0201", data={}, message="无更新内容")
     if user_info.email_address:
         check_user_dict = crud.get_user(
             db, [cellxgene.User.email_address == user_info.email_address]
         ).first()
         if check_user_dict:
-            return ResponseMessage(status="0201", data="此邮箱已有账号", message="此邮箱已有账号")
+            return ResponseMessage(status="0201", data={}, message="此邮箱已有账号")
     update_user_dict = {}
     for key, value in user_info.to_dict().items():
         if value:
@@ -147,7 +147,7 @@ async def edit_user_info(
         [cellxgene.User.email_address == current_user_email_address],
         update_user_dict,
     )
-    return ResponseMessage(status="0000", data="用户信息更新成功", message="用户信息更新成功")
+    return ResponseMessage(status="0000", data={}, message="用户信息更新成功")
 
 
 @router.get(
@@ -162,7 +162,7 @@ async def verify_user_email(
         [cellxgene.User.email_address == email_address],
         {"state": config.UserStateConfig.USER_STATE_VERIFY},
     )
-    return ResponseMessage(status="0000", data="邮箱校验成功", message="邮箱校验成功")
+    return ResponseMessage(status="0000", data={}, message="邮箱校验成功")
 
 
 @router.post(
@@ -177,7 +177,7 @@ async def send_reset_user_password_mail(
         db, [cellxgene.User.email_address == user.email_address]
     ).first()
     if not user_dict:
-        return ResponseMessage(status="0201", data="用户名错误", message="用户名错误")
+        return ResponseMessage(status="0201", data={}, message="用户名错误")
     token = auth_util.create_token(
         email_address=user_dict.email_address,
         expire_time=config.JWT_RESET_PASSWORD_EXPIRE_TIME,
@@ -192,12 +192,12 @@ async def send_reset_user_password_mail(
     if send_mail_result:
         return ResponseMessage(
             status="0000",
-            data="重置密码链接已发送至您的邮箱，请在半小时内完成重置",
+            data={},
             message="重置密码链接已发送至您的邮箱，请在半小时内完成重置",
         )
     else:
         return ResponseMessage(
-            status="0201", data="重置密码邮件发送失败，请点击重新发送", message="重置密码邮件发送失败，请点击重新发送"
+            status="0201", data={}, message="重置密码邮件发送失败，请点击重新发送"
         )
 
 
@@ -212,11 +212,11 @@ async def reset_user_password(
     email_address = auth_util.check_token_for_verify_email(db=db, token=token)
     if len(password) < 6 or len(password) > 16:
         return ResponseMessage(
-            status="0201", data="密码应大于6位或小于16位", message="密码应大于6位或小于16位"
+            status="0201", data={}, message="密码应大于6位或小于16位"
         )
     if not re.search("^[1-9a-zA-Z]", password):
         return ResponseMessage(
-            status="0201", data="密码应包含数字及大小写字母", message="密码应包含数字及大小写字母"
+            status="0201", data={}, message="密码应包含数字及大小写字母"
         )
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=None, password=password
@@ -229,12 +229,12 @@ async def reset_user_password(
         )
         return ResponseMessage(
             status="0000",
-            data="重置成功",
+            data={},
             message="重置成功",
         )
     except:
         return ResponseMessage(
             status="0201",
-            data="重置失败",
+            data={},
             message="重置失败",
         )

@@ -49,6 +49,7 @@ class UserInfoListModel(BaseModel):
         user_model.UserModel,
         List[user_model.UserModel],
         str,
+        dict,
     ]
     total: int
     page: int
@@ -62,6 +63,7 @@ class ResponseUserModel(BaseModel):
         user_model.UserModel,
         List[user_model.UserModel],
         str,
+        dict,
     ]
     message: str
 
@@ -73,5 +75,6 @@ class ResponseProjectDetailModel(BaseModel):
         ProjectListModel,
         project_relation_model.AnalysisRelation,
         str,
+        dict,
     ]
     message: str
