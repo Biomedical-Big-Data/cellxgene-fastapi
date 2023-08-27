@@ -50,7 +50,7 @@ async def get_user_list(
     current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     filter_list = []
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     if email_address is not None:
         filter_list.append(
             cellxgene.User.email_address.like("%{}%".format(email_address))
@@ -159,7 +159,7 @@ async def get_project_list(
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     filter_list = []
     if status is not None:
         filter_list.append(cellxgene.ProjectMeta.status == status)
@@ -246,7 +246,7 @@ async def get_cell_list(
     current_admin_email_address=Depends(get_current_admin),
 ):
     filter_list = []
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     if cell_id is not None:
         filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
     if species_id is not None:
@@ -300,7 +300,7 @@ async def get_project_list_by_gene(
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     filter_list = []
     if gene_symbol is not None:
         filter_list.append(

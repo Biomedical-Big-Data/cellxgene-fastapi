@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Any, List, Union
-from orm.schema import project_relation_model, project_model
+from orm.schema import project_relation_model, project_model, user_model
 
 
 class ResponseMessage(BaseModel):
@@ -46,8 +46,8 @@ class ResponseProjectListModel(BaseModel):
 
 class UserInfoListModel(BaseModel):
     user_list: Union[
-        project_relation_model.UserProjectRelation,
-        List[project_relation_model.UserProjectRelation],
+        user_model.UserModel,
+        List[user_model.UserModel],
         str,
     ]
     total: int
@@ -59,8 +59,8 @@ class ResponseUserModel(BaseModel):
     status: str
     data: Union[
         UserInfoListModel,
-        project_relation_model.UserProjectRelation,
-        List[project_relation_model.UserProjectRelation],
+        user_model.UserModel,
+        List[user_model.UserModel],
         str,
     ]
     message: str

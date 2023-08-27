@@ -35,6 +35,29 @@ router = APIRouter(
 )
 
 
+@router.get("/me", response_model=ResponseProjectDetailModel, status_code=status.HTTP_200_OK)
+async def get_user_project(
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+) -> ResponseMessage:
+    search_page = (page - 1) * page_size
+    filter_list = [
+        cellxgene.ProjectMeta.owner == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address
+    ]
+    project_list = crud.get_project(db=db, filters=filter_list).offset(search_page).limit(page_size).all()
+    total = crud.get_project(db, filters=filter_list).count()
+    res_dict = {
+        "project_list": project_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
 @router.get(
     "/{project_id}",
     response_model=ResponseProjectDetailModel,
@@ -126,7 +149,7 @@ async def get_organ_list(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     filter_list = []
     if organ:
         filter_list.append(cellxgene.BioSampleMeta.organ.like("%{}%".format(organ)))
@@ -154,7 +177,7 @@ async def get_gene_symbol_list(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     filter_list = []
     if gene_symbol:
         filter_list.append(
@@ -190,7 +213,7 @@ async def get_project_list_by_sample(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     filter_list = [
         cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
         cellxgene.ProjectBioSample.project_id == cellxgene.ProjectUser.project_id,
@@ -269,7 +292,7 @@ async def get_project_list_by_cell(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     filter_list = [
         cellxgene.CellTypeMeta.id == cellxgene.CalcCellClusterProportion.cell_type_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
@@ -343,7 +366,7 @@ async def get_project_list_by_gene(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    search_page = page - 1
+    search_page = (page - 1) * page_size
     filter_list = [
         cellxgene.GeneMeta.id == cellxgene.CellClusterGeneExpression.gene_id,
         cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
