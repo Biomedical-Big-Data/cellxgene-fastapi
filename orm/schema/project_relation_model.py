@@ -8,7 +8,7 @@ from orm.schema.project_model import (
     CellClusterProportionModel,
     CellTypeModel,
     GeneModel,
-    GeneExpression,
+    CellClusterGeneExpressionModel,
     ProjectBiosampleModel,
     BiosampleAnalysisModel,
 )
@@ -91,7 +91,7 @@ class CellTypeRelation(CellTypeModel):
         org_mode = True
 
 
-class GeneExpressionRelation(GeneExpression):
+class GeneExpressionRelation(CellClusterGeneExpressionModel):
     gene_expression_proportion_meta: CellClusterProportionRelation
 
     class Config:

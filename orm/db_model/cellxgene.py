@@ -20,7 +20,7 @@ metadata = Base.metadata
 class ProjectBioSample(Base):
     __tablename__ = "project_biosample"
 
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     project_id = Column(INTEGER, ForeignKey("project_meta.id"))
     biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
 
@@ -39,7 +39,7 @@ class ProjectBioSample(Base):
 class BioSampleAnalysis(Base):
     __tablename__ = "biosample_analysis"
 
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
     analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
 
@@ -59,7 +59,7 @@ class ProjectMeta(Base):
     __tablename__ = "project_meta"
 
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     #
     integrated_project = Column(TINYINT(1))
     #
@@ -138,7 +138,7 @@ class BioSampleMeta(Base):
     __tablename__ = "biosample_meta"
 
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     # 外部继承
     external_sample_accesstion = Column(TEXT)
     # 生物样本类型
@@ -309,7 +309,7 @@ class DonorMeta(Base):
     __tablename__ = "donor_meta"
 
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     sex = Column(String(255))
     # 种族
     ethnicity = Column(String(255))
@@ -344,7 +344,7 @@ class DonorMeta(Base):
 class Analysis(Base):
     __tablename__ = "analysis"
 
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     project_id = Column(INTEGER, ForeignKey("project_meta.id"))
     h5ad_id = Column(String(255))
     reference = Column(String(255))
@@ -372,12 +372,13 @@ class Analysis(Base):
 class CalcCellClusterProportion(Base):
     __tablename__ = "calc_cell_cluster_proportion"
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    calculated_cell_cluster_id = Column(String(255), ForeignKey("cell_cluster_gene_expression.calculated_cell_cluster_id"))
     # 生物样品ID
     biosample_id = Column(INTEGER)
     analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # 细胞类型ID
-    cell_type_id = Column(INTEGER, ForeignKey("cell_type_meta.id"))
+    cell_type_id = Column(String(255))
     # 细胞类型ID比例
     cell_proportion = Column(Double)
     # 细胞类型ID数量
@@ -408,17 +409,18 @@ class CellTypeMeta(Base):
     __tablename__ = "cell_type_meta"
 
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    cell_type_id = Column(String(255), ForeignKey("calc_cell_cluster_proportion.cell_type_id"))
     # 物种ID
     species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 标记符号
     marker_gene_symbol = Column(String(255))
     # 细胞分类标识
-    cell_taxonomy_id = Column(INTEGER)
+    cell_taxonomy_id = Column(String(255))
     # 细胞分类URL
     cell_taxonomy_url = Column(String(255))
     # 细胞本体 ID
-    cell_ontology_id = Column(INTEGER)
+    cell_ontology_id = Column(String(255))
     # 细胞类型名称
     cell_type_name = Column(String(255))
     # 细胞类型描述
@@ -440,18 +442,20 @@ class CellTypeMeta(Base):
     cell_type_species_meta = relationship(
         "SpeciesMeta", back_populates="species_cell_type_meta"
     )
+    cell_type_cell_taxonomy_ct_meta = relationship("CellTaxonomy", back_populates="cell_taxonomy_ct_cell_type_meta")
+    cell_type_cell_taxonomy_ontology_meta = relationship("CellTaxonomy", back_populates="cell_taxonomy_ontology_cell_type_meta")
 
 
 class CellClusterGeneExpression(Base):
     __tablename__ = "cell_cluster_gene_expression"
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     # 细胞集群ID
     calculated_cell_cluster_id = Column(
-        INTEGER, ForeignKey("calc_cell_cluster_proportion.id")
+        String(255)
     )
     # 基因组ID
-    gene_id = Column(INTEGER, ForeignKey("gene_meta.id"))
+    gene_ensemble_id = Column(String(255))
     # 基因符号
     gene_symbol = Column(String(255))
     # 平均基因表达式
@@ -488,7 +492,7 @@ class CellClusterGeneExpression(Base):
 class SpeciesMeta(Base):
     __tablename__ = "species_meta"
 
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     # 品种
     species = Column(String(255))
     # 物种_本体_标签
@@ -506,7 +510,9 @@ class GeneMeta(Base):
     __tablename__ = "gene_meta"
 
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    # 基因组id
+    gene_ensemble_id = Column(String(255), ForeignKey("cell_cluster_gene_expression.gene_ensemble_id"))
     # 品种
     species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 人类正源物
@@ -520,7 +526,7 @@ class GeneMeta(Base):
     # 基因生物
     gene_ontology = Column(String(255))
     # GPCR
-    GPCR = Column(String(255))
+    gpcr = Column(String(255))
     # TF
     TF = Column(String(255))
     # 表层
@@ -547,7 +553,7 @@ class GeneMeta(Base):
 class PathwayScore(Base):
     __tablename__ = "pathway_score"
     # ID
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     # 路径源
     pathway_source = Column(String(255))
     # 路径名称
@@ -584,7 +590,7 @@ class PathwayScore(Base):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     user_name = Column(String(255), nullable=False, unique=True)
     email_address = Column(VARCHAR(255), nullable=False, unique=True)
     organization = Column(String(255), nullable=False)
@@ -621,7 +627,7 @@ class User(Base):
 class ProjectUser(Base):
     __tablename__ = "project_user"
 
-    id = Column(INTEGER, primary_key=True)
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
     project_id = Column(INTEGER, ForeignKey("project_meta.id"))
     user_id = Column(INTEGER, ForeignKey("users.id"))
 
@@ -631,6 +637,35 @@ class ProjectUser(Base):
     project_user_user_meta = relationship(
         "User", back_populates="user_project_user_meta", cascade="all"
     )
+
+
+class CellTaxonomy(Base):
+    __tablename__ = "cell_taxonomy"
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    species = Column(String(255))
+    tissue_uberonontology_id = Column(String(255))
+    tissue_standard = Column(String(255))
+    ct_id = Column(String(255), ForeignKey("cell_type_meta.cell_taxonomy_id"))
+    cell_standard = Column(String(255))
+    specific_cell_ontology_id = Column(String(255), ForeignKey("cell_type_meta.cell_ontology_id"))
+    cell_marker = Column(String(255))
+    gene_entrezid = Column(String(255))
+    gene_alias = Column(String(255))
+    gene_ensemble_id = Column(String(255))
+    uniprot = Column(String(255))
+    pfam = Column(String(255))
+    go2 = Column(String(255))
+    condition = Column(String(255))
+    disease_ontology_id = Column(String(255))
+    pmid = Column(String(255))
+    source = Column(String(255))
+    species_tax_id = Column(String(255))
+    species_alias = Column(String(255))
+    cell_alias_change = Column(String(255))
+
+    cell_taxonomy_ct_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_cell_taxonomy_ct_meta")
+    cell_taxonomy_ontology_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_cell_taxonomy_ontology_meta")
 
 
 if __name__ == "__main__":

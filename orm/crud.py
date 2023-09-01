@@ -48,7 +48,7 @@ def get_project_by_cell(db: Session, filters: List, public_filter_list: List):
 
 
 def get_project_by_gene(db: Session, filters: List, public_filter_list: List):
-    return db.query(cellxgene.CellClusterGeneExpression).filter(
+    return db.query(cellxgene.CellClusterCellClusterGeneExpressionModel).filter(
         or_((and_(*filters)), (and_(*public_filter_list)))
     )
 

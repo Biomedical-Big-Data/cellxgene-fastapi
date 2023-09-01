@@ -152,6 +152,7 @@ class AnalysisModel(BaseModel):
 
 class CellClusterProportionModel(BaseModel):
     id: int
+    calculated_cell_cluster_id: str
     biosample_id: int | None
     analysis_id: int | None
     cell_type_id: int | None
@@ -168,7 +169,7 @@ class CellClusterProportionModel(BaseModel):
 class CellClusterGeneExpressionModel(BaseModel):
     id: int
     calculated_cell_cluster_id: int | None
-    gene_id: int | None
+    gene_ensemble_id: int | None
     gene_symbol: str | None
     average_gene_expression: float | None
     cell_proportion_expression_the_gene: float | None
@@ -186,6 +187,7 @@ class CellClusterGeneExpressionModel(BaseModel):
 
 class CellTypeModel(BaseModel):
     id: int
+    cell_type_id: str
     species_id: int
     marker_gene_symbol: str | None
     cell_taxonomy_id: int | None
@@ -201,34 +203,16 @@ class CellTypeModel(BaseModel):
         org_mode = True
 
 
-class GeneExpression(BaseModel):
-    id: int
-    calculated_cell_cluster_id: int
-    gene_id: int | None
-    gene_symbol: str | None
-    average_gene_expression: float | None
-    cell_proportion_expression_the_gene: float | None
-    cell_rank_gene_by_proportion: int | None
-    cell_rank_gene_by_expression: int | None
-    gene_rank_cell_by_expression: int | None
-    gene_rank_cell_by_proportion: int | None
-    suggested_surfaceome_protein_for_facs_sorting: str | None
-    create_at: datetime
-    update_at: datetime
-
-    class Config:
-        org_mode = True
-
-
 class GeneModel(BaseModel):
     id: int
+    gene_ensemble_id: str
     species_id: int
     ortholog: str | None
     gene_symbol: str | None
     gene_name: str | None
     alias: str | None
     gene_ontology: str | None
-    GPCR: str | None
+    gpcr: str | None
     TF: str | None
     surfaceome: str | None
     drugbank_drugtarget: str | None
@@ -238,6 +222,30 @@ class GeneModel(BaseModel):
 
     class Config:
         org_mode = True
+
+
+class CellTaxonomyModel(BaseModel):
+    id: int
+    species: str
+    tissue_uberonontology_id: str
+    tissue_standard: str
+    ct_id: str
+    cell_standard: str
+    specific_cell_ontology_id: str
+    cell_marker: str
+    gene_entrezid: str
+    gene_alias: str
+    gene_ensembl_id: str
+    uniprot: str
+    pfam: str
+    go2: str
+    condition: str
+    disease_ontology_id: str
+    pmid: str
+    source: str
+    species_tax_id: str
+    species_alias: str
+    cell_alias_change: str
 
 
 class ProjectBiosampleModel(BaseModel):
