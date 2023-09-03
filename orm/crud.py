@@ -96,7 +96,7 @@ def create_cell_proprotion_for_transaction(
     for insert_cell_proportion_model in insert_cell_proportion_model_list:
         db.add(insert_cell_proportion_model)
         db.flush()
-        inserted_id_list.append(insert_cell_proportion_model.id)
+        inserted_id_list.append(insert_cell_proportion_model.calculated_cell_cluster_id)
     return inserted_id_list
 
 

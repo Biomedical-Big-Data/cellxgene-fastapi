@@ -457,7 +457,7 @@ class CellClusterGeneExpression(Base):
         INTEGER, ForeignKey("calc_cell_cluster_proportion.calculated_cell_cluster_id")
     )
     # 基因组ID
-    gene_id = Column(String(255), ForeignKey("gene_meta.gene_ensemble_id"))
+    gene_ensemble_id = Column(String(255), ForeignKey("gene_meta.gene_ensemble_id"))
     # 基因符号
     gene_symbol = Column(String(255))
     # 平均基因表达式

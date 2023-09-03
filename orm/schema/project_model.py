@@ -59,7 +59,7 @@ class ProjectModel(BaseModel):
 
 
 class BiosampleModel(BaseModel):
-    id: int | str | None
+    id: int | str
     external_sample_accesstion: str | None
     biosample_type: str | None
     species_id: int | None
@@ -153,24 +153,24 @@ class AnalysisModel(BaseModel):
 
 
 class CellClusterProportionModel(BaseModel):
-    calculated_cell_cluster_id: int
-    biosample_id: int | None
-    analysis_id: int | None
+    calculated_cell_cluster_id: int | str
+    biosample_id: int | str | None
+    analysis_id: int | None = None
     cell_type_id: int | None
     cell_proportion: float | None
     cell_number: int | None
     cell_cluster_method: str | None
-    create_at: datetime
-    update_at: datetime
+    create_at: datetime | None = None
+    update_at: datetime | None = None
 
     class Config:
         org_mode = True
 
 
 class CellClusterGeneExpressionModel(BaseModel):
-    id: int
-    calculated_cell_cluster_id: int | None
-    gene_ensemble_id: int | None
+    id: int | str
+    calculated_cell_cluster_id: int | str | None
+    gene_ensemble_id: str | None
     gene_symbol: str | None
     average_gene_expression: float | None
     cell_proportion_expression_the_gene: float | None
@@ -179,8 +179,8 @@ class CellClusterGeneExpressionModel(BaseModel):
     gene_rank_cell_by_expression: int | None
     gene_rank_cell_by_proportion: int | None
     suggested_surfaceome_protein_for_facs_sorting: str | None
-    create_at: datetime
-    update_at: datetime
+    create_at: datetime | None = None
+    update_at: datetime | None = None
 
     class Config:
         org_mode = True
