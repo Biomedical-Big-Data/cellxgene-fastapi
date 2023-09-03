@@ -48,7 +48,7 @@ def get_project_by_cell(db: Session, filters: List, public_filter_list: List):
 
 
 def get_project_by_gene(db: Session, filters: List, public_filter_list: List):
-    return db.query(cellxgene.CellClusterCellClusterGeneExpressionModel).filter(
+    return db.query(cellxgene.CellClusterGeneExpression).filter(
         or_((and_(*filters)), (and_(*public_filter_list)))
     )
 
@@ -79,25 +79,105 @@ def create_biosample(db: Session, insert_biosample_model: cellxgene.BioSampleMet
     return insert_biosample_model.id
 
 
+def get_biosample(db: Session, filters: List):
+    return db.query(cellxgene.BioSampleMeta).filter(and_(*filters))
+
+
 def update_biosample(db: Session, filters: List, update_dict: Dict):
     db.query(cellxgene.BioSampleMeta).filter(and_(*filters)).update(update_dict)
     db.commit()
 
 
-def create_project_user(
+def create_cell_proprotion_for_transaction(
+    db: Session,
+    insert_cell_proportion_model_list: List[cellxgene.CalcCellClusterProportion],
+):
+    inserted_id_list = []
+    for insert_cell_proportion_model in insert_cell_proportion_model_list:
+        db.add(insert_cell_proportion_model)
+        db.flush()
+        inserted_id_list.append(insert_cell_proportion_model.id)
+    return inserted_id_list
+
+
+def get_cell_proportion(db: Session, filters: List):
+    return db.query(cellxgene.CalcCellClusterProportion).filter(and_(*filters))
+
+
+def update_cell_proportion_for_transaction(
+    db: Session, filters: List, update_dict: Dict
+):
+    db.query(cellxgene.CalcCellClusterProportion).filter(and_(*filters)).update(
+        update_dict
+    )
+
+
+def get_gene_expression(db: Session, filters: List):
+    return db.query(cellxgene.CellClusterGeneExpression).filter(and_(*filters))
+
+
+def update_gene_expression_for_transaction(
+    db: Session, filters: List, update_dict: Dict
+):
+    db.query(cellxgene.CellClusterGeneExpression).filter(and_(*filters)).update(
+        update_dict
+    )
+
+
+def create_gene_expression_for_transaction(
+    db: Session,
+    insert_gene_expression_model_list: List[cellxgene.CellClusterGeneExpression],
+):
+    db.add_all(insert_gene_expression_model_list)
+
+
+def get_project_biosample(db: Session, filters: List):
+    return db.query(cellxgene.ProjectBioSample).filter(and_(*filters))
+
+
+def create_project_biosample_for_transaction(
+    db: Session, insert_project_biosample_model_list: List[cellxgene.ProjectBioSample]
+):
+    db.add_all(insert_project_biosample_model_list)
+
+
+def delete_project_biosample_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.ProjectBioSample).filter(and_(*filters)).delete()
+
+
+def create_biosample_analysis_for_transaction(
+    db: Session, insert_biosample_analysis_list: List[cellxgene.BioSampleAnalysis]
+):
+    db.add_all(insert_biosample_analysis_list)
+
+
+def delete_biosample_analysis_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.BioSampleAnalysis).filter(and_(*filters)).delete()
+
+
+def create_project_user_for_transaction(
     db: Session, insert_project_user_model_list: List[cellxgene.ProjectUser]
 ):
     db.add_all(insert_project_user_model_list)
-    # db.commit()
 
 
-def delete_project_user(db: Session, filters: List):
+def delete_project_user_for_transaction(db: Session, filters: List):
     db.query(cellxgene.ProjectUser).filter(and_(*filters)).delete()
-    # db.commit()
 
 
 def update_project_for_transaction(db: Session, filters: List, update_dict: Dict):
     db.query(cellxgene.ProjectMeta).filter(and_(*filters)).update(update_dict)
+
+
+def create_biosample_for_transaction(
+    db: Session, insert_biosample_model_list=List[cellxgene.BioSampleMeta]
+):
+    inserted_id_list = []
+    for insert_biosample_model in insert_biosample_model_list:
+        db.add(insert_biosample_model)
+        db.flush()
+        inserted_id_list.append(insert_biosample_model.id)
+    return inserted_id_list
 
 
 def update_biosample_for_transaction(db: Session, filters: List, update_dict: Dict):
@@ -119,8 +199,8 @@ def project_update_transaction(
     update_analysis_filters: List,
     update_analysis_dict: Dict,
 ):
-    delete_project_user(db=db, filters=delete_project_user_filters)
-    create_project_user(
+    delete_project_user_for_transaction(db=db, filters=delete_project_user_filters)
+    create_project_user_for_transaction(
         db=db, insert_project_user_model_list=insert_project_user_model_list
     )
     update_project_for_transaction(
@@ -137,6 +217,43 @@ def project_update_transaction(
 
 def get_species_list(db: Session, filters: List | None):
     return db.query(cellxgene.SpeciesMeta).filter(and_(*filters)).all()
+
+
+def create_gene(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
+    db.add_all(insert_gene_model_list)
+    db.commit()
+
+
+def create_taxonomy(
+    db: Session, insert_taxonomy_model_list: List[cellxgene.CellTaxonomy]
+):
+    db.add_all(insert_taxonomy_model_list)
+    db.commit()
+
+
+def create_h5ad(db: Session, insert_h5ad_model: cellxgene.H5ADLibrary):
+    db.add(insert_h5ad_model)
+    db.commit()
+
+
+def get_h5ad(db: Session, filters: List | None):
+    return db.query(cellxgene.H5ADLibrary).filter(and_(*filters))
+
+
+def update_upload_file(
+    db: Session,
+    update_project_filters: List,
+    update_project_dict: Dict,
+    update_biosample_filters: List,
+    update_biosample_dict: Dict,
+):
+    update_project_for_transaction(
+        db=db, filters=update_project_filters, update_dict=update_project_dict
+    )
+    update_biosample_for_transaction(
+        db=db, filters=update_biosample_filters, update_dict=update_biosample_dict
+    )
+    db.commit()
 
 
 if __name__ == "__main__":

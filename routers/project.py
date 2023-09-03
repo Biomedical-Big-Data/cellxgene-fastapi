@@ -4,6 +4,7 @@ from fastapi import (
     status,
     Body,
     File,
+    Form,
     UploadFile,
     Request,
 )
@@ -121,7 +122,7 @@ async def get_analysis_list(
 async def create_project(
     title: str = Body(),
     description: str = Body(),
-    # h5ad_file: UploadFile | None = Body(),
+    h5ad_id: str = Body(),
     tags: str = Body(),
     members: list = Body(),
     is_publish: int = Body(),
@@ -192,7 +193,7 @@ async def update_project(
     project_id: int = Body(),
     title: str = Body(),
     description: str = Body(),
-    # h5ad_file: UploadFile | None = Body(),
+    h5ad_id: str | None = Body(),
     tags: str = Body(),
     members: list = Body(),
     is_publish: int = Body(),
@@ -242,7 +243,7 @@ async def update_project(
         ].biosample_id
         update_biosample_dict = {"species_id": species_id, "organ": organ}
         update_analysis_id = project_info.project_analysis_meta[0].id
-        h5ad_id = str(uuid4()).replace("-", "")
+        # h5ad_id = str(uuid4()).replace("-", "")
         update_analysis_dict = {"h5ad_id": h5ad_id}
         crud.project_update_transaction(
             db=db,
@@ -313,19 +314,18 @@ async def transfer_project(
         filters=[cellxgene.User.email_address == transfer_to.transfer_to_email_address],
     ).first()
     if not transfer_to_user_info:
-        return ResponseMessage(
-            status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确"
-        )
+        return ResponseMessage(status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确")
     project_info = crud.get_project(
         db=db, filters=[cellxgene.ProjectMeta.id == project_id]
     ).first()
     if not project_info:
         return ResponseMessage(status="0201", data={}, message="项目不存在")
     if project_info.project_user_meta.email_address != current_user_email_address:
-        return ResponseMessage(
-            status="0201", data={}, message="您不是项目的拥有者，无法转移此项目"
-        )
-    if project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE and project_info.is_publish != config.ProjectStatus.PROJECT_STATUS_UNAVAILABLE:
+        return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法转移此项目")
+    if (
+        project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
+        and project_info.is_publish != config.ProjectStatus.PROJECT_STATUS_UNAVAILABLE
+    ):
         try:
             crud.update_project(
                 db=db,
@@ -634,15 +634,74 @@ async def get_project_list_by_gene(
 
 
 @router.post(
-    "/file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/h5ad_file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
 async def add_project(
-    file: UploadFile = File(), current_user_email_address=Depends(get_current_user)
+    file: UploadFile = File(...),
+    # chunknumber: str = Form(...),
+    # identifier: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    content = await file.read()
-    all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
-    print(all_sheet_df.keys())
-    return ResponseMessage(status="0000", data={}, message="ok")
+    # if len(chunknumber) == 0 or len(identifier) == 0:
+    #     return ResponseMessage(status="0201", data={}, message="没有传递相关参数")
+    # task = identifier  # 获取文件唯一标识符
+    # chunk = chunknumber  # 获取该分片在所有分片中的序号【客户端设定】
+    # filename = '%s%s' % (task, chunk)  # 构成该分片唯一标识符
+    contents = await file.read()  # 异步读取文件
+    filename = file.filename
+    h5ad_id = str(uuid4()).replace("-", "") + ".h5ad"
+    current_user_info = crud.get_user(
+        db=db, filters=[cellxgene.User.email_address == current_user_email_address]
+    ).first()
+    with open(f"{config.H5AD_FILE_PATH}/{h5ad_id}", "wb") as f:
+        try:
+            f.write(contents)
+            insert_h5ad_model = cellxgene.H5ADLibrary(
+                h5ad_id=h5ad_id, file_name=filename, upload_user_id=current_user_info.id
+            )
+            crud.create_h5ad(db=db, insert_h5ad_model=insert_h5ad_model)
+        except:
+            ResponseMessage(status="0201", data={}, message="文件上传失败")
+        else:
+            return ResponseMessage(status="0000", data={}, message="文件上传成功")
+
+
+@router.get(
+    "/h5ad_file/me",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_user_h5ad_file_list(
+    file_name: Union[str, None] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    search_page = (page - 1) * page_size
+    filter_list = [
+        cellxgene.User.email_address == current_user_email_address,
+        cellxgene.H5ADLibrary.upload_user_id == cellxgene.User.id,
+    ]
+    if file_name:
+        filter_list.append(
+            cellxgene.H5ADLibrary.file_name.like("%{}%".format(file_name))
+        )
+    h5ad_file_list = (
+        crud.get_h5ad(db=db, filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_h5ad(db=db, filters=filter_list).count()
+    res_dict = {
+        "h5ad_list": h5ad_file_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
 @router.get(
@@ -664,7 +723,8 @@ async def project_view_h5ad(
     # current_user_email_address=Depends(get_current_user),
 ):
     filter_list = [
-        cellxgene.Analysis.id == analysis_id
+        cellxgene.Analysis.id
+        == analysis_id
         # cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         # cellxgene.ProjectMeta.id == cellxgene.ProjectUser.project_id,
         # cellxgene.ProjectUser.user_id == cellxgene.User.id,
@@ -674,7 +734,8 @@ async def project_view_h5ad(
     analysis_info = crud.get_analysis(db=db, filters=filter_list).first()
     if analysis_info:
         return RedirectResponse(
-            config.CELLXGENE_GATEWAY_URL + "{}/{}".format(analysis_info.h5ad_id, url_path)
+            config.CELLXGENE_GATEWAY_URL
+            + "{}/{}".format(analysis_info.h5ad_id, url_path)
             + "?"
             + str(request_param.query_params)
         )

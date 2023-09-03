@@ -54,6 +54,7 @@ VERIFY_URL = VERIFY_CONFIG.get("verify_url")
 RESET_PASSWORD_URL = VERIFY_CONFIG.get("reset_password_url")
 
 CELLXGENE_GATEWAY_URL = CELLXGENE_GATEWAY_CONFIG.get("url")
+H5AD_FILE_PATH = CELLXGENE_GATEWAY_CONFIG.get("h5ad_file_path")
 
 
 class UserStateConfig:

@@ -29,13 +29,9 @@ async def register(
     user: user_model.RegisterUserModel, db: Session = Depends(get_db)
 ) -> ResponseMessage:
     if len(user.user_password) < 6 or len(user.user_password) > 16:
-        return ResponseMessage(
-            status="0201", data={}, message="密码应大于6位或小于16位"
-        )
+        return ResponseMessage(status="0201", data={}, message="密码应大于6位或小于16位")
     if not re.search("^[1-9a-zA-Z]", user.user_password):
-        return ResponseMessage(
-            status="0201", data={}, message="密码应包含数字及大小写字母"
-        )
+        return ResponseMessage(status="0201", data={}, message="密码应包含数字及大小写字母")
     if crud.get_user(db, [cellxgene.User.email_address == user.email_address]).first():
         return ResponseMessage(status="0201", data={}, message="此邮箱已有账号")
     salt, jwt_user_password = auth_util.create_md5_password(
@@ -64,13 +60,9 @@ async def register(
         mail_template=mail_template, subject="账户验证邮件", to_list=user.email_address
     )
     if send_mail_result:
-        return ResponseMessage(
-            status="0000", data={}, message="注册成功，请到邮箱点击验证链接"
-        )
+        return ResponseMessage(status="0000", data={}, message="注册成功，请到邮箱点击验证链接")
     else:
-        return ResponseMessage(
-            status="0201", data={}, message="注册成功，验证邮件发送失败，请点击重新发送"
-        )
+        return ResponseMessage(status="0201", data={}, message="注册成功，验证邮件发送失败，请点击重新发送")
 
 
 @router.post("/login", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
@@ -196,9 +188,7 @@ async def send_reset_user_password_mail(
             message="重置密码链接已发送至您的邮箱，请在半小时内完成重置",
         )
     else:
-        return ResponseMessage(
-            status="0201", data={}, message="重置密码邮件发送失败，请点击重新发送"
-        )
+        return ResponseMessage(status="0201", data={}, message="重置密码邮件发送失败，请点击重新发送")
 
 
 @router.post(
@@ -211,13 +201,9 @@ async def reset_user_password(
 ) -> ResponseMessage:
     email_address = auth_util.check_token_for_verify_email(db=db, token=token)
     if len(password) < 6 or len(password) > 16:
-        return ResponseMessage(
-            status="0201", data={}, message="密码应大于6位或小于16位"
-        )
+        return ResponseMessage(status="0201", data={}, message="密码应大于6位或小于16位")
     if not re.search("^[1-9a-zA-Z]", password):
-        return ResponseMessage(
-            status="0201", data={}, message="密码应包含数字及大小写字母"
-        )
+        return ResponseMessage(status="0201", data={}, message="密码应包含数字及大小写字母")
     salt, jwt_user_password = auth_util.create_md5_password(
         salt=None, password=password
     )

@@ -26,6 +26,13 @@ class GeneListModel(BaseModel):
     page_size: int
 
 
+class H5adListModel(BaseModel):
+    h5ad_list: List[project_model.H5ADModel]
+    total: int
+    page: int
+    page_size: int
+
+
 class ProjectListModel(BaseModel):
     project_list: Union[
         List[project_relation_model.GeneExpressionRelation],
@@ -40,7 +47,7 @@ class ProjectListModel(BaseModel):
 
 class ResponseProjectListModel(BaseModel):
     status: str
-    data: Union[ProjectListModel, CellTypeListModel, GeneListModel]
+    data: Union[ProjectListModel, CellTypeListModel, GeneListModel, H5adListModel]
     message: str
 
 

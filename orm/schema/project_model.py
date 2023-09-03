@@ -34,6 +34,8 @@ class ProjectModel(BaseModel):
     id: int
     integrated_project: int | None
     title: str | None
+    donor_number: int | None
+    biosample_number: int | None
     external_project_accesstion: str | None
     cell_number: str | None
     description: str | None
@@ -49,15 +51,15 @@ class ProjectModel(BaseModel):
     is_private: int | None
     owner: int | None
     tags: str | None
-    create_at: datetime
-    update_at: datetime
+    create_at: datetime | None
+    update_at: datetime | None
 
     class Config:
         org_mode = True
 
 
 class BiosampleModel(BaseModel):
-    id: int
+    id: int | str | None
     external_sample_accesstion: str | None
     biosample_type: str | None
     species_id: int | None
@@ -130,8 +132,8 @@ class BiosampleModel(BaseModel):
     paired_ends: str | None
     number_of_cells: int | None
     number_of_reads: int | None
-    create_at: datetime
-    update_at: datetime
+    create_at: datetime | None = None
+    update_at: datetime | None = None
 
     class Config:
         org_mode = True
@@ -151,8 +153,7 @@ class AnalysisModel(BaseModel):
 
 
 class CellClusterProportionModel(BaseModel):
-    id: int
-    calculated_cell_cluster_id: str
+    calculated_cell_cluster_id: int
     biosample_id: int | None
     analysis_id: int | None
     cell_type_id: int | None
@@ -186,8 +187,7 @@ class CellClusterGeneExpressionModel(BaseModel):
 
 
 class CellTypeModel(BaseModel):
-    id: int
-    cell_type_id: str
+    cell_type_id: int
     species_id: int
     marker_gene_symbol: str | None
     cell_taxonomy_id: int | None
@@ -204,7 +204,6 @@ class CellTypeModel(BaseModel):
 
 
 class GeneModel(BaseModel):
-    id: int
     gene_ensemble_id: str
     species_id: int
     ortholog: str | None
@@ -226,26 +225,40 @@ class GeneModel(BaseModel):
 
 class CellTaxonomyModel(BaseModel):
     id: int
-    species: str
-    tissue_uberonontology_id: str
-    tissue_standard: str
-    ct_id: str
-    cell_standard: str
-    specific_cell_ontology_id: str
-    cell_marker: str
-    gene_entrezid: str
-    gene_alias: str
-    gene_ensembl_id: str
-    uniprot: str
-    pfam: str
-    go2: str
-    condition: str
-    disease_ontology_id: str
-    pmid: str
-    source: str
-    species_tax_id: str
-    species_alias: str
-    cell_alias_change: str
+    species: str | None
+    tissue_uberonontology_id: str | None
+    tissue_standard: str | None
+    ct_id: str | None
+    cell_standard: str | None
+    specific_cell_ontology_id: str | None
+    cell_marker: str | None
+    gene_entrezid: str | None
+    gene_alias: str | None
+    gene_ensembl_id: str | None
+    uniprot: str | None
+    pfam: str | None
+    go2: str | None
+    condition: str | None
+    disease_ontology_id: str | None
+    pmid: str | None
+    source: str | None
+    species_tax_id: str | None
+    species_alias: str | None
+    cell_alias_change: str | None
+
+    class Config:
+        org_mode = True
+
+
+class H5ADModel(BaseModel):
+    h5ad_id: str
+    file_name: str
+    upload_user_id: int
+    create_at: datetime
+    update_at: datetime
+
+    class Config:
+        org_mode = True
 
 
 class ProjectBiosampleModel(BaseModel):
@@ -272,6 +285,22 @@ class TransferProjectModel(BaseModel):
 
 class UpdateProjectModel(BaseModel):
     project_status: int
+
+
+class PathwayScoreModel(BaseModel):
+    id: int
+    pathway_source: str
+    pathway_name: str
+    species_id: int
+    geneset_gene_symbols: str
+    project_id: int
+    biosample_id: int
+    cell_type_name: str
+    calculated_cell_cluster_id: int
+    score_function: str
+    score: float
+    create_at: datetime
+    update_at: datetime
 
 
 if __name__ == "__main__":

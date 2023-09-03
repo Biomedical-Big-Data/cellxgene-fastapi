@@ -189,6 +189,21 @@ async def get_project_list(
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
+@router.post(
+    "/project/file/upload",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
+async def upload_project_file(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    content = await file.read()
+    all_sheet_df = pd.read_excel(BytesIO(content), sheet_name=None, dtype=str)
+    print(all_sheet_df.keys())
+
+
 @router.get(
     "/project/{project_id}",
     response_model=ResponseProjectDetailModel,
