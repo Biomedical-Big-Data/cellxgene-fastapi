@@ -190,9 +190,9 @@ class CellTypeModel(BaseModel):
     cell_type_id: int
     species_id: int
     marker_gene_symbol: str | None
-    cell_taxonomy_id: int | None
+    cell_taxonomy_id: str | None
     cell_taxonomy_url: str | None
-    cell_ontology_id: int | None
+    cell_ontology_id: str | None
     cell_type_name: str | None
     cell_type_description: str | None
     cell_type_ontology_label: str | None
@@ -212,7 +212,7 @@ class GeneModel(BaseModel):
     alias: str | None
     gene_ontology: str | None
     gpcr: str | None
-    TF: str | None
+    tf: str | None
     surfaceome: str | None
     drugbank_drugtarget: str | None
     phenotype: str | None

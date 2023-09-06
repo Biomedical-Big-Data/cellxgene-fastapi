@@ -500,14 +500,14 @@ async def get_project_list_by_cell(
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
     filter_list = [
-        cellxgene.CellTypeMeta.id == cellxgene.CalcCellClusterProportion.cell_type_id,
+        cellxgene.CellTypeMeta.cell_type_id == cellxgene.CalcCellClusterProportion.cell_type_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
     public_filter_list = [
-        cellxgene.CellTypeMeta.id == cellxgene.CalcCellClusterProportion.cell_type_id,
+        cellxgene.CellTypeMeta.cell_type_id == cellxgene.CalcCellClusterProportion.cell_type_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
@@ -515,8 +515,8 @@ async def get_project_list_by_cell(
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
     if cell_id is not None:
-        filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
-        public_filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
+        filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
     if species_id is not None:
         filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
         public_filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
@@ -580,18 +580,18 @@ async def get_project_list_by_gene(
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
     filter_list = [
-        cellxgene.GeneMeta.id == cellxgene.CellClusterGeneExpression.gene_id,
+        cellxgene.GeneMeta.gene_ensemble_id == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
         cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
-        == cellxgene.CalcCellClusterProportion.id,
+        == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
     public_filter_list = [
-        cellxgene.GeneMeta.id == cellxgene.CellClusterGeneExpression.gene_id,
+        cellxgene.GeneMeta.gene_ensemble_id == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
         cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
-        == cellxgene.CalcCellClusterProportion.id,
+        == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
