@@ -1,40 +1,51 @@
-import aiomqtt
-import asyncio
+from gmqtt import Client as MQTTClient
 from conf.config import MQTT_BROKER_URL, MQTT_BROKER_PORT, MQTT_TOPIC
-
-
-async def on_message(client, userdata, message):
-    print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
+import asyncio
 
 
 class Consumer:
 
     def __init__(self):
+        self.client = None
         self._consumer = None
         self.url = MQTT_BROKER_URL
         self.port = MQTT_BROKER_PORT
         self.topic = MQTT_TOPIC
+        self.stop = asyncio.Event()
 
     async def initialize(self):
-        print(self.url)
-        self._consumer = aiomqtt.Client(
-            hostname=self.url,  # The only non-optional parameter
-            port=self.port,
-        )
-        await self._consumer.connect()
-        await self._consumer.subscribe(self.topic)
-        self._consumer.on_message = on_message
+        self.client = MQTTClient("client-id")
 
-    async def shutdown(self):
-        await self._consumer.disconnect()
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.on_disconnect = self.on_disconnect
+        self.client.on_subscribe = self.on_subscribe
+        await self.client.connect(self.url, self.port)
+
+    def on_connect(self, client, flags, rc, properties):
+        print('Connected')
+        client.subscribe(self.topic, qos=0)
+
+    def on_message(self, client, topic, payload, qos, properties):
+        print('RECV MSG:', payload)
+
+    def on_disconnect(self, client, packet, exc=None):
+        print('Disconnected')
+
+    def on_subscribe(self, client, mid, qos, properties):
+        print('SUBSCRIBED')
+
+    def shutdown(self):
+        self.client.disconnect()
 
 
-async def main():
-    consumer = Consumer()
-    await consumer.initialize()
+# async def main():
+#     consumer = Consumer()
+#     consumer.initialize()
 
 
 if __name__ == "__main__":
-    renwu = [main()]
-    loops = asyncio.get_event_loop()
-    loops.run_until_complete(asyncio.wait(renwu))
+    consumer = Consumer()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(consumer.initialize())
+
