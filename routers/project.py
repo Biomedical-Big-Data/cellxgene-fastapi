@@ -634,9 +634,9 @@ async def get_project_list_by_gene(
 
 
 @router.post(
-    "/h5ad_file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
-async def add_project(
+async def upload_file(
     file: UploadFile = File(...),
     # chunknumber: str = Form(...),
     # identifier: str = Form(...),
@@ -650,15 +650,15 @@ async def add_project(
     # filename = '%s%s' % (task, chunk)  # 构成该分片唯一标识符
     contents = await file.read()  # 异步读取文件
     filename = file.filename
-    h5ad_id = str(uuid4()).replace("-", "") + ".h5ad"
+    file_id = str(uuid4()).replace("-", "")
     current_user_info = crud.get_user(
         db=db, filters=[cellxgene.User.email_address == current_user_email_address]
     ).first()
-    with open(f"{config.H5AD_FILE_PATH}/{h5ad_id}", "wb") as f:
+    with open(f"{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
         try:
             f.write(contents)
-            insert_h5ad_model = cellxgene.H5ADLibrary(
-                h5ad_id=h5ad_id, file_name=filename, upload_user_id=current_user_info.id
+            insert_h5ad_model = cellxgene.FileLibrary(
+                file_id=file_id, file_name=filename, upload_user_id=current_user_info.id
             )
             crud.create_h5ad(db=db, insert_h5ad_model=insert_h5ad_model)
         except:
@@ -682,11 +682,11 @@ async def get_user_h5ad_file_list(
     search_page = (page - 1) * page_size
     filter_list = [
         cellxgene.User.email_address == current_user_email_address,
-        cellxgene.H5ADLibrary.upload_user_id == cellxgene.User.id,
+        cellxgene.FileLibrary.upload_user_id == cellxgene.User.id,
     ]
     if file_name:
         filter_list.append(
-            cellxgene.H5ADLibrary.file_name.like("%{}%".format(file_name))
+            cellxgene.FileLibrary.file_name.like("%{}%".format(file_name))
         )
     h5ad_file_list = (
         crud.get_h5ad(db=db, filters=filter_list)

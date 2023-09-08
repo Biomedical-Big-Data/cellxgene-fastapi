@@ -143,6 +143,8 @@ class AnalysisModel(BaseModel):
     id: int
     project_id: int | None
     h5ad_id: str | None
+    umap_id: str | None
+    cell_marker_id: str | None
     reference: str | None
     analysis_protocol: str | None
     create_at: datetime
@@ -250,8 +252,8 @@ class CellTaxonomyModel(BaseModel):
         org_mode = True
 
 
-class H5ADModel(BaseModel):
-    h5ad_id: str
+class FileLibraryModel(BaseModel):
+    file_id: str
     file_name: str
     upload_user_id: int
     create_at: datetime

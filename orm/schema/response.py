@@ -27,7 +27,7 @@ class GeneListModel(BaseModel):
 
 
 class H5adListModel(BaseModel):
-    h5ad_list: List[project_model.H5ADModel]
+    h5ad_list: List[project_model.FileLibraryModel]
     total: int
     page: int
     page_size: int

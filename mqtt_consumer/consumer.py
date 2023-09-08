@@ -35,8 +35,8 @@ class Consumer:
     def on_subscribe(self, client, mid, qos, properties):
         print('SUBSCRIBED')
 
-    def shutdown(self):
-        self.client.disconnect()
+    async def shutdown(self):
+        await self.client.disconnect()
 
 
 # async def main():

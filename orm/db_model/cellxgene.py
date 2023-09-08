@@ -349,6 +349,8 @@ class Analysis(Base):
     id = Column(INTEGER, primary_key=True)
     project_id = Column(INTEGER, ForeignKey("project_meta.id"))
     h5ad_id = Column(String(255))
+    umap_id = Column(String(255))
+    cell_marker_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
     create_at = Column(
@@ -678,10 +680,10 @@ class CellTaxonomy(Base):
     # cell_taxonomy_ontology_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_cell_taxonomy_ontology_meta")
 
 
-class H5ADLibrary(Base):
-    __tablename__ = "h5ad_library"
+class FileLibrary(Base):
+    __tablename__ = "file_library"
 
-    h5ad_id = Column(String(255), primary_key=True)
+    file_id = Column(String(255), primary_key=True)
     file_name = Column(String(255))
     upload_user_id = Column(INTEGER)
     create_at = Column(

@@ -231,13 +231,13 @@ def create_taxonomy(
     db.commit()
 
 
-def create_h5ad(db: Session, insert_h5ad_model: cellxgene.H5ADLibrary):
+def create_h5ad(db: Session, insert_h5ad_model: cellxgene.FileLibrary):
     db.add(insert_h5ad_model)
     db.commit()
 
 
 def get_h5ad(db: Session, filters: List | None):
-    return db.query(cellxgene.H5ADLibrary).filter(and_(*filters))
+    return db.query(cellxgene.FileLibrary).filter(and_(*filters))
 
 
 def update_upload_file(
