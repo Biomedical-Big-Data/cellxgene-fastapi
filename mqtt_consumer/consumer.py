@@ -1,6 +1,11 @@
+import json
+
 from gmqtt import Client as MQTTClient
 from conf.config import MQTT_BROKER_URL, MQTT_BROKER_PORT, MQTT_TOPIC
 import asyncio
+
+
+SERVER_STATUS_DICT = {}
 
 
 class Consumer:
@@ -27,7 +32,10 @@ class Consumer:
         client.subscribe(self.topic, qos=0)
 
     def on_message(self, client, topic, payload, qos, properties):
-        print('RECV MSG:', payload)
+        # print('RECV MSG:', payload)
+        payload_dict = json.loads(payload)
+        SERVER_STATUS_DICT[payload_dict["ip"]] = payload_dict
+        print(SERVER_STATUS_DICT)
 
     def on_disconnect(self, client, packet, exc=None):
         print('Disconnected')

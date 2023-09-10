@@ -236,6 +236,10 @@ def create_h5ad(db: Session, insert_h5ad_model: cellxgene.FileLibrary):
     db.commit()
 
 
+def create_h5ad_for_transaction(db: Session, insert_h5ad_model: cellxgene.FileLibrary):
+    db.add(insert_h5ad_model)
+
+
 def get_h5ad(db: Session, filters: List | None):
     return db.query(cellxgene.FileLibrary).filter(and_(*filters))
 

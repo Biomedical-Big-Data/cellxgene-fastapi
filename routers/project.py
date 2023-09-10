@@ -24,8 +24,10 @@ import pandas as pd
 from sqlalchemy import and_, or_, distinct
 from orm.dependencies import get_current_user
 from orm.schema.project_model import TransferProjectModel
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from uuid import uuid4
+from utils import file_util
+from mqtt_consumer.consumer import SERVER_STATUS_DICT
 
 
 router = APIRouter(
@@ -634,7 +636,7 @@ async def get_project_list_by_gene(
 
 
 @router.post(
-    "/file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/h5ad_file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
 async def upload_file(
     file: UploadFile = File(...),
@@ -648,23 +650,15 @@ async def upload_file(
     # task = identifier  # 获取文件唯一标识符
     # chunk = chunknumber  # 获取该分片在所有分片中的序号【客户端设定】
     # filename = '%s%s' % (task, chunk)  # 构成该分片唯一标识符
-    contents = await file.read()  # 异步读取文件
-    filename = file.filename
-    file_id = str(uuid4()).replace("-", "")
     current_user_info = crud.get_user(
         db=db, filters=[cellxgene.User.email_address == current_user_email_address]
     ).first()
-    with open(f"{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
-        try:
-            f.write(contents)
-            insert_h5ad_model = cellxgene.FileLibrary(
-                file_id=file_id, file_name=filename, upload_user_id=current_user_info.id
-            )
-            crud.create_h5ad(db=db, insert_h5ad_model=insert_h5ad_model)
-        except:
-            ResponseMessage(status="0201", data={}, message="文件上传失败")
-        else:
-            return ResponseMessage(status="0000", data={}, message="文件上传成功")
+    try:
+        await file_util.save_file(db=db, file=file, insert_user_id=current_user_info.id)
+    except:
+        ResponseMessage(status="0201", data={}, message="文件上传失败")
+    else:
+        return ResponseMessage(status="0000", data={}, message="文件上传成功")
 
 
 @router.get(
@@ -714,6 +708,15 @@ async def get_species_list(
     return ResponseMessage(status="0000", data=species_list, message="ok")
 
 
+@router.get("/view/csv/{csv_id}", status_code=status.HTTP_200_OK)
+async def get_csv_data(
+    csv_id: str,
+    # current_user_email_address=Depends(get_current_user),
+):
+    file_path = config.H5AD_FILE_PATH
+    return FileResponse(config.H5AD_FILE_PATH + '/' + csv_id, media_type="application/octet-stream", filename=csv_id)
+
+
 @router.get("/view/{analysis_id}/{url_path:path}", status_code=status.HTTP_200_OK)
 async def project_view_h5ad(
     analysis_id: int,
@@ -735,6 +738,7 @@ async def project_view_h5ad(
     if analysis_info:
         return RedirectResponse(
             config.CELLXGENE_GATEWAY_URL
+            + "/view/"
             + "{}/{}".format(analysis_info.h5ad_id, url_path)
             + "?"
             + str(request_param.query_params)

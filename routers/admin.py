@@ -20,13 +20,15 @@ from orm import crud
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from orm.db_model import cellxgene
-from utils import auth_util, mail_util
+from utils import auth_util, mail_util, file_util
 from conf import config
 from typing import List, Union
 from io import BytesIO
 import pandas as pd
 import numpy as np
 from orm.dependencies import get_db, get_current_admin
+from mqtt_consumer.consumer import SERVER_STATUS_DICT
+from uuid import uuid4
 
 router = APIRouter(
     prefix="/admin",
@@ -197,22 +199,27 @@ async def get_project_list(
 )
 async def upload_project_file(
     analysis_id: int,
-    file: UploadFile = File(...),
+    project_file: UploadFile = File(...),
+    cell_marker_file: UploadFile = File(...),
+    umap_file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
-    content = await file.read()
-    excel_df = pd.ExcelFile(BytesIO(content))
-    project_df = excel_df.parse("project_meta")
-    biosample_df = excel_df.parse("biosample_meta")
-    cell_proportion_df = excel_df.parse("calc_cell_cluster_proportion")
-    gene_expression_df = excel_df.parse("cell_cluster_gene_expression")
+    current_user_info = crud.get_user(db=db, filters=[cellxgene.User.email_address == current_admin_email_address])
+    project_content = await project_file.read()
+    project_excel_df = pd.ExcelFile(BytesIO(project_content))
+    project_df = project_excel_df.parse("project_meta")
+    biosample_df = project_excel_df.parse("biosample_meta")
+    cell_proportion_df = project_excel_df.parse("calc_cell_cluster_proportion")
+    gene_expression_df = project_excel_df.parse("cell_cluster_gene_expression")
     project_df = project_df.replace(np.nan, None)
     biosample_df = biosample_df.replace(np.nan, None)
     cell_proportion_df = cell_proportion_df.replace(np.nan, None)
     gene_expression_df = gene_expression_df.replace(np.nan, None)
-    # print(project_df.to_dict('records')[0])
     try:
+        cell_marker_file_id = await file_util.save_file(db=db, file=cell_marker_file, insert_user_id=current_user_info.id, insert=False)
+        umap_file_id = await file_util.save_file(db=db, file=umap_file, insert_user_id=current_user_info.id, insert=False)
+        crud.update_analysis_for_transaction(db=db, filters=[cellxgene.Analysis.id == analysis_id], update_dict={"umap_id": umap_file_id, "cell_marker_id": cell_marker_file_id})
         update_project_dict = project_df.to_dict("records")[0]
         project_id = update_project_dict.get("id")
         analysis_id_info = crud.get_analysis(
@@ -522,7 +529,7 @@ async def get_project_list_by_gene(
 async def get_project_cache_status(
     current_admin_email_address=Depends(get_current_admin),
 ):
-    return RedirectResponse("http://localhost:5005/cache_status")
+    return RedirectResponse(config.CELLXGENE_GATEWAY_URL + "/cache_status")
 
 
 @router.get("/project/process/{h5ad_id}/terminate", status_code=status.HTTP_200_OK)
@@ -531,5 +538,13 @@ async def terminate_project_process(
     current_admin_email_address=Depends(get_current_admin),
 ):
     return RedirectResponse(
-        "http://localhost:5005/terminate/{}".format(h5ad_id) + "?source_name=local"
+        config.CELLXGENE_GATEWAY_URL + "/terminate/{}".format(h5ad_id) + "?source_name=local"
     )
+
+
+@router.get("/server/status", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_server_status(
+    current_admin_email_address=Depends(get_current_admin),
+):
+    server_status_list = [value for key, value in SERVER_STATUS_DICT.items()]
+    return ResponseMessage(status="0000", data=server_status_list, message="ok")
