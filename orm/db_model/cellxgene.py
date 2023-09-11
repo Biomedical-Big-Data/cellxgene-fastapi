@@ -60,6 +60,7 @@ class ProjectMeta(Base):
 
     # ID
     id = Column(INTEGER, primary_key=True)
+    project_alias_id = Column(String(255))
     #
     integrated_project = Column(TINYINT(1))
     #
@@ -413,6 +414,7 @@ class CellTypeMeta(Base):
 
     # ID
     cell_type_id = Column(INTEGER, primary_key=True)
+    cell_type_alias_id = Column(String(255))
     # 物种ID
     species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 标记符号

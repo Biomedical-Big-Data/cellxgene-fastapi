@@ -37,6 +37,25 @@ router = APIRouter(
 )
 
 
+@router.get("/homepage", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+async def get_view_homepage(
+    db: Session = Depends(get_db)
+):
+    species_list = crud.get_species_list(db=db, filters=[]).distinct(cellxgene.SpeciesMeta.species).count()
+    sample_list = crud.get_biosample(db=db, filters=[]).distinct(cellxgene.BioSampleMeta.organ).count()
+    organ_list = crud.get_biosample(db=db, filters=[]).distinct(cellxgene.BioSampleMeta.biosample_type).count()
+    print(species_list)
+    # species_list = [species.species for species in species_distinct_meta]
+    # sample_list = [sample.biosample_type for sample in sample_distinct_meta]
+    # organ_list = [organ.organ for organ in organ_distinct_meta]
+    res_dict = {
+        "species_list": species_list,
+        "sample_list": sample_list,
+        "organ_list": organ_list
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
 @router.get(
     "/me", response_model=ResponseProjectDetailModel, status_code=status.HTTP_200_OK
 )
@@ -180,6 +199,7 @@ async def create_project(
         analysis_id, project_id = crud.create_analysis(
             db=db, insert_analysis_model=insert_analysis_model
         )
+        crud.update_project(db=db, filters=[cellxgene.ProjectMeta.id == project_id], update_dict={"project_alias_id": "project" + str(project_id)})
         return ResponseMessage(
             status="0000",
             data={"analysis_id": analysis_id, "project_id": project_id},
@@ -704,7 +724,7 @@ async def get_user_h5ad_file_list(
 async def get_species_list(
     db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)
 ) -> ResponseMessage:
-    species_list = crud.get_species_list(db=db, filters=None)
+    species_list = crud.get_species_list(db=db, filters=None).all()
     return ResponseMessage(status="0000", data=species_list, message="ok")
 
 

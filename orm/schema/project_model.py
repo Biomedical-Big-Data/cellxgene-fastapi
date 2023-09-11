@@ -32,6 +32,7 @@ class DonorModel(BaseModel):
 
 class ProjectModel(BaseModel):
     id: int
+    project_alias_id: str | None
     integrated_project: int | None
     title: str | None
     donor_number: int | None
@@ -190,6 +191,7 @@ class CellClusterGeneExpressionModel(BaseModel):
 
 class CellTypeModel(BaseModel):
     cell_type_id: int
+    cell_type_alias_id: str | None
     species_id: int
     marker_gene_symbol: str | None
     cell_taxonomy_id: str | None

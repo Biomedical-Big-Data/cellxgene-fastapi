@@ -216,7 +216,7 @@ def project_update_transaction(
 
 
 def get_species_list(db: Session, filters: List | None):
-    return db.query(cellxgene.SpeciesMeta).filter(and_(*filters)).all()
+    return db.query(cellxgene.SpeciesMeta).filter(and_(*filters))
 
 
 def create_gene(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
