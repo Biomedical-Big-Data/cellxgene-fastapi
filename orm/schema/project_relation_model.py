@@ -83,6 +83,13 @@ class CellClusterProportionRelation(CellClusterProportionModel):
         org_mode = True
 
 
+class CellClusterProportionRelationForGraph(CellClusterProportionModel):
+    proportion_cell_type_meta: CellTypeModel
+
+    class Config:
+        org_mode = True
+
+
 class CellTypeRelation(CellTypeModel):
     cell_type_species_meta: SpeciesModel
     cell_type_proportion_meta: List[CellClusterProportionRelation]
@@ -93,6 +100,13 @@ class CellTypeRelation(CellTypeModel):
 
 class GeneExpressionRelation(CellClusterGeneExpressionModel):
     gene_expression_proportion_meta: CellClusterProportionRelation
+
+    class Config:
+        org_mode = True
+
+
+class GeneExpressionRelationForGraph(CellClusterGeneExpressionModel):
+    gene_expression_proportion_meta: CellClusterProportionRelationForGraph
 
     class Config:
         org_mode = True

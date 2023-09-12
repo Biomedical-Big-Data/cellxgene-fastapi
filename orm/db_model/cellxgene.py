@@ -10,7 +10,7 @@ from sqlalchemy import (
     ForeignKey,
 )
 from sqlalchemy.dialects.mysql import TINYINT
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, backref
 from orm.database import cellxgene_engine
 
 Base = declarative_base()
@@ -679,7 +679,27 @@ class CellTaxonomy(Base):
     cell_taxonomy_ct_cell_type_meta = relationship(
         "CellTypeMeta", back_populates="cell_type_cell_taxonomy_ct_meta"
     )
+    cell_taxonomy_cell_taxonomy_relation = relationship("CellTaxonomyRelation",
+                                                        back_populates="cell_taxonomy_relation_cell_taxonomy")
     # cell_taxonomy_ontology_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_cell_taxonomy_ontology_meta")
+
+
+class CellTaxonomyRelation(Base):
+    __tablename__ = "cell_taxonomy_relation"
+
+    cl_id = Column(String(255), ForeignKey("cell_taxonomy.specific_cell_ontology_id"), primary_key=True)
+    cl_pid = Column(String(255))
+    name = Column(String(255))
+
+    # children = relationship("CellTaxonomyRelation",
+    #                         cascade="all",
+    #                         backref=backref("parent", remote_side=cl_id)
+    #                         )
+    #
+    # parents = relationship("CellTaxonomyRelation", cascade="all", primaryjoin="CellTaxonomyRelation.cl_pid==CellTaxonomyRelation.cl_id")
+
+    cell_taxonomy_relation_cell_taxonomy = relationship("CellTaxonomy",
+                                                        back_populates="cell_taxonomy_cell_taxonomy_relation")
 
 
 class FileLibrary(Base):

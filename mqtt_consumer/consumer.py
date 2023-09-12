@@ -9,7 +9,6 @@ SERVER_STATUS_DICT = {}
 
 
 class Consumer:
-
     def __init__(self):
         self.client = None
         self._consumer = None
@@ -28,7 +27,7 @@ class Consumer:
         await self.client.connect(self.url, self.port)
 
     def on_connect(self, client, flags, rc, properties):
-        print('Connected')
+        print("Connected")
         client.subscribe(self.topic, qos=0)
 
     def on_message(self, client, topic, payload, qos, properties):
@@ -38,10 +37,10 @@ class Consumer:
         print(SERVER_STATUS_DICT)
 
     def on_disconnect(self, client, packet, exc=None):
-        print('Disconnected')
+        print("Disconnected")
 
     def on_subscribe(self, client, mid, qos, properties):
-        print('SUBSCRIBED')
+        print("SUBSCRIBED")
 
     async def shutdown(self):
         await self.client.disconnect()
@@ -56,4 +55,3 @@ if __name__ == "__main__":
     consumer = Consumer()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(consumer.initialize())
-

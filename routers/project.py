@@ -38,20 +38,32 @@ router = APIRouter(
 
 
 @router.get("/homepage", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
-async def get_view_homepage(
-    db: Session = Depends(get_db)
-):
-    species_list = crud.get_species_list(db=db, filters=[]).distinct(cellxgene.SpeciesMeta.species).count()
-    sample_list = crud.get_biosample(db=db, filters=[]).distinct(cellxgene.BioSampleMeta.organ).count()
-    organ_list = crud.get_biosample(db=db, filters=[]).distinct(cellxgene.BioSampleMeta.biosample_type).count()
-    print(species_list)
-    # species_list = [species.species for species in species_distinct_meta]
-    # sample_list = [sample.biosample_type for sample in sample_distinct_meta]
-    # organ_list = [organ.organ for organ in organ_distinct_meta]
+async def get_view_homepage(db: Session = Depends(get_db)):
+    species_list = (
+        crud.get_species_list(
+            db=db, query_list=[cellxgene.SpeciesMeta.species], filters=[]
+        )
+        .distinct(cellxgene.SpeciesMeta.species)
+        .count()
+    )
+    sample_list = (
+        crud.get_biosample(
+            db=db, query_list=[cellxgene.BioSampleMeta.organ], filters=[]
+        )
+        .distinct()
+        .count()
+    )
+    organ_list = (
+        crud.get_biosample(
+            db=db, query_list=[cellxgene.BioSampleMeta.biosample_type], filters=[]
+        )
+        .distinct()
+        .count()
+    )
     res_dict = {
         "species_list": species_list,
         "sample_list": sample_list,
-        "organ_list": organ_list
+        "organ_list": organ_list,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
@@ -199,7 +211,11 @@ async def create_project(
         analysis_id, project_id = crud.create_analysis(
             db=db, insert_analysis_model=insert_analysis_model
         )
-        crud.update_project(db=db, filters=[cellxgene.ProjectMeta.id == project_id], update_dict={"project_alias_id": "project" + str(project_id)})
+        crud.update_project(
+            db=db,
+            filters=[cellxgene.ProjectMeta.id == project_id],
+            update_dict={"project_alias_id": "project" + str(project_id)},
+        )
         return ResponseMessage(
             status="0000",
             data={"analysis_id": analysis_id, "project_id": project_id},
@@ -522,14 +538,16 @@ async def get_project_list_by_cell(
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
     filter_list = [
-        cellxgene.CellTypeMeta.cell_type_id == cellxgene.CalcCellClusterProportion.cell_type_id,
+        cellxgene.CellTypeMeta.cell_type_id
+        == cellxgene.CalcCellClusterProportion.cell_type_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
     public_filter_list = [
-        cellxgene.CellTypeMeta.cell_type_id == cellxgene.CalcCellClusterProportion.cell_type_id,
+        cellxgene.CellTypeMeta.cell_type_id
+        == cellxgene.CalcCellClusterProportion.cell_type_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
@@ -602,7 +620,8 @@ async def get_project_list_by_gene(
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
     filter_list = [
-        cellxgene.GeneMeta.gene_ensemble_id == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
+        cellxgene.GeneMeta.gene_ensemble_id
+        == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
         cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
         == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
@@ -611,7 +630,8 @@ async def get_project_list_by_gene(
         cellxgene.User.email_address == current_user_email_address,
     ]
     public_filter_list = [
-        cellxgene.GeneMeta.gene_ensemble_id == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
+        cellxgene.GeneMeta.gene_ensemble_id
+        == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
         cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
         == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
@@ -632,7 +652,10 @@ async def get_project_list_by_gene(
         public_filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = (
         crud.get_project_by_gene(
-            db=db, filters=filter_list, public_filter_list=public_filter_list
+            db=db,
+            query_list=[cellxgene.CellClusterGeneExpression],
+            filters=filter_list,
+            public_filter_list=public_filter_list,
         )
         .distinct()
         .offset(search_page)
@@ -641,7 +664,10 @@ async def get_project_list_by_gene(
     )
     total = (
         crud.get_project_by_gene(
-            db=db, filters=filter_list, public_filter_list=public_filter_list
+            db=db,
+            query_list=[cellxgene.CellClusterGeneExpression],
+            filters=filter_list,
+            public_filter_list=public_filter_list,
         )
         .distinct()
         .count()
@@ -653,6 +679,72 @@ async def get_project_list_by_gene(
         "page_size": page_size,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
+    "/list/by/gene/graph",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
+async def get_project_list_by_gene(
+    gene_symbol: Union[str, None] = None,
+    species_id: Union[int, None] = None,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+) -> ResponseMessage:
+    filter_list = [
+        cellxgene.GeneMeta.gene_ensemble_id
+        == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
+        cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
+        == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
+    public_filter_list = [
+        cellxgene.GeneMeta.gene_ensemble_id
+        == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
+        cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
+        == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.is_publish
+        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
+    if gene_symbol is not None:
+        filter_list.append(
+            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        )
+        public_filter_list.append(
+            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        )
+    if species_id is not None:
+        filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+        public_filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+    gene_meta_list = (
+        crud.get_project_by_gene(
+            db=db,
+            query_list=[
+                cellxgene.CellClusterGeneExpression.cell_proportion_expression_the_gene,
+                cellxgene.CellClusterGeneExpression.average_gene_expression,
+                cellxgene.CellTypeMeta.cell_type_name,
+            ],
+            filters=filter_list,
+            public_filter_list=public_filter_list,
+        )
+        .distinct()
+        .all()
+    )
+    res_list = []
+    for gene_meta in gene_meta_list:
+        res_list.append({
+            "cell_proportion_expression_the_gene": gene_meta.cell_proportion_expression_the_gene,
+            "average_gene_expression": gene_meta.average_gene_expression,
+            "cell_type_name": gene_meta.cell_type_name
+        })
+    return ResponseMessage(status="0000", data=res_list, message="ok")
 
 
 @router.post(
@@ -724,7 +816,9 @@ async def get_user_h5ad_file_list(
 async def get_species_list(
     db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)
 ) -> ResponseMessage:
-    species_list = crud.get_species_list(db=db, filters=None).all()
+    species_list = crud.get_species_list(
+        db=db, query_list=[cellxgene.SpeciesMeta], filters=None
+    ).all()
     return ResponseMessage(status="0000", data=species_list, message="ok")
 
 
@@ -734,7 +828,11 @@ async def get_csv_data(
     # current_user_email_address=Depends(get_current_user),
 ):
     file_path = config.H5AD_FILE_PATH
-    return FileResponse(config.H5AD_FILE_PATH + '/' + csv_id, media_type="application/octet-stream", filename=csv_id)
+    return FileResponse(
+        config.H5AD_FILE_PATH + "/" + csv_id,
+        media_type="application/octet-stream",
+        filename=csv_id,
+    )
 
 
 @router.get("/view/{analysis_id}/{url_path:path}", status_code=status.HTTP_200_OK)

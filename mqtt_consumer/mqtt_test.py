@@ -14,22 +14,25 @@ STOP = asyncio.Event()
 
 
 def on_connect(client, flags, rc, properties):
-    print('Connected')
-    client.subscribe('cellxgene-gateway', qos=0)
+    print("Connected")
+    client.subscribe("cellxgene-gateway", qos=0)
 
 
 def on_message(client, topic, payload, qos, properties):
-    print('RECV MSG:', payload)
+    print("RECV MSG:", payload)
 
 
 def on_disconnect(client, packet, exc=None):
-    print('Disconnected')
+    print("Disconnected")
+
 
 def on_subscribe(client, mid, qos, properties):
-    print('SUBSCRIBED')
+    print("SUBSCRIBED")
+
 
 def ask_exit(*args):
     STOP.set()
+
 
 async def main(broker_host):
     client = MQTTClient("client-id")
@@ -48,10 +51,10 @@ async def main(broker_host):
     await client.disconnect()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     loop = asyncio.get_event_loop()
 
-    host = '124.223.82.115'
+    host = "124.223.82.115"
     # token = os.environ.get('FLESPI_TOKEN')
 
     # loop.add_signal_handler(signal.SIGINT, ask_exit)

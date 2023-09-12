@@ -205,7 +205,9 @@ async def upload_project_file(
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
-    current_user_info = crud.get_user(db=db, filters=[cellxgene.User.email_address == current_admin_email_address])
+    current_user_info = crud.get_user(
+        db=db, filters=[cellxgene.User.email_address == current_admin_email_address]
+    )
     project_content = await project_file.read()
     project_excel_df = pd.ExcelFile(BytesIO(project_content))
     project_df = project_excel_df.parse("project_meta")
@@ -217,9 +219,23 @@ async def upload_project_file(
     cell_proportion_df = cell_proportion_df.replace(np.nan, None)
     gene_expression_df = gene_expression_df.replace(np.nan, None)
     try:
-        cell_marker_file_id = await file_util.save_file(db=db, file=cell_marker_file, insert_user_id=current_user_info.id, insert=False)
-        umap_file_id = await file_util.save_file(db=db, file=umap_file, insert_user_id=current_user_info.id, insert=False)
-        crud.update_analysis_for_transaction(db=db, filters=[cellxgene.Analysis.id == analysis_id], update_dict={"umap_id": umap_file_id, "cell_marker_id": cell_marker_file_id})
+        cell_marker_file_id = await file_util.save_file(
+            db=db,
+            file=cell_marker_file,
+            insert_user_id=current_user_info.id,
+            insert=False,
+        )
+        umap_file_id = await file_util.save_file(
+            db=db, file=umap_file, insert_user_id=current_user_info.id, insert=False
+        )
+        crud.update_analysis_for_transaction(
+            db=db,
+            filters=[cellxgene.Analysis.id == analysis_id],
+            update_dict={
+                "umap_id": umap_file_id,
+                "cell_marker_id": cell_marker_file_id,
+            },
+        )
         update_project_dict = project_df.to_dict("records")[0]
         project_id = update_project_dict.get("id")
         analysis_id_info = crud.get_analysis(
@@ -230,7 +246,9 @@ async def upload_project_file(
             ],
         ).first()
         if not analysis_id_info:
-            return ResponseMessage(status="0201", data={}, message="该analysis_id和project_id不存在关联")
+            return ResponseMessage(
+                status="0201", data={}, message="该analysis_id和project_id不存在关联"
+            )
         update_project_filter_list = [cellxgene.ProjectMeta.id == project_id]
         crud.update_project_for_transaction(
             db=db, filters=update_project_filter_list, update_dict=update_project_dict
@@ -254,19 +272,29 @@ async def upload_project_file(
             if type(biosample_meta.id) == str:
                 check_insert_biosample_id_list.append(biosample_meta.id)
                 insert_biosample_model_list.append(
-                    cellxgene.BioSampleMeta(**biosample_meta.model_dump(mode="json", exclude={"id"}, exclude_none=True))
+                    cellxgene.BioSampleMeta(
+                        **biosample_meta.model_dump(
+                            mode="json", exclude={"id"}, exclude_none=True
+                        )
+                    )
                 )
             else:
                 check_biosample_meta = crud.get_biosample(
-                    db=db, filters=[cellxgene.BioSampleMeta.id == biosample_meta.id]
+                    db=db,
+                    query_list=[cellxgene.BioSampleMeta],
+                    filters=[cellxgene.BioSampleMeta.id == biosample_meta.id],
                 )
                 if not check_biosample_meta:
-                    return ResponseMessage(status="0201", data={}, message="biosample id 不存在")
+                    return ResponseMessage(
+                        status="0201", data={}, message="biosample id 不存在"
+                    )
                 update_biosample_id_list.append(biosample_meta.id)
                 crud.update_biosample_for_transaction(
                     db=db,
                     filters=[cellxgene.BioSampleMeta.id == biosample_meta.id],
-                    update_dict=biosample_meta.model_dump(mode="json", exclude_none=True),
+                    update_dict=biosample_meta.model_dump(
+                        mode="json", exclude_none=True
+                    ),
                 )
         inserted_biosample_id_list = crud.create_biosample_for_transaction(
             db=db, insert_biosample_model_list=insert_biosample_model_list
@@ -298,28 +326,40 @@ async def upload_project_file(
             filters=[
                 cellxgene.BioSampleAnalysis.analysis_id == analysis_id,
                 cellxgene.ProjectBioSample.project_id == project_id,
-                cellxgene.BioSampleAnalysis.biosample_id == cellxgene.ProjectBioSample.biosample_id,
+                cellxgene.BioSampleAnalysis.biosample_id
+                == cellxgene.ProjectBioSample.biosample_id,
             ],
         )
         crud.create_biosample_analysis_for_transaction(
             db=db, insert_biosample_analysis_list=insert_biosample_analysis_model_list
         )
         for _, row in cell_proportion_df.iterrows():
-            cell_proportion_meta = project_model.CellClusterProportionModel(**row.to_dict())
-            cell_proportion_meta.biosample_id = cell_proportion_meta.biosample_id if type(
-                cell_proportion_meta.biosample_id) == int else int(
-                inserted_biosample_id_dict.get(cell_proportion_meta.biosample_id))
+            cell_proportion_meta = project_model.CellClusterProportionModel(
+                **row.to_dict()
+            )
+            cell_proportion_meta.biosample_id = (
+                cell_proportion_meta.biosample_id
+                if type(cell_proportion_meta.biosample_id) == int
+                else int(
+                    inserted_biosample_id_dict.get(cell_proportion_meta.biosample_id)
+                )
+            )
             cell_proportion_meta.analysis_id = analysis_id
             if cell_proportion_meta.biosample_id not in inserted_biosample_id_list:
-                return ResponseMessage(status="0201", data={}, message="请选择biosample_meta中存在的biosample_id")
+                return ResponseMessage(
+                    status="0201", data={}, message="请选择biosample_meta中存在的biosample_id"
+                )
             if type(cell_proportion_meta.calculated_cell_cluster_id) == str:
                 check_insert_cell_proportion_id_list.append(
                     cell_proportion_meta.calculated_cell_cluster_id
                 )
                 insert_cell_proportion_model_list.append(
                     cellxgene.CalcCellClusterProportion(
-                        **cell_proportion_meta.model_dump(mode="json", exclude={"calculated_cell_cluster_id"},
-                                                          exclude_none=True),
+                        **cell_proportion_meta.model_dump(
+                            mode="json",
+                            exclude={"calculated_cell_cluster_id"},
+                            exclude_none=True,
+                        ),
                     ),
                 )
             else:
@@ -331,14 +371,18 @@ async def upload_project_file(
                     ],
                 )
                 if not check_cell_proportion_meta:
-                    return ResponseMessage(status="0201", data={}, message="cell proportion id 不存在")
+                    return ResponseMessage(
+                        status="0201", data={}, message="cell proportion id 不存在"
+                    )
                 crud.update_cell_proportion_for_transaction(
                     db=db,
                     filters=[
                         cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id
                         == cell_proportion_meta.calculated_cell_cluster_id
                     ],
-                    update_dict=cell_proportion_meta.model_dump(mode="json", exclude_none=True),
+                    update_dict=cell_proportion_meta.model_dump(
+                        mode="json", exclude_none=True
+                    ),
                 )
         inserted_cell_proportion_id_list = crud.create_cell_proprotion_for_transaction(
             db=db, insert_cell_proportion_model_list=insert_cell_proportion_model_list
@@ -347,15 +391,24 @@ async def upload_project_file(
             zip(check_insert_cell_proportion_id_list, inserted_cell_proportion_id_list)
         )
         for _, row in gene_expression_df.iterrows():
-            gene_expression_meta = project_model.CellClusterGeneExpressionModel(**row.to_dict())
-            gene_expression_meta.calculated_cell_cluster_id = gene_expression_meta.calculated_cell_cluster_id if type(
-                gene_expression_meta.calculated_cell_cluster_id) == int else int(
-                inserted_cell_proportion_id_dict.get(gene_expression_meta.calculated_cell_cluster_id))
+            gene_expression_meta = project_model.CellClusterGeneExpressionModel(
+                **row.to_dict()
+            )
+            gene_expression_meta.calculated_cell_cluster_id = (
+                gene_expression_meta.calculated_cell_cluster_id
+                if type(gene_expression_meta.calculated_cell_cluster_id) == int
+                else int(
+                    inserted_cell_proportion_id_dict.get(
+                        gene_expression_meta.calculated_cell_cluster_id
+                    )
+                )
+            )
             if type(gene_expression_meta.id) == str:
                 insert_gene_expression_model_list.append(
                     cellxgene.CellClusterGeneExpression(
-                        **gene_expression_meta.model_dump(mode="json", exclude={"id"},
-                                                          exclude_none=True),
+                        **gene_expression_meta.model_dump(
+                            mode="json", exclude={"id"}, exclude_none=True
+                        ),
                     )
                 )
             else:
@@ -367,14 +420,18 @@ async def upload_project_file(
                     ],
                 )
                 if not check_gene_expression_meta:
-                    return ResponseMessage(status="0201", data={}, message="gene expression id 不存在")
+                    return ResponseMessage(
+                        status="0201", data={}, message="gene expression id 不存在"
+                    )
                 crud.update_gene_expression_for_transaction(
                     db=db,
                     filters=[
                         cellxgene.CellClusterGeneExpression.id
                         == gene_expression_meta.id
                     ],
-                    update_dict=gene_expression_meta.model_dump(mode="json", exclude_none=True),
+                    update_dict=gene_expression_meta.model_dump(
+                        mode="json", exclude_none=True
+                    ),
                 )
         crud.create_gene_expression_for_transaction(
             db=db,
@@ -508,13 +565,21 @@ async def get_project_list_by_gene(
     if species_id is not None:
         filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = (
-        crud.get_project_by_gene(db=db, filters=filter_list, public_filter_list=[])
+        crud.get_project_by_gene(
+            db=db,
+            query_list=[cellxgene.CellClusterGeneExpression],
+            filters=filter_list,
+            public_filter_list=[],
+        )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
     total = crud.get_project_by_gene(
-        db=db, filters=filter_list, public_filter_list=[]
+        db=db,
+        query_list=[cellxgene.CellClusterGeneExpression],
+        filters=filter_list,
+        public_filter_list=[],
     ).count()
     res_dict = {
         "gene_meta_list": gene_meta_list,
@@ -538,11 +603,15 @@ async def terminate_project_process(
     current_admin_email_address=Depends(get_current_admin),
 ):
     return RedirectResponse(
-        config.CELLXGENE_GATEWAY_URL + "/terminate/{}".format(h5ad_id) + "?source_name=local"
+        config.CELLXGENE_GATEWAY_URL
+        + "/terminate/{}".format(h5ad_id)
+        + "?source_name=local"
     )
 
 
-@router.get("/server/status", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
+@router.get(
+    "/server/status", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+)
 async def get_server_status(
     current_admin_email_address=Depends(get_current_admin),
 ):

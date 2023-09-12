@@ -47,8 +47,10 @@ def get_project_by_cell(db: Session, filters: List, public_filter_list: List):
     )
 
 
-def get_project_by_gene(db: Session, filters: List, public_filter_list: List):
-    return db.query(cellxgene.CellClusterGeneExpression).filter(
+def get_project_by_gene(
+    db: Session, query_list: List, filters: List, public_filter_list: List
+):
+    return db.query(*query_list).filter(
         or_((and_(*filters)), (and_(*public_filter_list)))
     )
 
@@ -79,8 +81,8 @@ def create_biosample(db: Session, insert_biosample_model: cellxgene.BioSampleMet
     return insert_biosample_model.id
 
 
-def get_biosample(db: Session, filters: List):
-    return db.query(cellxgene.BioSampleMeta).filter(and_(*filters))
+def get_biosample(db: Session, query_list: List, filters: List):
+    return db.query(*query_list).filter(and_(*filters))
 
 
 def update_biosample(db: Session, filters: List, update_dict: Dict):
@@ -215,8 +217,8 @@ def project_update_transaction(
     db.commit()
 
 
-def get_species_list(db: Session, filters: List | None):
-    return db.query(cellxgene.SpeciesMeta).filter(and_(*filters))
+def get_species_list(db: Session, query_list: List, filters: List | None):
+    return db.query(*query_list).filter(and_(*filters))
 
 
 def create_gene(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
@@ -257,6 +259,11 @@ def update_upload_file(
     update_biosample_for_transaction(
         db=db, filters=update_biosample_filters, update_dict=update_biosample_dict
     )
+    db.commit()
+
+
+def create_cell_taxonomy_relation(db: Session, insert_model_list: List[cellxgene.CellTaxonomyRelation]):
+    db.add_all(insert_model_list)
     db.commit()
 
 
