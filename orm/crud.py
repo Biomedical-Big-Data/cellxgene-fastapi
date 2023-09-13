@@ -1,5 +1,5 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy.orm import Session, aliased
+from sqlalchemy import and_, or_, func, literal
 from orm.schema import user_model
 from orm.db_model import cellxgene
 
@@ -265,6 +265,58 @@ def update_upload_file(
 def create_cell_taxonomy_relation(db: Session, insert_model_list: List[cellxgene.CellTaxonomyRelation]):
     db.add_all(insert_model_list)
     db.commit()
+
+
+def get_cell_taxonomy_relation(db: Session, query_list: List, filters: List):
+    return db.query(*query_list).filter(and_(*filters))
+
+
+def get_cell_taxonomy_relation_test1(db: Session, query_list: List, filters: List):
+    print(1111)
+    hierarchy = db.query(
+        cellxgene.CellTaxonomyRelation, literal(0).label('level')) \
+        .filter(and_(*filters)) \
+        .cte(name="hierarchy", recursive=True)
+
+    parent = aliased(hierarchy, name="p")
+    print(hierarchy)
+    children = aliased(cellxgene.CellTaxonomyRelation, name="c")
+    hierarchy = hierarchy.union_all(
+        db.query(
+            children,
+            (parent.c.level + 1).label("level"))
+        .filter(children.cl_pid == parent.c.cl_id))
+
+    result = db.query(cellxgene.CellTaxonomyRelation, hierarchy.c.level) \
+        .select_entity_from(hierarchy).all()
+    print(result)
+    return result
+
+
+def get_cell_test2(db: Session):
+    from sqlalchemy.sql import select, union_all
+    # class Employee(Base):
+    #     __tablename__ = 'employees'
+    #     id = Column(Integer, primary_key=True)
+    #     name = Column(String)
+    #     manager_id = Column(Integer, ForeignKey('employees.id'))
+    #     manager = relationship('Employee', remote_side=[id])
+
+    # Define the recursive query using CTE
+    print('start')
+    cte = db.query(cellxgene.CellTaxonomyRelation.cl_id.label('child_id'), cellxgene.CellTaxonomyRelation.name.label('name'), cellxgene.CellTaxonomyRelation.cl_pid.label('parent_id')).cte(recursive=True)
+    cte_alias = aliased(cte, name='e')
+
+    cte = cte.union_all(
+        select(cellxgene.CellTaxonomyRelation.cl_id, cellxgene.CellTaxonomyRelation.name, cellxgene.CellTaxonomyRelation.cl_pid).where(cellxgene.CellTaxonomyRelation.cl_id == cte_alias.c.parent_id)
+    )
+
+    # Execute the recursive query
+    result = db.query(cte).all()
+    print(result)
+    # Print the result
+    for row in result:
+        print(row.employee_id, row.employee_name, row.manager_id)
 
 
 if __name__ == "__main__":

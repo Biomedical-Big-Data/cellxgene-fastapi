@@ -194,7 +194,7 @@ async def create_project(
         project_user_model = cellxgene.ProjectUser(user_id=member_info.id)
         insert_project_model.project_project_user_meta.append(project_user_model)
     # h5ad_id = str(uuid4()).replace("-", "")
-    h5ad_id = "pbmc3k.h5ad"
+    # h5ad_id = "pbmc3k.h5ad"
     insert_analysis_model = cellxgene.Analysis(h5ad_id=h5ad_id)
     insert_analysis_model.analysis_project_meta = insert_project_model
     insert_biosample_model = cellxgene.BioSampleMeta(species_id=species_id, organ=organ)

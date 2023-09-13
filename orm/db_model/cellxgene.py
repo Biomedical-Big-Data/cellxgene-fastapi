@@ -652,7 +652,7 @@ class CellTaxonomy(Base):
     tissue_standard = Column(String(255))
     ct_id = Column(String(255))
     cell_standard = Column(String(255))
-    specific_cell_ontology_id = Column(String(255))
+    specific_cell_ontology_id = Column(String(255), ForeignKey("cell_taxonomy_relation.cl_id"))
     cell_marker = Column(String(255))
     gene_entrezid = Column(String(255))
     gene_alias = Column(String(255))
@@ -687,16 +687,20 @@ class CellTaxonomy(Base):
 class CellTaxonomyRelation(Base):
     __tablename__ = "cell_taxonomy_relation"
 
-    cl_id = Column(String(255), ForeignKey("cell_taxonomy.specific_cell_ontology_id"), primary_key=True)
-    cl_pid = Column(String(255))
+    cl_id = Column(String(255), primary_key=True)
+    cl_pid = Column(String(255), ForeignKey("cell_taxonomy_relation.cl_id"))
     name = Column(String(255))
+
+    parent = relationship("CellTaxonomyRelation", remote_side=cl_id)
 
     # children = relationship("CellTaxonomyRelation",
     #                         cascade="all",
-    #                         backref=backref("parent", remote_side=cl_id)
+    #                         back_populates="parents",
     #                         )
     #
-    # parents = relationship("CellTaxonomyRelation", cascade="all", primaryjoin="CellTaxonomyRelation.cl_pid==CellTaxonomyRelation.cl_id")
+    # parents = relationship("CellTaxonomyRelation", cascade="all", primaryjoin="CellTaxonomyRelation.cl_pid==CellTaxonomyRelation.cl_id", overlaps="parent,children",
+    #                        back_populates="children",
+    #                        remote_side=cl_id)
 
     cell_taxonomy_relation_cell_taxonomy = relationship("CellTaxonomy",
                                                         back_populates="cell_taxonomy_cell_taxonomy_relation")

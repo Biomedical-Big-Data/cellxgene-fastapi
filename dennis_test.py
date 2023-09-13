@@ -1,7 +1,8 @@
 import pandas as pd
 import json
 import numpy as np
-from sqlalchemy.orm import Session
+from sqlalchemy import literal, null
+from sqlalchemy.orm import Session, aliased
 
 from orm.db_model import cellxgene
 from orm import crud
@@ -98,7 +99,7 @@ def read_excel():
 
 
 def import_relation_json():
-    with open("D:\\项目文档\\cellxgene\\celltype_relationship.json", "r", encoding="utf-8") as f:
+    with open("/Users/dennis/Documents/celltype_relationship.json", "r", encoding="utf-8") as f:
         content = json.load(f)
     # print(content)
     insert_list = []
@@ -107,6 +108,24 @@ def import_relation_json():
         insert_list.append(cellxgene.CellTaxonomyRelation(cl_id=ct_dict['id'], cl_pid=ct_dict.get('pId', ''), name=ct_dict.get('name', '')))
     print(insert_list)
     crud.create_cell_taxonomy_relation(db=next(get_db()), insert_model_list=insert_list)
+
+
+def get_relation():
+    filter_list = [
+        cellxgene.CellTaxonomy.specific_cell_ontology_id == cellxgene.CellTaxonomyRelation.cl_id,
+        cellxgene.CellTaxonomy.cell_marker == 'Lgals7'
+    ]
+    crud.get_cell_test2(db=next(get_db()))
+    # print(res)
+    # res = crud.get_cell_taxonomy_relation(db=next(get_db()), query_list=[cellxgene.CellTaxonomyRelation], filters=filter_list).all()
+    # print(len(res))
+    # for i in res:
+    #     # print(i.cl_id, i.cl_pid, i.name, i.parents)
+    #     for j in i.parent:
+    #         print(i.cl_id, i.cl_pid, j.cl_id, j.cl_pid, j.name)
+    #     print('------')
+
+
 
 
 def dennis_test():
@@ -133,7 +152,8 @@ def excel_test():
 
 if __name__ == "__main__":
     pass
-    import_relation_json()
+    get_relation()
+    # import_relation_json()
     # excel_test()
     # read_update_file(next(get_db()))
     # read_cell_txt()
