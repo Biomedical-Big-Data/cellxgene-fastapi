@@ -99,25 +99,50 @@ def read_excel():
 
 
 def import_relation_json():
-    with open("/Users/dennis/Documents/celltype_relationship.json", "r", encoding="utf-8") as f:
+    with open(
+        "/Users/dennis/Documents/celltype_relationship.json", "r", encoding="utf-8"
+    ) as f:
         content = json.load(f)
     # print(content)
     insert_list = []
     for ct_dict in content:
         # print(ct_dict)
-        insert_list.append(cellxgene.CellTaxonomyRelation(cl_id=ct_dict['id'], cl_pid=ct_dict.get('pId', ''), name=ct_dict.get('name', '')))
+        insert_list.append(
+            cellxgene.CellTaxonomyRelation(
+                cl_id=ct_dict["id"],
+                cl_pid=ct_dict.get("pId", ""),
+                name=ct_dict.get("name", ""),
+            )
+        )
     print(insert_list)
     crud.create_cell_taxonomy_relation(db=next(get_db()), insert_model_list=insert_list)
 
 
 def get_relation():
+    with open("./conf/celltype_relationship.json", "r", encoding="utf-8") as f:
+        total_relation_list = json.load(f)
+    # print(content)
     filter_list = [
-        cellxgene.CellTaxonomy.specific_cell_ontology_id == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_marker == 'Lgals7'
+        cellxgene.CellTaxonomy.specific_cell_ontology_id
+        == cellxgene.CellTaxonomyRelation.cl_id,
+        cellxgene.CellTaxonomy.cell_marker == "Lgals7",
     ]
-    crud.get_cell_test2(db=next(get_db()))
+    # crud.get_cell_taxonomy_relation_test1(db=next(get_db()), query_list=[], filters=filter_list)
     # print(res)
-    # res = crud.get_cell_taxonomy_relation(db=next(get_db()), query_list=[cellxgene.CellTaxonomyRelation], filters=filter_list).all()
+    cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation(
+        db=next(get_db()),
+        query_list=[cellxgene.CellTaxonomyRelation],
+        filters=filter_list,
+    ).all()
+    res = []
+    for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
+        relation_dict = {"cl_id": cell_taxonomy_relation_model.cl_id}
+        parent_dict = get_parent_id(
+            total_relation_list, cell_taxonomy_relation_model.cl_id, {}
+        )
+        relation_dict["parent_dict"] = parent_dict
+        res.append(relation_dict)
+    print(res)
     # print(len(res))
     # for i in res:
     #     # print(i.cl_id, i.cl_pid, i.name, i.parents)
@@ -126,6 +151,14 @@ def get_relation():
     #     print('------')
 
 
+def get_parent_id(relation_list, cl_id, parent_dict):
+    for i in relation_list:
+        if i.get("id") == cl_id:
+            parent_dict['cl_id'] = i.get("id")
+            parent_dict['parent_dict'] = {}
+            get_parent_id(relation_list, i.get("pId"), parent_dict['parent_dict'])
+        if i.get("id") == "CL:0000000":
+            return parent_dict
 
 
 def dennis_test():

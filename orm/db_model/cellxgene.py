@@ -652,7 +652,9 @@ class CellTaxonomy(Base):
     tissue_standard = Column(String(255))
     ct_id = Column(String(255))
     cell_standard = Column(String(255))
-    specific_cell_ontology_id = Column(String(255), ForeignKey("cell_taxonomy_relation.cl_id"))
+    specific_cell_ontology_id = Column(
+        String(255), ForeignKey("cell_taxonomy_relation.cl_id")
+    )
     cell_marker = Column(String(255))
     gene_entrezid = Column(String(255))
     gene_alias = Column(String(255))
@@ -679,8 +681,9 @@ class CellTaxonomy(Base):
     cell_taxonomy_ct_cell_type_meta = relationship(
         "CellTypeMeta", back_populates="cell_type_cell_taxonomy_ct_meta"
     )
-    cell_taxonomy_cell_taxonomy_relation = relationship("CellTaxonomyRelation",
-                                                        back_populates="cell_taxonomy_relation_cell_taxonomy")
+    cell_taxonomy_cell_taxonomy_relation = relationship(
+        "CellTaxonomyRelation", back_populates="cell_taxonomy_relation_cell_taxonomy"
+    )
     # cell_taxonomy_ontology_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_cell_taxonomy_ontology_meta")
 
 
@@ -702,8 +705,9 @@ class CellTaxonomyRelation(Base):
     #                        back_populates="children",
     #                        remote_side=cl_id)
 
-    cell_taxonomy_relation_cell_taxonomy = relationship("CellTaxonomy",
-                                                        back_populates="cell_taxonomy_cell_taxonomy_relation")
+    cell_taxonomy_relation_cell_taxonomy = relationship(
+        "CellTaxonomy", back_populates="cell_taxonomy_cell_taxonomy_relation"
+    )
 
 
 class FileLibrary(Base):

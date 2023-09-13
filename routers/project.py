@@ -14,6 +14,7 @@ from orm.schema.response import (
     ResponseProjectListModel,
     ResponseProjectDetailModel,
 )
+import json
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
@@ -739,11 +740,13 @@ async def get_project_list_by_gene(
     )
     res_list = []
     for gene_meta in gene_meta_list:
-        res_list.append({
-            "cell_proportion_expression_the_gene": gene_meta.cell_proportion_expression_the_gene,
-            "average_gene_expression": gene_meta.average_gene_expression,
-            "cell_type_name": gene_meta.cell_type_name
-        })
+        res_list.append(
+            {
+                "cell_proportion_expression_the_gene": gene_meta.cell_proportion_expression_the_gene,
+                "average_gene_expression": gene_meta.average_gene_expression,
+                "cell_type_name": gene_meta.cell_type_name,
+            }
+        )
     return ResponseMessage(status="0000", data=res_list, message="ok")
 
 
@@ -822,6 +825,37 @@ async def get_species_list(
     return ResponseMessage(status="0000", data=species_list, message="ok")
 
 
+@router.get(
+    "/view/tree/cell_taxonomy",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
+async def get_cell_taxonomy_tree(
+    cell_marker: str,
+    db: Session = Depends(get_db),
+    # current_user_email_address = Depends(get_current_user),
+):
+    with open("./conf/celltype_relationship.json", "r", encoding="utf-8") as f:
+        total_relation_list = json.load(f)
+    filter_list = [
+        cellxgene.CellTaxonomy.specific_cell_ontology_id
+        == cellxgene.CellTaxonomyRelation.cl_id,
+        cellxgene.CellTaxonomy.cell_marker == cell_marker,
+    ]
+    cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation(
+        db=db, query_list=[cellxgene.CellTaxonomyRelation], filters=filter_list
+    ).all()
+    res = []
+    for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
+        # relation_dict = {"cl_id": cell_taxonomy_relation_model.cl_id}
+        parent_dict = get_parent_id(
+            total_relation_list, cell_taxonomy_relation_model.cl_id, {}
+        )
+        # relation_dict["parent_dict"] = parent_dict
+        res.append(parent_dict)
+    return ResponseMessage(status="0000", data=res, message="ok")
+
+
 @router.get("/view/csv/{csv_id}", status_code=status.HTTP_200_OK)
 async def get_csv_data(
     csv_id: str,
@@ -863,3 +897,13 @@ async def project_view_h5ad(
         )
     else:
         return ResponseMessage(status="0201", data={}, message="无法查看此项目")
+
+
+def get_parent_id(relation_list, cl_id, parent_dict):
+    for i in relation_list:
+        if i.get("id") == cl_id:
+            parent_dict['cl_id'] = i.get("id")
+            parent_dict['parent_dict'] = {}
+            get_parent_id(relation_list, i.get("pId"), parent_dict['parent_dict'])
+        if i.get("id") == "CL:0000000":
+            return parent_dict
