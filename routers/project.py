@@ -771,7 +771,7 @@ async def upload_file(
     try:
         await file_util.save_file(db=db, file=file, insert_user_id=current_user_info.id)
     except:
-        ResponseMessage(status="0201", data={}, message="文件上传失败")
+        return ResponseMessage(status="0201", data={}, message="文件上传失败")
     else:
         return ResponseMessage(status="0000", data={}, message="文件上传成功")
 

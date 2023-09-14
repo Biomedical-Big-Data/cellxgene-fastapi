@@ -4,6 +4,10 @@ from uuid import uuid4
 from orm.db_model import cellxgene
 from fastapi import UploadFile
 from orm import crud
+import os
+
+
+PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 async def save_file(
@@ -14,7 +18,8 @@ async def save_file(
     file_name_list = filename.split(".")
     file_name_suffix = file_name_list[len(file_name_list) - 1 :][0]
     file_id = str(uuid4()).replace("-", "") + "." + file_name_suffix
-    with open(f"{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
+    # print(f"{PROJECT_ROOT}/{config.H5AD_FILE_PATH}/{file_id}")
+    with open(f"{PROJECT_ROOT}/{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
         f.write(contents)
         insert_h5ad_model = cellxgene.FileLibrary(
             file_id=file_id, file_name=filename, upload_user_id=insert_user_id
