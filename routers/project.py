@@ -233,6 +233,8 @@ async def update_project(
     title: str = Body(),
     description: str = Body(),
     h5ad_id: str | None = Body(),
+    cell_marker_id: str | None = Body(),
+    umap_id: str | None = Body(),
     tags: str = Body(),
     members: list = Body(),
     is_publish: int = Body(),
@@ -283,7 +285,7 @@ async def update_project(
         update_biosample_dict = {"species_id": species_id, "organ": organ}
         update_analysis_id = project_info.project_analysis_meta[0].id
         # h5ad_id = str(uuid4()).replace("-", "")
-        update_analysis_dict = {"h5ad_id": h5ad_id}
+        update_analysis_dict = {"h5ad_id": h5ad_id, "cell_marker_id": cell_marker_id, "umap_id": umap_id}
         crud.project_update_transaction(
             db=db,
             delete_project_user_filters=[

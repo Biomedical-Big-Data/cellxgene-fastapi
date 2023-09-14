@@ -200,8 +200,8 @@ async def get_project_list(
 async def upload_project_file(
     analysis_id: int,
     project_file: UploadFile = File(...),
-    cell_marker_file: UploadFile = File(...),
-    umap_file: UploadFile = File(...),
+    # cell_marker_file: UploadFile = File(...),
+    # umap_file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
@@ -219,23 +219,23 @@ async def upload_project_file(
     cell_proportion_df = cell_proportion_df.replace(np.nan, None)
     gene_expression_df = gene_expression_df.replace(np.nan, None)
     try:
-        cell_marker_file_id = await file_util.save_file(
-            db=db,
-            file=cell_marker_file,
-            insert_user_id=current_user_info.id,
-            insert=False,
-        )
-        umap_file_id = await file_util.save_file(
-            db=db, file=umap_file, insert_user_id=current_user_info.id, insert=False
-        )
-        crud.update_analysis_for_transaction(
-            db=db,
-            filters=[cellxgene.Analysis.id == analysis_id],
-            update_dict={
-                "umap_id": umap_file_id,
-                "cell_marker_id": cell_marker_file_id,
-            },
-        )
+        # cell_marker_file_id = await file_util.save_file(
+        #     db=db,
+        #     file=cell_marker_file,
+        #     insert_user_id=current_user_info.id,
+        #     insert=False,
+        # )
+        # umap_file_id = await file_util.save_file(
+        #     db=db, file=umap_file, insert_user_id=current_user_info.id, insert=False
+        # )
+        # crud.update_analysis_for_transaction(
+        #     db=db,
+        #     filters=[cellxgene.Analysis.id == analysis_id],
+        #     update_dict={
+        #         "umap_id": umap_file_id,
+        #         "cell_marker_id": cell_marker_file_id,
+        #     },
+        # )
         update_project_dict = project_df.to_dict("records")[0]
         project_id = update_project_dict.get("id")
         analysis_id_info = crud.get_analysis(
