@@ -15,6 +15,7 @@ from orm.schema.response import (
     ResponseProjectDetailModel,
 )
 import json
+import os
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
@@ -29,6 +30,9 @@ from fastapi.responses import RedirectResponse, FileResponse
 from uuid import uuid4
 from utils import file_util
 from mqtt_consumer.consumer import SERVER_STATUS_DICT
+
+
+PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 router = APIRouter(
@@ -858,17 +862,21 @@ async def get_cell_taxonomy_tree(
     return ResponseMessage(status="0000", data=res, message="ok")
 
 
-@router.get("/view/csv/{csv_id}", status_code=status.HTTP_200_OK)
+@router.get("/view/file/{file_id}", status_code=status.HTTP_200_OK)
 async def get_csv_data(
-    csv_id: str,
+    file_id: str,
     # current_user_email_address=Depends(get_current_user),
 ):
-    file_path = config.H5AD_FILE_PATH
-    return FileResponse(
-        config.H5AD_FILE_PATH + "/" + csv_id,
-        media_type="application/octet-stream",
-        filename=csv_id,
-    )
+    file_path = PROJECT_ROOT + "/" + config.H5AD_FILE_PATH + "/" + file_id
+    print(file_path)
+    try:
+        return FileResponse(
+            file_path,
+            media_type="application/octet-stream",
+            filename=file_id,
+        )
+    except:
+        return ResponseMessage(status="0201", data={}, message="文件不存在")
 
 
 @router.get("/view/{analysis_id}/{url_path:path}", status_code=status.HTTP_200_OK)
