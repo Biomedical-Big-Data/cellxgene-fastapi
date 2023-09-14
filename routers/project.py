@@ -751,7 +751,7 @@ async def get_project_list_by_gene(
 
 
 @router.post(
-    "/h5ad_file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )
 async def upload_file(
     file: UploadFile = File(...),
@@ -777,7 +777,7 @@ async def upload_file(
 
 
 @router.get(
-    "/h5ad_file/me",
+    "/file/me",
     response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
 )
