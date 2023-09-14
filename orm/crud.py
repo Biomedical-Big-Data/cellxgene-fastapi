@@ -217,6 +217,28 @@ def project_update_transaction(
     db.commit()
 
 
+def admin_project_update_transaction(
+    db: Session,
+    delete_project_user_filters: List,
+    insert_project_user_model_list: List[cellxgene.ProjectUser],
+    update_project_filters: List,
+    update_project_dict: Dict,
+    update_analysis_filters: List,
+    update_analysis_dict: Dict,
+):
+    delete_project_user_for_transaction(db=db, filters=delete_project_user_filters)
+    create_project_user_for_transaction(
+        db=db, insert_project_user_model_list=insert_project_user_model_list
+    )
+    update_project_for_transaction(
+        db=db, filters=update_project_filters, update_dict=update_project_dict
+    )
+    update_analysis_for_transaction(
+        db=db, filters=update_analysis_filters, update_dict=update_analysis_dict
+    )
+    db.commit()
+
+
 def get_species_list(db: Session, query_list: List, filters: List | None):
     return db.query(*query_list).filter(and_(*filters))
 
