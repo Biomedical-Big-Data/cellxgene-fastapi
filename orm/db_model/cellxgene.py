@@ -566,8 +566,8 @@ class PathwayScore(Base):
     species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 基因组符号
     geneset_gene_symbols = Column(String(255))
-    # 项目编号
-    project_id = Column(INTEGER, ForeignKey("project_meta.id"))
+    # 分析id
+    analysis_id = Column(INTEGER, ForeignKey("project_meta.id"))
     # 生物样本 ID
     biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
     # 细胞类型名称

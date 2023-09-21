@@ -754,6 +754,26 @@ async def get_project_list_by_gene(
     return ResponseMessage(status="0000", data=res_list, message="ok")
 
 
+@router.get("/{analysis_id}/graph/cell_number", response_model=ResponseProjectDetailModel, status_code=status.HTTP_200_OK)
+async def view_cell_number_graph(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    # current_user_email_address=Depends(get_current_user),
+):
+    cell_proportion_meta_list = crud.get_cell_proportion(db=db, filters=[cellxgene.CalcCellClusterProportion.analysis_id == analysis_id])
+    return ResponseMessage(status="0000", data=cell_proportion_meta_list, message="ok")
+
+
+@router.get("/{analysis_id}/graph/pathway", response_model=ResponseProjectDetailModel, status_code=status.HTTP_200_OK)
+async def view_pathway_graph(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    # current_user_email_address=Depends(get_current_user),
+):
+    pathway_meta_list = crud.get_pathway_score(db=db, filters=[cellxgene.PathwayScore.analysis_id == analysis_id])
+    return ResponseMessage(status="0000", data=pathway_meta_list, message="ok")
+
+
 @router.post(
     "/file/upload", response_model=ResponseMessage, status_code=status.HTTP_200_OK
 )

@@ -293,16 +293,16 @@ class UpdateProjectModel(BaseModel):
 
 class PathwayScoreModel(BaseModel):
     id: int
-    pathway_source: str
-    pathway_name: str
-    species_id: int
-    geneset_gene_symbols: str
-    project_id: int
-    biosample_id: int
-    cell_type_name: str
-    calculated_cell_cluster_id: int
-    score_function: str
-    score: float
+    pathway_source: str | None
+    pathway_name: str | None
+    species_id: int | None
+    geneset_gene_symbols: str | None
+    analysis_id: int | None
+    biosample_id: int | None
+    cell_type_name: str | None
+    calculated_cell_cluster_id: int | None
+    score_function: str | None
+    score: float | None
     create_at: datetime
     update_at: datetime
 

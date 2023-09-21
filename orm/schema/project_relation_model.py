@@ -36,8 +36,12 @@ class ProjectRelation(ProjectModel):
         org_mode = True
 
 
+class ProjectAnalysisRelation(ProjectModel):
+    project_analysis_meta: Union[List[AnalysisModel], None]
+
+
 class BiosampleProjectRelation(ProjectBiosampleModel):
-    project_biosample_project_meta: ProjectModel
+    project_biosample_project_meta: ProjectAnalysisRelation
 
     class Config:
         org_mode = True

@@ -295,6 +295,10 @@ def get_cell_taxonomy_relation(db: Session, query_list: List, filters: List):
     return db.query(*query_list).filter(and_(*filters))
 
 
+def get_pathway_score(db: Session, filters: List):
+    return db.query(cellxgene.PathwayScore).filter(and_(*filters))
+
+
 def get_cell_taxonomy_relation_test1(db: Session, query_list: List, filters: List):
     print(1111)
     hierarchy = (
