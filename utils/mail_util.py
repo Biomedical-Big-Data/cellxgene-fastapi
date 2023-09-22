@@ -20,7 +20,11 @@ def send_mail(mail_template: str, subject: str, to_list: str | None) -> bool:
     message["To"] = to_list  # 设置收件人昵称
     message["Subject"] = subject  # 设置邮件主题
     try:
-        smtp_connection = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        # smtp_connection = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        # smtp_connection.ehlo()
+        # smtp_connection.login(SENDER_EMAIL, AUTHORIZATION_CODE)
+        smtp_connection = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT)
+        smtp_connection.ehlo()
         smtp_connection.login(SENDER_EMAIL, AUTHORIZATION_CODE)
         smtp_connection.sendmail(SENDER_EMAIL, to_list, message.as_string())
         smtp_connection.quit()
@@ -55,4 +59,7 @@ def reset_password_mail_template(user_name: str, reset_password_url: str) -> str
 
 
 if __name__ == "__main__":
-    send_mail("www.baidu.com")
+    send_mail_result = send_mail(
+        mail_template='', subject="重置密码邮件", to_list='619589351@qq.com'
+    )
+    print(send_mail_result)
