@@ -23,6 +23,7 @@ branch = (
     .replace("\n", "")
 )
 if branch == "master":
+    print('master')
     cp.read(os.path.join(PROJECT_ROOT, "conf_master.cfg"), encoding="utf8")
 else:
     cp.read(os.path.join(PROJECT_ROOT, "conf_preview.cfg"), encoding="utf8")

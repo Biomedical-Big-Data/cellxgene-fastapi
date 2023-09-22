@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from gmqtt import Client as MQTTClient
 from conf.config import MQTT_BROKER_URL, MQTT_BROKER_PORT, MQTT_TOPIC
@@ -18,7 +19,7 @@ class Consumer:
         self.stop = asyncio.Event()
 
     async def initialize(self):
-        self.client = MQTTClient("client-id")
+        self.client = MQTTClient(uuid.uuid4().hex)
 
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
