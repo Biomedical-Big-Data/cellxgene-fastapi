@@ -872,11 +872,10 @@ async def get_cell_taxonomy_tree(
     res = []
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
         # relation_dict = {"cl_id": cell_taxonomy_relation_model.cl_id}
-        parent_dict = get_parent_id(
-            total_relation_list, cell_taxonomy_relation_model.cl_id, {}
+        res = get_parent_id(
+            total_relation_list, cell_taxonomy_relation_model.cl_id, res
         )
         # relation_dict["parent_dict"] = parent_dict
-        res.append(parent_dict)
     return ResponseMessage(status="0000", data=res, message="ok")
 
 
@@ -927,11 +926,20 @@ async def project_view_h5ad(
         return ResponseMessage(status="0201", data={}, message="无法查看此项目")
 
 
-def get_parent_id(relation_list, cl_id, parent_dict):
+def get_parent_id(relation_list, cl_id, parent_list):
     for i in relation_list:
         if i.get("id") == cl_id:
-            parent_dict['cl_id'] = i.get("id")
-            parent_dict['parent_dict'] = {}
-            get_parent_id(relation_list, i.get("pId"), parent_dict['parent_dict'])
+            parent_dict = {
+                'cl_id': i.get("id"),
+                'cl_pid': i.get('pId'),
+                'name': i.get('name')
+            }
+            if parent_dict not in parent_list:
+                parent_list.append({
+                    'cl_id': i.get("id"),
+                    'cl_pid': i.get('pId'),
+                    'name': i.get('name')
+                })
+            get_parent_id(relation_list, i.get("pId"),parent_list)
         if i.get("id") == "CL:0000000":
-            return parent_dict
+            return parent_list
