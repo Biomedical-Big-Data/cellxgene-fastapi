@@ -900,7 +900,7 @@ async def get_csv_data(
 async def project_view_h5ad(
     analysis_id: int,
     url_path: str,
-    request_param: Request,
+    # request_param: Request,
     db: Session = Depends(get_db),
     # current_user_email_address=Depends(get_current_user),
 ):
@@ -919,8 +919,8 @@ async def project_view_h5ad(
             config.CELLXGENE_GATEWAY_URL
             + "/view/"
             + "{}/{}".format(analysis_info.h5ad_id, url_path)
-            + "?"
-            + str(request_param.query_params)
+            # + "?"
+            # + str(request_param.query_params)
         )
     else:
         return ResponseMessage(status="0201", data={}, message="无法查看此项目")
