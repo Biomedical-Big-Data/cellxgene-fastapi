@@ -884,7 +884,7 @@ async def get_csv_data(
     file_id: str,
     # current_user_email_address=Depends(get_current_user),
 ):
-    file_path = PROJECT_ROOT + "/" + config.H5AD_FILE_PATH + "/" + file_id
+    file_path = config.H5AD_FILE_PATH + "/" + file_id
     print(file_path)
     try:
         return FileResponse(
