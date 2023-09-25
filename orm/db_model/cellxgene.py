@@ -372,6 +372,7 @@ class Analysis(Base):
     analysis_project_meta = relationship(
         "ProjectMeta", back_populates="project_analysis_meta"
     )
+    analysis_pathway_score_meta = relationship("PathwayScore", back_populates="pathway_score_analysis_meta")
 
 
 class CalcCellClusterProportion(Base):
@@ -567,7 +568,7 @@ class PathwayScore(Base):
     # 基因组符号
     geneset_gene_symbols = Column(String(255))
     # 分析id
-    analysis_id = Column(INTEGER, ForeignKey("project_meta.id"))
+    analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # 生物样本 ID
     biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
     # 细胞类型名称
@@ -589,6 +590,8 @@ class PathwayScore(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
+
+    pathway_score_analysis_meta = relationship("Analysis", back_populates="analysis_pathway_score_meta")
 
 
 class User(Base):

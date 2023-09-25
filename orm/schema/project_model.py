@@ -306,6 +306,9 @@ class PathwayScoreModel(BaseModel):
     create_at: datetime
     update_at: datetime
 
+    class Config:
+        org_mode = True
+
 
 if __name__ == "__main__":
     a = BiosampleModel()

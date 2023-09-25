@@ -11,6 +11,7 @@ from orm.schema.project_model import (
     CellClusterGeneExpressionModel,
     ProjectBiosampleModel,
     BiosampleAnalysisModel,
+    PathwayScoreModel,
 )
 from orm.schema.user_model import UserModel, ProjectUserModel
 
@@ -26,8 +27,15 @@ class ProjectUserRelation(ProjectUserModel):
     project_user_user_meta: UserModel
 
 
+class AnalysisForProjectRelation(AnalysisModel):
+    analysis_pathway_score_meta: List[PathwayScoreModel]
+
+    class Config:
+        org_mode = True
+
+
 class ProjectRelation(ProjectModel):
-    project_analysis_meta: Union[List[AnalysisModel], None]
+    project_analysis_meta: Union[List[AnalysisForProjectRelation], None]
     project_user_meta: Union[UserModel, None]
     project_project_biosample_meta: Union[List[ProjectBiosampleRelation], None]
     project_project_user_meta: Union[List[ProjectUserRelation], None]
