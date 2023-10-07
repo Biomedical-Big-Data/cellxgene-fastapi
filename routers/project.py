@@ -375,6 +375,9 @@ async def transfer_project(
                 filters=[cellxgene.ProjectMeta.id == project_id],
                 update_dict={"owner": transfer_to_user_info.id},
             )
+            exist_user_id = [project_user.id for project_user in project_info.project_project_user_meta]
+            if transfer_to_user_info.id not in exist_user_id:
+                crud.create_project_user(db=db, insert_project_user_model=cellxgene.ProjectUser(project_id=project_id, user_id=transfer_to_user_info.id))
             return ResponseMessage(status="0000", data={}, message="项目转移成功")
         except:
             return ResponseMessage(status="0201", data={}, message="项目转移失败")

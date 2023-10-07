@@ -35,6 +35,11 @@ def get_project(db: Session, filters: List):
     return db.query(cellxgene.ProjectMeta).filter(and_(*filters))
 
 
+def create_project_user(db: Session, insert_project_user_model: cellxgene.ProjectUser):
+    db.add(insert_project_user_model)
+    db.commit()
+
+
 def get_project_by_sample(db: Session, filters: List, public_filter_list: List):
     return db.query(cellxgene.BioSampleMeta).filter(
         or_((and_(*filters)), (and_(*public_filter_list)))
