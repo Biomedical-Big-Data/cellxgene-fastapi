@@ -16,17 +16,17 @@ from orm.schema.response import (
 )
 import json
 import os
+import plotly.express as px
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
 from conf import config
 from typing import List, Union
-from io import BytesIO
 import pandas as pd
 from sqlalchemy import and_, or_, distinct
 from orm.dependencies import get_current_user
 from orm.schema.project_model import TransferProjectModel
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse, Response
 from uuid import uuid4
 from utils import file_util
 from mqtt_consumer.consumer import SERVER_STATUS_DICT
@@ -139,7 +139,7 @@ async def get_project_list(
     response_model=ResponseProjectDetailModel,
     status_code=status.HTTP_200_OK,
 )
-async def get_analysis_list(
+async def get_analysis_detail(
     analysis_id: int,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
@@ -882,21 +882,33 @@ async def get_cell_taxonomy_tree(
     return ResponseMessage(status="0000", data=res, message="ok")
 
 
-@router.get("/view/file/{file_id}", status_code=status.HTTP_200_OK)
+@router.get("/view/file/{file_type}/{file_id}", status_code=status.HTTP_200_OK)
 async def get_csv_data(
+    file_type: str,
     file_id: str,
+    group_by: str | None = None,
     # current_user_email_address=Depends(get_current_user),
 ):
     file_path = config.H5AD_FILE_PATH + "/" + file_id
-    print(file_path)
-    try:
-        return FileResponse(
-            file_path,
-            media_type="application/octet-stream",
-            filename=file_id,
-        )
-    except:
-        return ResponseMessage(status="0201", data={}, message="文件不存在")
+    file_data_df = pd.read_csv(file_path)
+    if file_type == 'umap':
+        fig = px.scatter(file_data_df, x='UMAP_1', y='UMAP_2', color=group_by)
+        # fig.show()
+
+        # Save the picture to a byte buffer
+        img_byte_arr = fig.to_image(format='png')
+
+        # Return the picture as a response
+        return Response(content=img_byte_arr, media_type='image/png')
+    else:
+        try:
+            return FileResponse(
+                file_path,
+                media_type="application/octet-stream",
+                filename=file_id,
+            )
+        except:
+            return ResponseMessage(status="0201", data={}, message="文件不存在")
 
 
 @router.get("/view/{analysis_id}/{url_path:path}", status_code=status.HTTP_200_OK)
