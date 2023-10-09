@@ -72,7 +72,7 @@ class ProjectMeta(Base):
     # 细胞数
     cell_number = Column(String(255))
     # 项目描述
-    description = Column(String(255))
+    description = Column(TEXT)
     # 解剖实体
     anatomical_entity = Column(String(255))
     # 公布日期
