@@ -40,24 +40,33 @@ def create_project_user(db: Session, insert_project_user_model: cellxgene.Projec
     db.commit()
 
 
-def get_project_by_sample(db: Session, filters: List, public_filter_list: List):
+def get_project_by_sample(db: Session, public_filter_list: List):
     return db.query(cellxgene.BioSampleMeta).filter(
-        or_((and_(*filters)), (and_(*public_filter_list)))
+        and_(*public_filter_list)
     )
+    # return db.query(cellxgene.BioSampleMeta).filter(
+    #     or_((and_(*filters)), (and_(*public_filter_list)))
+    # )
 
 
-def get_project_by_cell(db: Session, filters: List, public_filter_list: List):
+def get_project_by_cell(db: Session, public_filter_list: List):
     return db.query(cellxgene.CalcCellClusterProportion).filter(
-        or_((and_(*filters)), (and_(*public_filter_list)))
+        and_(*public_filter_list)
     )
+    # return db.query(cellxgene.CalcCellClusterProportion).filter(
+    #     or_((and_(*filters)), (and_(*public_filter_list)))
+    # )
 
 
 def get_project_by_gene(
-    db: Session, query_list: List, filters: List, public_filter_list: List
+    db: Session, query_list: List, public_filter_list: List
 ):
     return db.query(*query_list).filter(
-        or_((and_(*filters)), (and_(*public_filter_list)))
+        and_(*public_filter_list)
     )
+    # return db.query(*query_list).filter(
+    #     or_((and_(*filters)), (and_(*public_filter_list)))
+    # )
 
 
 def get_organ_list(db: Session, filters: List):

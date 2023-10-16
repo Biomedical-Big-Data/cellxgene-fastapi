@@ -78,8 +78,8 @@ async def get_view_homepage(db: Session = Depends(get_db)):
 )
 async def get_user_project(
     title: Union[str, None] = None,
-    is_publish: Union[int, None] = None,
-    is_private: Union[int, None] = None,
+    # is_publish: Union[int, None] = None,
+    # is_private: Union[int, None] = None,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
@@ -87,15 +87,17 @@ async def get_user_project(
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
     filter_list = [
-        cellxgene.ProjectMeta.owner == cellxgene.User.id,
+        cellxgene.ProjectMeta.id == cellxgene.ProjectUser.project_id,
+        cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
+        cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
     ]
     if title is not None:
         filter_list.append(cellxgene.ProjectMeta.title.like("%{}%".format(title)))
-    if is_publish is not None:
-        filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
-    if is_private is not None:
-        filter_list.append(cellxgene.ProjectMeta.is_private == is_private)
+    # if is_publish is not None:
+    #     filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
+    # if is_private is not None:
+    #     filter_list.append(cellxgene.ProjectMeta.is_private == is_private)
     project_list = (
         crud.get_project(db=db, filters=filter_list)
         .offset(search_page)
@@ -460,12 +462,12 @@ async def get_project_list_by_sample(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
-    filter_list = [
-        cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
-        cellxgene.ProjectBioSample.project_id == cellxgene.ProjectUser.project_id,
-        cellxgene.ProjectUser.user_id == cellxgene.User.id,
-        cellxgene.User.email_address == current_user_email_address,
-    ]
+    # filter_list = [
+    #     cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+    #     cellxgene.ProjectBioSample.project_id == cellxgene.ProjectUser.project_id,
+    #     cellxgene.ProjectUser.user_id == cellxgene.User.id,
+    #     cellxgene.User.email_address == current_user_email_address,
+    # ]
     public_filter_list = [
         cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
         cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
@@ -474,31 +476,31 @@ async def get_project_list_by_sample(
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
     if organ is not None:
-        filter_list.append(cellxgene.BioSampleMeta.organ == organ)
+        # filter_list.append(cellxgene.BioSampleMeta.organ == organ)
         public_filter_list.append(cellxgene.BioSampleMeta.organ == organ)
     if species_id is not None:
-        filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
+        # filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
         public_filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
     if external_sample_accesstion is not None:
-        filter_list.append(
-            cellxgene.BioSampleMeta.external_sample_accesstion
-            == external_sample_accesstion
-        )
+        # filter_list.append(
+        #     cellxgene.BioSampleMeta.external_sample_accesstion
+        #     == external_sample_accesstion
+        # )
         public_filter_list.append(
             cellxgene.BioSampleMeta.external_sample_accesstion
             == external_sample_accesstion
         )
     if disease is not None:
-        filter_list.append(cellxgene.BioSampleMeta.disease.like("%{}%".format(disease)))
+        # filter_list.append(cellxgene.BioSampleMeta.disease.like("%{}%".format(disease)))
         public_filter_list.append(
             cellxgene.BioSampleMeta.disease.like("%{}%".format(disease))
         )
     if development_stage is not None:
-        filter_list.append(
-            cellxgene.BioSampleMeta.development_stage.like(
-                "%{}%".format(development_stage)
-            )
-        )
+        # filter_list.append(
+        #     cellxgene.BioSampleMeta.development_stage.like(
+        #         "%{}%".format(development_stage)
+        #     )
+        # )
         public_filter_list.append(
             cellxgene.BioSampleMeta.development_stage.like(
                 "%{}%".format(development_stage)
@@ -506,7 +508,7 @@ async def get_project_list_by_sample(
         )
     biosample_list = (
         crud.get_project_by_sample(
-            db=db, filters=filter_list, public_filter_list=public_filter_list
+            db=db, public_filter_list=public_filter_list
         )
         .distinct()
         .offset(search_page)
@@ -515,7 +517,7 @@ async def get_project_list_by_sample(
     )
     total = (
         crud.get_project_by_sample(
-            db=db, filters=filter_list, public_filter_list=public_filter_list
+            db=db, public_filter_list=public_filter_list
         )
         .distinct()
         .count()
@@ -545,14 +547,14 @@ async def get_project_list_by_cell(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
-    filter_list = [
-        cellxgene.CellTypeMeta.cell_type_id
-        == cellxgene.CalcCellClusterProportion.cell_type_id,
-        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
-        cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
-        cellxgene.ProjectUser.user_id == cellxgene.User.id,
-        cellxgene.User.email_address == current_user_email_address,
-    ]
+    # filter_list = [
+    #     cellxgene.CellTypeMeta.cell_type_id
+    #     == cellxgene.CalcCellClusterProportion.cell_type_id,
+    #     cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+    #     cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+    #     cellxgene.ProjectUser.user_id == cellxgene.User.id,
+    #     cellxgene.User.email_address == current_user_email_address,
+    # ]
     public_filter_list = [
         cellxgene.CellTypeMeta.cell_type_id
         == cellxgene.CalcCellClusterProportion.cell_type_id,
@@ -563,10 +565,10 @@ async def get_project_list_by_cell(
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
     if cell_id is not None:
-        filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
+        # filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
         public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
     if species_id is not None:
-        filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
+        # filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
         public_filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
     if genes_positive is not None:
         genes_positive_list = genes_positive.split(",")
@@ -575,7 +577,7 @@ async def get_project_list_by_cell(
             positive_filter_list.append(
                 cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
             )
-        filter_list.append(or_(*positive_filter_list))
+        # filter_list.append(or_(*positive_filter_list))
         public_filter_list.append(or_(*positive_filter_list))
     if genes_negative is not None:
         genes_negative_list = genes_negative.split(",")
@@ -586,11 +588,11 @@ async def get_project_list_by_cell(
                     "%{}%".format(negative)
                 )
             )
-        filter_list.append(and_(*negative_filter_list))
+        # filter_list.append(and_(*negative_filter_list))
         public_filter_list.append(and_(*negative_filter_list))
     cell_type_list = (
         crud.get_project_by_cell(
-            db=db, filters=filter_list, public_filter_list=public_filter_list
+            db=db, public_filter_list=public_filter_list
         )
         .distinct()
         .offset(search_page)
@@ -599,7 +601,7 @@ async def get_project_list_by_cell(
     )
     total = (
         crud.get_project_by_cell(
-            db=db, filters=filter_list, public_filter_list=public_filter_list
+            db=db, public_filter_list=public_filter_list
         )
         .distinct()
         .count()
@@ -627,16 +629,16 @@ async def get_project_list_by_gene(
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
-    filter_list = [
-        cellxgene.GeneMeta.gene_ensemble_id
-        == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
-        cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
-        == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
-        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
-        cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
-        cellxgene.ProjectUser.user_id == cellxgene.User.id,
-        cellxgene.User.email_address == current_user_email_address,
-    ]
+    # filter_list = [
+    #     cellxgene.GeneMeta.gene_ensemble_id
+    #     == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
+    #     cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
+    #     == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
+    #     cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+    #     cellxgene.Analysis.project_id == cellxgene.ProjectUser.project_id,
+    #     cellxgene.ProjectUser.user_id == cellxgene.User.id,
+    #     cellxgene.User.email_address == current_user_email_address,
+    # ]
     public_filter_list = [
         cellxgene.GeneMeta.gene_ensemble_id
         == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
@@ -649,20 +651,20 @@ async def get_project_list_by_gene(
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
     if gene_symbol is not None:
-        filter_list.append(
-            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
-        )
+        # filter_list.append(
+        #     cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        # )
         public_filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         )
     if species_id is not None:
-        filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+        # filter_list.append(cellxgene.GeneMeta.species_id == species_id)
         public_filter_list.append(cellxgene.GeneMeta.species_id == species_id)
     gene_meta_list = (
         crud.get_project_by_gene(
             db=db,
             query_list=[cellxgene.CellClusterGeneExpression],
-            filters=filter_list,
+            # filters=filter_list,
             public_filter_list=public_filter_list,
         )
         .distinct()
@@ -674,7 +676,7 @@ async def get_project_list_by_gene(
         crud.get_project_by_gene(
             db=db,
             query_list=[cellxgene.CellClusterGeneExpression],
-            filters=filter_list,
+            # filters=filter_list,
             public_filter_list=public_filter_list,
         )
         .distinct()
