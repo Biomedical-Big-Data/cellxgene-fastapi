@@ -14,3 +14,4 @@ numpy~=1.25.2
 gmqtt~=0.6.12
 plotly==5.17.0
 kaleido==0.2.1
+xlsxwriter==3.1.8

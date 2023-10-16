@@ -269,13 +269,17 @@ def create_taxonomy(
     db.commit()
 
 
-def create_h5ad(db: Session, insert_h5ad_model: cellxgene.FileLibrary):
-    db.add(insert_h5ad_model)
+def create_file(db: Session, insert_file_model: cellxgene.FileLibrary):
+    db.add(insert_file_model)
     db.commit()
 
 
-def create_h5ad_for_transaction(db: Session, insert_h5ad_model: cellxgene.FileLibrary):
-    db.add(insert_h5ad_model)
+def update_file(db: Session, filters: List, file_filters: List, update_dict: Dict):
+    db.query(cellxgene.FileLibrary).filter(and_((and_(*filters)), (or_(*file_filters)))).update(update_dict)
+
+
+def create_file_for_transaction(db: Session, insert_file_model: cellxgene.FileLibrary):
+    db.add(insert_file_model)
 
 
 def get_h5ad(db: Session, filters: List | None):

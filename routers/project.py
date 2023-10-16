@@ -1,3 +1,4 @@
+import xlsxwriter
 from fastapi import (
     APIRouter,
     Depends,
@@ -17,6 +18,7 @@ from orm.schema.response import (
 import json
 import os
 import plotly.express as px
+from io import BytesIO
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
@@ -25,8 +27,8 @@ from typing import List, Union
 import pandas as pd
 from sqlalchemy import and_, or_, distinct
 from orm.dependencies import get_current_user
-from orm.schema.project_model import TransferProjectModel
-from fastapi.responses import RedirectResponse, FileResponse, Response
+from orm.schema.project_model import TransferProjectModel, CopyToProjectModel
+from fastapi.responses import RedirectResponse, FileResponse, Response, StreamingResponse
 from uuid import uuid4
 from utils import file_util
 from mqtt_consumer.consumer import SERVER_STATUS_DICT
@@ -377,12 +379,92 @@ async def transfer_project(
                 filters=[cellxgene.ProjectMeta.id == project_id],
                 update_dict={"owner": transfer_to_user_info.id},
             )
+            crud.update_file(
+                db=db,
+                filters=[cellxgene.Analysis.project_id == project_id],
+                file_filters=[cellxgene.Analysis.h5ad_id == cellxgene.FileLibrary.file_id,
+                              cellxgene.Analysis.umap_id == cellxgene.FileLibrary.file_id,
+                              cellxgene.Analysis.cell_marker_id == cellxgene.FileLibrary.file_id],
+                update_dict={"upload_user_id": transfer_to_user_info.id}
+            )
             exist_user_id = [project_user.id for project_user in project_info.project_project_user_meta]
             if transfer_to_user_info.id not in exist_user_id:
                 crud.create_project_user(db=db, insert_project_user_model=cellxgene.ProjectUser(project_id=project_id, user_id=transfer_to_user_info.id))
             return ResponseMessage(status="0000", data={}, message="项目转移成功")
         except:
             return ResponseMessage(status="0201", data={}, message="项目转移失败")
+    else:
+        return ResponseMessage(status="0201", data={}, message="当前状态不可转移项目")
+
+
+@router.post(
+    "{project_id}/copy",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
+def copy_project_id(
+    project_id: int,
+    copy_to: CopyToProjectModel = Body(),
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    copy_to_user_info = crud.get_user(
+        db=db,
+        filters=[cellxgene.User.email_address == copy_to.transfer_to_email_address],
+    ).first()
+    if not copy_to_user_info:
+        return ResponseMessage(status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确")
+    project_info = crud.get_project(
+        db=db, filters=[cellxgene.ProjectMeta.id == project_id]
+    ).first()
+    if not project_info:
+        return ResponseMessage(status="0201", data={}, message="项目不存在")
+    if project_info.project_user_meta.email_address != current_user_email_address:
+        return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法转移此项目")
+    if (
+            project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
+            and project_info.is_publish != config.ProjectStatus.PROJECT_STATUS_UNAVAILABLE
+    ):
+        insert_project_model = cellxgene.ProjectMeta(
+                    **project_info.model_dump(
+                        mode="json", exclude={"id"}, exclude_none=True
+                    ))
+        for member_info in project_info.project_project_user_meta:
+            project_user_model = cellxgene.ProjectUser(user_id=member_info.user_id)
+            insert_project_model.project_project_user_meta.append(project_user_model)
+        # h5ad_id = str(uuid4()).replace("-", "")
+        # h5ad_id = "pbmc3k.h5ad"
+        insert_analysis_model = cellxgene.Analysis(
+            **project_info
+        )
+        insert_analysis_model.analysis_project_meta = insert_project_model
+        insert_biosample_model = cellxgene.BioSampleMeta(species_id=species_id, organ=organ)
+        biosample_id = crud.create_biosample(
+            db=db, insert_biosample_model=insert_biosample_model
+        )
+        insert_project_model.project_project_biosample_meta.append(
+            cellxgene.ProjectBioSample(biosample_id=biosample_id)
+        )
+        insert_analysis_model.analysis_biosample_analysis_meta.append(
+            cellxgene.BioSampleAnalysis(biosample_id=biosample_id)
+        )
+        try:
+            analysis_id, project_id = crud.create_analysis(
+                db=db, insert_analysis_model=insert_analysis_model
+            )
+            crud.update_project(
+                db=db,
+                filters=[cellxgene.ProjectMeta.id == project_id],
+                update_dict={"project_alias_id": "project" + str(project_id)},
+            )
+            return ResponseMessage(
+                status="0000",
+                data={"analysis_id": analysis_id, "project_id": project_id},
+                message="项目创建成功",
+            )
+        except Exception as e:
+            print(e)
+            return ResponseMessage(status="0201", data={}, message="项目创建失败")
     else:
         return ResponseMessage(status="0201", data={}, message="当前状态不可转移项目")
 
@@ -532,6 +614,85 @@ async def get_project_list_by_sample(
 
 
 @router.get(
+    "/list/by/sample/download",
+    response_model=None,
+    status_code=status.HTTP_200_OK,
+)
+async def download_project_list_by_sample(
+    organ: Union[str, None] = None,
+    species_id: Union[int, None] = None,
+    external_sample_accesstion: Union[str, None] = None,
+    disease: Union[str, None] = None,
+    development_stage: Union[str, None] = None,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    public_filter_list = [
+        cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+        cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.is_publish
+        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
+    if organ is not None:
+        # filter_list.append(cellxgene.BioSampleMeta.organ == organ)
+        public_filter_list.append(cellxgene.BioSampleMeta.organ == organ)
+    if species_id is not None:
+        # filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
+        public_filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
+    if external_sample_accesstion is not None:
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.external_sample_accesstion
+            == external_sample_accesstion
+        )
+    if disease is not None:
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.disease.like("%{}%".format(disease))
+        )
+    if development_stage is not None:
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.development_stage.like(
+                "%{}%".format(development_stage)
+            )
+        )
+    biosample_list = (
+        crud.get_project_by_sample(
+            db=db, public_filter_list=public_filter_list
+        )
+        .distinct()
+        .all()
+    )
+    data_list = []
+    for biosample_meta in biosample_list:
+        biosample_project_biosample_meta_list = biosample_meta.biosample_project_biosample_meta
+        for biosample_project_biosample_meta in biosample_project_biosample_meta_list:
+            project_meta = biosample_project_biosample_meta.project_biosample_project_meta
+            data_list.append([project_meta.title,
+                              biosample_meta.disease,
+                              biosample_meta.sequencing_instrument_manufacturer_model,
+                              biosample_meta.biosample_species_meta.species,
+                              biosample_meta.organ,
+                              biosample_meta.biosample_donor_meta.sex])
+    data_df = pd.DataFrame(data=data_list, columns=["Project", "Disease", "Platform", "Species", "Organ", "Sex"])
+    data_df = data_df.fillna('')
+    buffer = BytesIO()
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+    for i, col in enumerate(data_df.columns):
+        worksheet.write(0, i, col)
+        for j, value in enumerate(data_df[col]):
+            worksheet.write(j + 1, i, value)
+    workbook.close()
+
+    # 将 Excel 文件转换为字节流，作为响应体返回给客户端
+    buffer.seek(0)
+    excel_bytes = buffer.getvalue()
+    return StreamingResponse(BytesIO(excel_bytes),
+                             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                             headers={"Content-Disposition": "attachment; filename=myfile.xlsx"})
+
+
+@router.get(
     "/list/by/cell",
     response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
@@ -618,6 +779,70 @@ async def get_project_list_by_cell(
         "page_size": page_size,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
+    "/list/by/cell/download",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_project_list_by_cell(
+    cell_id: Union[int, None] = None,
+    species_id: Union[int, None] = None,
+    cell_standard: Union[str, None] = None,
+    genes_positive: Union[str, None] = None,
+    genes_negative: Union[str, None] = None,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+) -> ResponseMessage:
+    public_filter_list = [
+        cellxgene.CellTypeMeta.cell_type_id
+        == cellxgene.CalcCellClusterProportion.cell_type_id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.is_publish
+        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
+    if cell_id is not None:
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
+    if species_id is not None:
+        public_filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
+    if cell_standard is not None:
+        cell_standard_filter_list = [cellxgene.CellTaxonomy.ct_id == cellxgene.CellTypeMeta.cell_taxonomy_id,
+                                     cellxgene.CellTaxonomy.cell_standard.like("%{}%".format(cell_standard))]
+        public_filter_list.append(and_(*cell_standard_filter_list))
+    if genes_positive is not None:
+        genes_positive_list = genes_positive.split(",")
+        positive_filter_list = []
+        for positive in genes_positive_list:
+            positive_filter_list.append(
+                cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
+            )
+        public_filter_list.append(or_(*positive_filter_list))
+    if genes_negative is not None:
+        genes_negative_list = genes_negative.split(",")
+        negative_filter_list = []
+        for negative in genes_negative_list:
+            negative_filter_list.append(
+                cellxgene.CellTypeMeta.marker_gene_symbol.notlike(
+                    "%{}%".format(negative)
+                )
+            )
+        # filter_list.append(and_(*negative_filter_list))
+        public_filter_list.append(and_(*negative_filter_list))
+    cell_type_list = (
+        crud.get_project_by_cell(
+            db=db, public_filter_list=public_filter_list
+        )
+        .distinct()
+        .all()
+    )
+    data_list = []
+    for cell_type_meta in cell_type_list:
+        project_meta = cell_type_meta.cell_proportion_analysis_meta.analysis_project_meta
+        biosample_meta = ''
+    return ResponseMessage(status="0000", data='ok', message="ok")
 
 
 @router.get(
@@ -746,7 +971,7 @@ async def get_project_list_by_gene(
                 cellxgene.CellClusterGeneExpression.average_gene_expression,
                 cellxgene.CellTypeMeta.cell_type_name,
             ],
-            filters=filter_list,
+            # filters=filter_list,
             public_filter_list=public_filter_list,
         )
         .distinct()

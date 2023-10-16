@@ -25,7 +25,7 @@ async def save_file(
             file_id=file_id, file_name=filename, upload_user_id=insert_user_id
         )
         if insert:
-            crud.create_h5ad(db=db, insert_h5ad_model=insert_h5ad_model)
+            crud.create_file(db=db, insert_file_model=insert_h5ad_model)
         else:
-            crud.create_h5ad_for_transaction(db=db, insert_h5ad_model=insert_h5ad_model)
+            crud.create_file_for_transaction(db=db, insert_file_model=insert_h5ad_model)
     return file_id

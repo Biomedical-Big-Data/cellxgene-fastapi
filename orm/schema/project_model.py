@@ -287,6 +287,10 @@ class TransferProjectModel(BaseModel):
     transfer_to_email_address: str
 
 
+class CopyToProjectModel(BaseModel):
+    copy_to_email_address: str
+
+
 class UpdateProjectModel(BaseModel):
     project_status: int
 
