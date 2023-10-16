@@ -539,6 +539,7 @@ async def get_project_list_by_sample(
 async def get_project_list_by_cell(
     cell_id: Union[int, None] = None,
     species_id: Union[int, None] = None,
+    cell_standard: Union[str, None] = None,
     genes_positive: Union[str, None] = None,
     genes_negative: Union[str, None] = None,
     page: int = 1,
@@ -570,6 +571,10 @@ async def get_project_list_by_cell(
     if species_id is not None:
         # filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
         public_filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
+    if cell_standard is not None:
+        cell_standard_filter_list = [cellxgene.CellTaxonomy.ct_id == cellxgene.CellTypeMeta.cell_taxonomy_id,
+                                     cellxgene.CellTaxonomy.cell_standard.like("%{}%".format(cell_standard))]
+        public_filter_list.append(and_(*cell_standard_filter_list))
     if genes_positive is not None:
         genes_positive_list = genes_positive.split(",")
         positive_filter_list = []
@@ -869,7 +874,7 @@ async def get_cell_taxonomy_tree(
     filter_list = [
         cellxgene.CellTaxonomy.specific_cell_ontology_id
         == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_marker == cell_marker,
+        cellxgene.CellTaxonomy.cell_marker.like("%{}%".format(cell_marker))
     ]
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation(
         db=db, query_list=[cellxgene.CellTaxonomyRelation], filters=filter_list
@@ -878,7 +883,7 @@ async def get_cell_taxonomy_tree(
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
         # relation_dict = {"cl_id": cell_taxonomy_relation_model.cl_id}
         res = get_parent_id(
-            total_relation_list, cell_taxonomy_relation_model.cl_id, res
+            total_relation_list, cell_taxonomy_relation_model, res
         )
         # relation_dict["parent_dict"] = parent_dict
     return ResponseMessage(status="0000", data=res, message="ok")
