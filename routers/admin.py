@@ -20,7 +20,7 @@ from orm import crud
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from orm.db_model import cellxgene
-from utils import auth_util, mail_util, file_util
+from utils import auth_util, mail_util, file_util, upload_excel_util
 from conf import config
 from typing import List, Union
 from io import BytesIO
@@ -205,7 +205,7 @@ async def admin_update_project(
     h5ad_id: str | None = Body(),
     cell_marker_id: str | None = Body(),
     umap_id: str | None = Body(),
-    # excel_id: str | None = Body(),
+    excel_id: str | None = Body(),
     tags: str = Body(),
     members: list = Body(),
     is_publish: int = Body(),
@@ -240,7 +240,9 @@ async def admin_update_project(
             )
         update_analysis_id = project_info.project_analysis_meta[0].id
         # h5ad_id = str(uuid4()).replace("-", "")
-        update_analysis_dict = {"h5ad_id": h5ad_id, "cell_marker_id": cell_marker_id, "umap_id": umap_id}
+        update_analysis_dict = {"h5ad_id": h5ad_id if h5ad_id else project_info.project_analysis_meta[0].h5ad_id,
+                                "cell_marker_id": cell_marker_id if cell_marker_id else project_info.project_analysis_meta[0].cell_marker_id,
+                                "umap_id": umap_id if umap_id else project_info.project_analysis_meta[0].umap_id}
         crud.admin_project_update_transaction(
             db=db,
             delete_project_user_filters=[
@@ -252,6 +254,8 @@ async def admin_update_project(
             update_analysis_filters=[cellxgene.Analysis.id == update_analysis_id],
             update_analysis_dict=update_analysis_dict,
         )
+        if excel_id is not None:
+            upload_excel_util.upload_file(db=db, analysis_id=analysis_id, excel_id=excel_id)
     except Exception as e:
         print(e)
         return ResponseMessage(status="0201", data={"error": str(e)}, message="更新失败")
