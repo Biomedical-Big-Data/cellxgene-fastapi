@@ -145,6 +145,7 @@ class AnalysisModel(BaseModel):
     project_id: int | None
     h5ad_id: str | None
     umap_id: str | None
+    pathway_id: str | None
     cell_marker_id: str | None
     reference: str | None
     analysis_protocol: str | None
