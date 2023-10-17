@@ -959,7 +959,7 @@ async def get_project_list_by_gene(
 
 @router.get(
     "/list/by/gene/download",
-    response_model=ResponseProjectListModel,
+    response_model=None,
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_gene(
@@ -967,7 +967,7 @@ async def get_project_list_by_gene(
     species_id: Union[int, None] = None,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-) -> ResponseMessage:
+) -> StreamingResponse:
     public_filter_list = [
         cellxgene.GeneMeta.gene_ensemble_id
         == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
@@ -996,19 +996,18 @@ async def get_project_list_by_gene(
     )
     data_list = []
     for gene_meta in gene_meta_list:
-        project_meta = gene_meta.cell_proportion_analysis_meta.analysis_project_meta
-        biosample_meta = gene_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta
-        donor_meta = gene_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_donor_meta
-        species_meta = gene_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_species_meta
+        project_meta = gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_project_meta
+        biosample_meta = gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta
+        donor_meta = gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_donor_meta
+        species_meta = gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_species_meta
         data_list.append([project_meta.title,
                           biosample_meta.disease,
                           biosample_meta.sequencing_instrument_manufacturer_model,
-                          gene_meta.cell_proportion,
-                          gene_meta.cell_number,
+                          gene_meta.cell_proportion_expression_the_gene,
                           species_meta.species,
                           biosample_meta.organ,
                           donor_meta.sex])
-    data_df = pd.DataFrame(data=data_list, columns=["Project", "Disease", "Platform", "Proportion of cel", "cell number", "Species", "Organ", "Sex"])
+    data_df = pd.DataFrame(data=data_list, columns=["Project", "Disease", "Platform", "Percentage of Cells in cellcluster that express GeneX", "Species", "Organ", "Sex"])
     data_df = data_df.fillna('')
     buffer = BytesIO()
     workbook = xlsxwriter.Workbook(buffer)
@@ -1025,7 +1024,6 @@ async def get_project_list_by_gene(
     return StreamingResponse(BytesIO(excel_bytes),
                              media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                              headers={"Content-Disposition": "attachment; filename=myfile.xlsx"})
-    return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
 @router.get(
