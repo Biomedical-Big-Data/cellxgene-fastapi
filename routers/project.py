@@ -1132,7 +1132,7 @@ async def get_csv_data(
 
         # Return the picture as a response
         return Response(content=img_byte_arr, media_type='image/png')
-    elif file_type in ['cellmarker', 'h5ad']:
+    elif file_type == 'cellmarker':
         try:
             return FileResponse(
                 file_path,
@@ -1141,6 +1141,14 @@ async def get_csv_data(
             )
         except:
             return ResponseMessage(status="0201", data={}, message="文件不存在")
+
+
+@router.get("/download/file/{file_id}", status_code=status.HTTP_200_OK)
+async def download_file(
+    file_id: str
+):
+    file_path = config.H5AD_FILE_PATH + "/" + file_id
+    return StreamingResponse(file_util.file_iterator(file_path), media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={file_path}"})
 
 
 @router.get("/view/{analysis_id}/{url_path:path}", status_code=status.HTTP_200_OK)

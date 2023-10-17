@@ -29,3 +29,12 @@ async def save_file(
         else:
             crud.create_file_for_transaction(db=db, insert_file_model=insert_h5ad_model)
     return file_id
+
+
+def file_iterator(file_path, block_size=65536):
+    with open(file_path, "rb") as file:
+        while True:
+            block = file.read(block_size)
+            if not block:
+                break
+            yield block
