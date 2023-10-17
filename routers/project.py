@@ -87,8 +87,9 @@ async def get_view_homepage(db: Session = Depends(get_db)):
 )
 async def get_user_project(
     title: Union[str, None] = None,
-    # is_publish: Union[int, None] = None,
-    # is_private: Union[int, None] = None,
+    is_publish: Union[int, None] = None,
+    is_private: Union[int, None] = None,
+    tag: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
@@ -103,10 +104,12 @@ async def get_user_project(
     ]
     if title is not None:
         filter_list.append(cellxgene.ProjectMeta.title.like("%{}%".format(title)))
-    # if is_publish is not None:
-    #     filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
-    # if is_private is not None:
-    #     filter_list.append(cellxgene.ProjectMeta.is_private == is_private)
+    if is_publish is not None:
+        filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
+    if is_private is not None:
+        filter_list.append(cellxgene.ProjectMeta.is_private == is_private)
+    if tag is not None:
+        filter_list.append(cellxgene.ProjectMeta.tags.like("%{}%".format(tag)))
     project_list = (
         crud.get_project(db=db, filters=filter_list)
         .offset(search_page)
