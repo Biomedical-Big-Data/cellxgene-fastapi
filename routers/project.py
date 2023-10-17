@@ -25,7 +25,7 @@ from orm.db_model import cellxgene
 from conf import config
 from typing import List, Union
 import pandas as pd
-from sqlalchemy import and_, or_, distinct
+from sqlalchemy import and_, or_, distinct, func
 from orm.dependencies import get_current_user
 from orm.schema.project_model import TransferProjectModel, CopyToProjectModel
 from fastapi.responses import RedirectResponse, FileResponse, Response, StreamingResponse
@@ -48,29 +48,36 @@ router = APIRouter(
 async def get_view_homepage(db: Session = Depends(get_db)):
     species_list = (
         crud.get_species_list(
-            db=db, query_list=[cellxgene.SpeciesMeta.species], filters=[]
+            db=db, query_list=[cellxgene.SpeciesMeta.species, func.count(cellxgene.SpeciesMeta.id)], filters=[]
         )
-        .distinct(cellxgene.SpeciesMeta.species)
-        .count()
+        .group_by(cellxgene.SpeciesMeta.species)
+        .all()
     )
     sample_list = (
         crud.get_biosample(
-            db=db, query_list=[cellxgene.BioSampleMeta.organ], filters=[]
+            db=db, query_list=[cellxgene.BioSampleMeta.biosample_type, func.count(cellxgene.BioSampleMeta.id)], filters=[]
         )
-        .distinct()
-        .count()
+        .group_by(cellxgene.BioSampleMeta.biosample_type)
+        .all()
     )
     organ_list = (
         crud.get_biosample(
-            db=db, query_list=[cellxgene.BioSampleMeta.biosample_type], filters=[]
+            db=db, query_list=[cellxgene.BioSampleMeta.organ, func.count(cellxgene.BioSampleMeta.id)], filters=[]
         )
-        .distinct()
-        .count()
+        .group_by(cellxgene.BioSampleMeta.organ)
+        .all()
     )
+    return_species_list, return_biosample_type_list, return_organ_list = [], [], []
+    for species_meta in species_list:
+        return_species_list.append({"species": species_meta[0], "count": species_meta[1]})
+    for biosample_type_meta in sample_list:
+        return_biosample_type_list.append({"biosample_type": biosample_type_meta[0], "count": biosample_type_meta[1]})
+    for organ_meta in organ_list:
+        return_organ_list.append({"organ": organ_meta[0], "count": organ_meta[1]})
     res_dict = {
-        "species_list": species_list,
-        "sample_list": sample_list,
-        "organ_list": organ_list,
+        "species_list": return_species_list,
+        "sample_list": return_biosample_type_list,
+        "organ_list": return_organ_list,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
