@@ -438,7 +438,7 @@ def copy_project_id(
             **project_info
         )
         insert_analysis_model.analysis_project_meta = insert_project_model
-        insert_biosample_model = cellxgene.BioSampleMeta(species_id=species_id, organ=organ)
+        insert_biosample_model = cellxgene.BioSampleMeta(species_id=1, organ='organ')
         biosample_id = crud.create_biosample(
             db=db, insert_biosample_model=insert_biosample_model
         )
@@ -1122,8 +1122,8 @@ async def get_csv_data(
     # current_user_email_address=Depends(get_current_user),
 ):
     file_path = config.H5AD_FILE_PATH + "/" + file_id
-    file_data_df = pd.read_csv(file_path)
     if file_type == 'umap':
+        file_data_df = pd.read_csv(file_path)
         fig = px.scatter(file_data_df, x='UMAP_1', y='UMAP_2', color=group_by)
         # fig.show()
 
@@ -1132,7 +1132,7 @@ async def get_csv_data(
 
         # Return the picture as a response
         return Response(content=img_byte_arr, media_type='image/png')
-    else:
+    elif file_type in ['cellmarker', 'h5ad']:
         try:
             return FileResponse(
                 file_path,
