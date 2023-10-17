@@ -165,6 +165,9 @@ async def create_project(
     title: str = Body(),
     description: str = Body(),
     h5ad_id: str = Body(),
+    umap_id: str = Body(),
+    cell_marker_id: str = Body(),
+    pathway_id: str = Body(),
     tags: str = Body(),
     members: list = Body(),
     is_publish: int = Body(),
@@ -204,7 +207,7 @@ async def create_project(
         insert_project_model.project_project_user_meta.append(project_user_model)
     # h5ad_id = str(uuid4()).replace("-", "")
     # h5ad_id = "pbmc3k.h5ad"
-    insert_analysis_model = cellxgene.Analysis(h5ad_id=h5ad_id)
+    insert_analysis_model = cellxgene.Analysis(h5ad_id=h5ad_id, umap_id=umap_id, cell_marker_id=cell_marker_id, pathway_id=pathway_id)
     insert_analysis_model.analysis_project_meta = insert_project_model
     insert_biosample_model = cellxgene.BioSampleMeta(species_id=species_id, organ=organ)
     biosample_id = crud.create_biosample(
