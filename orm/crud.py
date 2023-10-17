@@ -269,6 +269,12 @@ def create_taxonomy(
     db.commit()
 
 
+def get_taxonomy(
+    db: Session, filters: List
+):
+    return db.query(cellxgene.CellTaxonomy).filter(and_(*filters))
+
+
 def create_file(db: Session, insert_file_model: cellxgene.FileLibrary):
     db.add(insert_file_model)
     db.commit()
@@ -381,6 +387,7 @@ def get_cell_test2(db: Session):
         if row.child_id not in cl_id_list:
             cl_id_list.append(row.child_id)
     print(cl_id_list)
+    return cl_id_list
     taxonomy_list = []
     #     print(type(row))
     #     print(row.employee_id, row.employee_name, row.manager_id)

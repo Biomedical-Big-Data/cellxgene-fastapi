@@ -83,6 +83,7 @@ class ResponseProjectDetailModel(BaseModel):
         project_relation_model.AnalysisRelation,
         List[project_relation_model.CellClusterProportionRelationForGraph],
         List[project_model.PathwayScoreModel],
+        List[project_model.CellTaxonomyModel],
         str,
         dict,
     ]

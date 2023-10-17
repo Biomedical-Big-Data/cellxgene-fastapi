@@ -239,7 +239,7 @@ class CellTaxonomyModel(BaseModel):
     cell_marker: str | None
     gene_entrezid: str | None
     gene_alias: str | None
-    gene_ensembl_id: str | None
+    gene_ensemble_id: str | None
     uniprot: str | None
     pfam: str | None
     go2: str | None
@@ -250,6 +250,8 @@ class CellTaxonomyModel(BaseModel):
     species_tax_id: str | None
     species_alias: str | None
     cell_alias_change: str | None
+    create_at: datetime
+    update_at: datetime
 
     class Config:
         org_mode = True

@@ -1124,6 +1124,17 @@ async def get_cell_taxonomy_tree(
     return ResponseMessage(status="0000", data=res, message="ok")
 
 
+@router.get("/taxonomy/info", response_model=ResponseProjectDetailModel, status_code=status.HTTP_200_OK)
+async def get_cell_taxonomy_info(
+    cl_id: str,
+    db: Session = Depends(get_db),
+    # current_user_email_address = Depends(get_current_user),
+) -> ResponseMessage:
+    taxonomy_model_list = crud.get_taxonomy(db=db, filters=[cellxgene.CellTaxonomy.specific_cell_ontology_id == cl_id]).all()
+    print(taxonomy_model_list)
+    return ResponseMessage(status="0000", data=taxonomy_model_list, message="ok")
+
+
 @router.get("/view/file/{file_type}/{file_id}", status_code=status.HTTP_200_OK)
 async def get_csv_data(
     file_type: str,
