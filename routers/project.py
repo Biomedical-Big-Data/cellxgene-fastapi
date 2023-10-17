@@ -793,7 +793,7 @@ async def get_project_list_by_cell(
 
 @router.get(
     "/list/by/cell/download",
-    response_model=ResponseProjectListModel,
+    response_model=None,
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_cell(
@@ -804,7 +804,7 @@ async def get_project_list_by_cell(
     genes_negative: Union[str, None] = None,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
-) -> ResponseMessage:
+):
     public_filter_list = [
         cellxgene.CellTypeMeta.cell_type_id
         == cellxgene.CalcCellClusterProportion.cell_type_id,
@@ -851,8 +851,34 @@ async def get_project_list_by_cell(
     data_list = []
     for cell_type_meta in cell_type_list:
         project_meta = cell_type_meta.cell_proportion_analysis_meta.analysis_project_meta
-        biosample_meta = ''
-    return ResponseMessage(status="0000", data='ok', message="ok")
+        biosample_meta = cell_type_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta
+        donor_meta = cell_type_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_donor_meta
+        species_meta = cell_type_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_species_meta
+        data_list.append([project_meta.title,
+                          biosample_meta.disease,
+                          biosample_meta.sequencing_instrument_manufacturer_model,
+                          cell_type_meta.cell_proportion,
+                          cell_type_meta.cell_number,
+                          species_meta.species,
+                          biosample_meta.organ,
+                          donor_meta.sex])
+    data_df = pd.DataFrame(data=data_list, columns=["Project", "Disease", "Platform", "Proportion of cel", "cell number", "Species", "Organ", "Sex"])
+    data_df = data_df.fillna('')
+    buffer = BytesIO()
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+    for i, col in enumerate(data_df.columns):
+        worksheet.write(0, i, col)
+        for j, value in enumerate(data_df[col]):
+            worksheet.write(j + 1, i, value)
+    workbook.close()
+
+    # 将 Excel 文件转换为字节流，作为响应体返回给客户端
+    buffer.seek(0)
+    excel_bytes = buffer.getvalue()
+    return StreamingResponse(BytesIO(excel_bytes),
+                             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                             headers={"Content-Disposition": "attachment; filename=myfile.xlsx"})
 
 
 @router.get(
@@ -928,6 +954,77 @@ async def get_project_list_by_gene(
         "page": page,
         "page_size": page_size,
     }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
+    "/list/by/gene/download",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_project_list_by_gene(
+    gene_symbol: Union[str, None] = None,
+    species_id: Union[int, None] = None,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+) -> ResponseMessage:
+    public_filter_list = [
+        cellxgene.GeneMeta.gene_ensemble_id
+        == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
+        cellxgene.CellClusterGeneExpression.calculated_cell_cluster_id
+        == cellxgene.CalcCellClusterProportion.calculated_cell_cluster_id,
+        cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.is_publish
+        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
+    if gene_symbol is not None:
+        public_filter_list.append(
+            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
+        )
+    if species_id is not None:
+        public_filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+    gene_meta_list = (
+        crud.get_project_by_gene(
+            db=db,
+            query_list=[cellxgene.CellClusterGeneExpression],
+            public_filter_list=public_filter_list,
+        )
+        .distinct()
+        .all()
+    )
+    data_list = []
+    for gene_meta in gene_meta_list:
+        project_meta = gene_meta.cell_proportion_analysis_meta.analysis_project_meta
+        biosample_meta = gene_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta
+        donor_meta = gene_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_donor_meta
+        species_meta = gene_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[0].biosample_analysis_biosample_meta.biosample_species_meta
+        data_list.append([project_meta.title,
+                          biosample_meta.disease,
+                          biosample_meta.sequencing_instrument_manufacturer_model,
+                          gene_meta.cell_proportion,
+                          gene_meta.cell_number,
+                          species_meta.species,
+                          biosample_meta.organ,
+                          donor_meta.sex])
+    data_df = pd.DataFrame(data=data_list, columns=["Project", "Disease", "Platform", "Proportion of cel", "cell number", "Species", "Organ", "Sex"])
+    data_df = data_df.fillna('')
+    buffer = BytesIO()
+    workbook = xlsxwriter.Workbook(buffer)
+    worksheet = workbook.add_worksheet()
+    for i, col in enumerate(data_df.columns):
+        worksheet.write(0, i, col)
+        for j, value in enumerate(data_df[col]):
+            worksheet.write(j + 1, i, value)
+    workbook.close()
+
+    # 将 Excel 文件转换为字节流，作为响应体返回给客户端
+    buffer.seek(0)
+    excel_bytes = buffer.getvalue()
+    return StreamingResponse(BytesIO(excel_bytes),
+                             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                             headers={"Content-Disposition": "attachment; filename=myfile.xlsx"})
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
 
@@ -1118,7 +1215,7 @@ async def get_cell_taxonomy_tree(
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
         # relation_dict = {"cl_id": cell_taxonomy_relation_model.cl_id}
         res = get_parent_id(
-            total_relation_list, cell_taxonomy_relation_model, res
+            total_relation_list, cell_taxonomy_relation_model.cl_id, res
         )
         # relation_dict["parent_dict"] = parent_dict
     return ResponseMessage(status="0000", data=res, message="ok")
@@ -1211,11 +1308,7 @@ def get_parent_id(relation_list, cl_id, parent_list):
                 'name': i.get('name')
             }
             if parent_dict not in parent_list:
-                parent_list.append({
-                    'cl_id': i.get("id"),
-                    'cl_pid': i.get('pId'),
-                    'name': i.get('name')
-                })
+                parent_list.append(parent_dict)
             get_parent_id(relation_list, i.get("pId"),parent_list)
         if i.get("id") == "CL:0000000":
             return parent_list
