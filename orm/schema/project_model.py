@@ -317,6 +317,21 @@ class PathwayScoreModel(BaseModel):
         org_mode = True
 
 
+class ProjectCreateModel(BaseModel):
+    title: str
+    description: str
+    h5ad_id: str
+    umap_id: str | None = None
+    cell_marker_id: str | None = None
+    pathway_id: str | None = None
+    tags: str
+    members: list
+    is_publish: int
+    is_private: int
+    species_id: int
+    organ: str
+
+
 if __name__ == "__main__":
     a = BiosampleModel()
     print(a.keys())

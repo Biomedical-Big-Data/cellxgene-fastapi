@@ -27,7 +27,7 @@ from typing import List, Union
 import pandas as pd
 from sqlalchemy import and_, or_, distinct, func
 from orm.dependencies import get_current_user
-from orm.schema.project_model import TransferProjectModel, CopyToProjectModel
+from orm.schema.project_model import TransferProjectModel, CopyToProjectModel, ProjectCreateModel
 from fastapi.responses import RedirectResponse, FileResponse, Response, StreamingResponse
 from uuid import uuid4
 from utils import file_util
@@ -172,18 +172,7 @@ async def get_analysis_detail(
 
 @router.post("/create", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def create_project(
-    title: str = Body(),
-    description: str = Body(),
-    h5ad_id: str = Body(),
-    umap_id: str = Body(),
-    cell_marker_id: str = Body(),
-    pathway_id: str = Body(),
-    tags: str = Body(),
-    members: list = Body(),
-    is_publish: int = Body(),
-    is_private: int = Body(),
-    species_id: int = Body(),
-    organ: str = Body(),
+    create_project_model: ProjectCreateModel,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
@@ -193,23 +182,23 @@ async def create_project(
         .id
     )
     project_status = config.ProjectStatus.PROJECT_STATUS_DRAFT
-    members.append(current_user_email_address)
+    create_project_model.members.append(current_user_email_address)
     member_info_list = []
-    if is_private:
+    if create_project_model.is_private:
         member_info_list = crud.get_user(
-            db=db, filters=[cellxgene.User.email_address.in_(members)]
+            db=db, filters=[cellxgene.User.email_address.in_(create_project_model.members)]
         ).all()
-    if is_publish:
-        if is_private:
+    if create_project_model.is_publish:
+        if create_project_model.is_private:
             project_status = config.ProjectStatus.PROJECT_STATUS_AVAILABLE
         else:
             project_status = config.ProjectStatus.PROJECT_STATUS_NEED_AUDIT
     insert_project_model = cellxgene.ProjectMeta(
-        title=title,
-        description=description,
+        title=create_project_model.title,
+        description=create_project_model.description,
         is_publish=project_status,
-        is_private=is_private,
-        tags=tags,
+        is_private=create_project_model.is_private,
+        tags=create_project_model.tags,
         owner=owner,
     )
     for member_info in member_info_list:
@@ -217,9 +206,12 @@ async def create_project(
         insert_project_model.project_project_user_meta.append(project_user_model)
     # h5ad_id = str(uuid4()).replace("-", "")
     # h5ad_id = "pbmc3k.h5ad"
-    insert_analysis_model = cellxgene.Analysis(h5ad_id=h5ad_id, umap_id=umap_id, cell_marker_id=cell_marker_id, pathway_id=pathway_id)
+    insert_analysis_model = cellxgene.Analysis(h5ad_id=create_project_model.h5ad_id,
+                                               umap_id=create_project_model.umap_id if create_project_model.umap_id is not None else "",
+                                               cell_marker_id=create_project_model.cell_marker_id if create_project_model.cell_marker_id is not None else "",
+                                               pathway_id=create_project_model.pathway_id if create_project_model.pathway_id is not None else "")
     insert_analysis_model.analysis_project_meta = insert_project_model
-    insert_biosample_model = cellxgene.BioSampleMeta(species_id=species_id, organ=organ)
+    insert_biosample_model = cellxgene.BioSampleMeta(species_id=create_project_model.species_id, organ=create_project_model.organ)
     biosample_id = crud.create_biosample(
         db=db, insert_biosample_model=insert_biosample_model
     )
