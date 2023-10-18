@@ -1228,10 +1228,12 @@ async def get_cell_taxonomy_info(
 @router.get("/view/file/{file_type}/{file_id}", status_code=status.HTTP_200_OK)
 async def get_csv_data(
     file_type: str,
-    file_id: str,
+    file_id: str | None = None,
     group_by: str | None = None,
     # current_user_email_address=Depends(get_current_user),
 ):
+    if file_id is None:
+        return ResponseMessage(status="0201", data={}, message="未上传文件")
     file_path = config.H5AD_FILE_PATH + "/" + file_id
     if file_type == 'umap':
         file_data_df = pd.read_csv(file_path)
