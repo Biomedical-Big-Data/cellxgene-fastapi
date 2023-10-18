@@ -1242,7 +1242,10 @@ async def get_csv_data(
         img_byte_arr = fig.to_image(format='png')
 
         # Return the picture as a response
-        return Response(content=img_byte_arr, media_type='image/png')
+        try:
+            return Response(content=img_byte_arr, media_type='image/png')
+        except:
+            return ResponseMessage(status="0201", data={}, message="文件不存在")
     elif file_type == 'cellmarker':
         try:
             return FileResponse(
