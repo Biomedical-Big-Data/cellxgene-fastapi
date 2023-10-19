@@ -41,9 +41,7 @@ def create_project_user(db: Session, insert_project_user_model: cellxgene.Projec
 
 
 def get_project_by_sample(db: Session, public_filter_list: List):
-    return db.query(cellxgene.BioSampleMeta).filter(
-        and_(*public_filter_list)
-    )
+    return db.query(cellxgene.BioSampleMeta).filter(and_(*public_filter_list))
     # return db.query(cellxgene.BioSampleMeta).filter(
     #     or_((and_(*filters)), (and_(*public_filter_list)))
     # )
@@ -58,12 +56,8 @@ def get_project_by_cell(db: Session, public_filter_list: List):
     # )
 
 
-def get_project_by_gene(
-    db: Session, query_list: List, public_filter_list: List
-):
-    return db.query(*query_list).filter(
-        and_(*public_filter_list)
-    )
+def get_project_by_gene(db: Session, query_list: List, public_filter_list: List):
+    return db.query(*query_list).filter(and_(*public_filter_list))
     # return db.query(*query_list).filter(
     #     or_((and_(*filters)), (and_(*public_filter_list)))
     # )
@@ -269,9 +263,7 @@ def create_taxonomy(
     db.commit()
 
 
-def get_taxonomy(
-    db: Session, filters: List
-):
+def get_taxonomy(db: Session, filters: List):
     return db.query(cellxgene.CellTaxonomy).filter(and_(*filters))
 
 
@@ -281,7 +273,9 @@ def create_file(db: Session, insert_file_model: cellxgene.FileLibrary):
 
 
 def update_file(db: Session, filters: List, file_filters: List, update_dict: Dict):
-    db.query(cellxgene.FileLibrary).filter(and_((and_(*filters)), (or_(*file_filters)))).update(update_dict)
+    db.query(cellxgene.FileLibrary).filter(
+        and_((and_(*filters)), (or_(*file_filters)))
+    ).update(update_dict)
 
 
 def create_file_for_transaction(db: Session, insert_file_model: cellxgene.FileLibrary):
@@ -361,12 +355,121 @@ def get_cell_test2(db: Session):
 
     # Define the recursive query using CTE
     print("start")
-    cte = db.query(
-        cellxgene.CellTaxonomyRelation.cl_id.label("child_id"),
-        cellxgene.CellTaxonomyRelation.name.label("name"),
-        cellxgene.CellTaxonomyRelation.cl_pid.label("parent_id"),
-    ).filter(cellxgene.CellTaxonomyRelation.cl_id.in_(['CL:0000007','CL:0000208','CL:0002288','CL:0002321','CL:0000312','CL:0000114','CL:0002645','CL:0000360','CL:0000372','CL:0000008','CL:0000133','CL:1000083','CL:0000216','CL:1001606','CL:0002561','CL:0000192','CL:0002160','CL:0002562','CL:0000353','CL:0000441','CL:0000312','CL:0002161','CL:0005026','CL:0011010','CL:0010000','CL:0002484','CL:0000365','CL:0000854','CL:0002153','CL:0002148','CL:0005022','CL:1000448','CL:0002190','CL:0000223','CL:0002170','CL:0000066','CL:0000066','CL:0002451','CL:0011012','CL:0000222','CL:0000237','CL:0000362','CL:0002135','CL:0002285','CL:2000033','CL:0000238','CL:0000419','CL:2000073','CL:0002640','CL:0007018','CL:0002638','CL:0002560','CL:0002664','CL:0002308','CL:0002189','CL:0002655','CL:0002159','CL:0000032','CL:2000081','CL:0000374','CL:1000447','CL:1000085','CL:1000348','CL:0000649','CL:0000712','CL:2000082','CL:0002337','CL:0011011','CL:0002158','CL:0002351','CL:0000357','CL:0002418','CL:2000075','CL:0000221','CL:0002187','CL:0002283','CL:0000185','CL:0007006','CL:0002654','CL:0002643','CL:0000499','CL:1000486','CL:0000240','CL:0002221','CL:0000011','CL:0007020','CL:0002483','CL:0000646','CL:2000092','CL:0000036','CL:0000361','CL:1000428','CL:0002607','CL:2000000','CL:0000646','CL:0000646','CL:0000185','CL:0000077','CL:0000312','CL:0000646','CL:0000646']
-                                                      )).cte(recursive=True)
+    cte = (
+        db.query(
+            cellxgene.CellTaxonomyRelation.cl_id.label("child_id"),
+            cellxgene.CellTaxonomyRelation.name.label("name"),
+            cellxgene.CellTaxonomyRelation.cl_pid.label("parent_id"),
+        )
+        .filter(
+            cellxgene.CellTaxonomyRelation.cl_id.in_(
+                [
+                    "CL:0000007",
+                    "CL:0000208",
+                    "CL:0002288",
+                    "CL:0002321",
+                    "CL:0000312",
+                    "CL:0000114",
+                    "CL:0002645",
+                    "CL:0000360",
+                    "CL:0000372",
+                    "CL:0000008",
+                    "CL:0000133",
+                    "CL:1000083",
+                    "CL:0000216",
+                    "CL:1001606",
+                    "CL:0002561",
+                    "CL:0000192",
+                    "CL:0002160",
+                    "CL:0002562",
+                    "CL:0000353",
+                    "CL:0000441",
+                    "CL:0000312",
+                    "CL:0002161",
+                    "CL:0005026",
+                    "CL:0011010",
+                    "CL:0010000",
+                    "CL:0002484",
+                    "CL:0000365",
+                    "CL:0000854",
+                    "CL:0002153",
+                    "CL:0002148",
+                    "CL:0005022",
+                    "CL:1000448",
+                    "CL:0002190",
+                    "CL:0000223",
+                    "CL:0002170",
+                    "CL:0000066",
+                    "CL:0000066",
+                    "CL:0002451",
+                    "CL:0011012",
+                    "CL:0000222",
+                    "CL:0000237",
+                    "CL:0000362",
+                    "CL:0002135",
+                    "CL:0002285",
+                    "CL:2000033",
+                    "CL:0000238",
+                    "CL:0000419",
+                    "CL:2000073",
+                    "CL:0002640",
+                    "CL:0007018",
+                    "CL:0002638",
+                    "CL:0002560",
+                    "CL:0002664",
+                    "CL:0002308",
+                    "CL:0002189",
+                    "CL:0002655",
+                    "CL:0002159",
+                    "CL:0000032",
+                    "CL:2000081",
+                    "CL:0000374",
+                    "CL:1000447",
+                    "CL:1000085",
+                    "CL:1000348",
+                    "CL:0000649",
+                    "CL:0000712",
+                    "CL:2000082",
+                    "CL:0002337",
+                    "CL:0011011",
+                    "CL:0002158",
+                    "CL:0002351",
+                    "CL:0000357",
+                    "CL:0002418",
+                    "CL:2000075",
+                    "CL:0000221",
+                    "CL:0002187",
+                    "CL:0002283",
+                    "CL:0000185",
+                    "CL:0007006",
+                    "CL:0002654",
+                    "CL:0002643",
+                    "CL:0000499",
+                    "CL:1000486",
+                    "CL:0000240",
+                    "CL:0002221",
+                    "CL:0000011",
+                    "CL:0007020",
+                    "CL:0002483",
+                    "CL:0000646",
+                    "CL:2000092",
+                    "CL:0000036",
+                    "CL:0000361",
+                    "CL:1000428",
+                    "CL:0002607",
+                    "CL:2000000",
+                    "CL:0000646",
+                    "CL:0000646",
+                    "CL:0000185",
+                    "CL:0000077",
+                    "CL:0000312",
+                    "CL:0000646",
+                    "CL:0000646",
+                ]
+            )
+        )
+        .cte(recursive=True)
+    )
     cte_alias = aliased(cte, name="e")
 
     cte = cte.union_all(
@@ -396,6 +499,7 @@ def get_cell_test2(db: Session):
 if __name__ == "__main__":
     pass
     from orm.dependencies import get_db
+
     get_cell_test2(db=next(get_db()))
     # create_project_biosample(db=next(get_db()))
     # update_project_biosample(db=next(get_db()))

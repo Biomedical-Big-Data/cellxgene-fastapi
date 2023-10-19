@@ -60,6 +60,6 @@ def reset_password_mail_template(user_name: str, reset_password_url: str) -> str
 
 if __name__ == "__main__":
     send_mail_result = send_mail(
-        mail_template='', subject="重置密码邮件", to_list='619589351@qq.com'
+        mail_template="", subject="重置密码邮件", to_list="619589351@qq.com"
     )
     print(send_mail_result)

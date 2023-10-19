@@ -99,9 +99,7 @@ def upload_file(db, analysis_id, excel_id):
             crud.update_biosample_for_transaction(
                 db=db,
                 filters=[cellxgene.BioSampleMeta.id == biosample_meta.id],
-                update_dict=biosample_meta.model_dump(
-                    mode="json", exclude_none=True
-                ),
+                update_dict=biosample_meta.model_dump(mode="json", exclude_none=True),
             )
     inserted_biosample_id_list = crud.create_biosample_for_transaction(
         db=db, insert_biosample_model_list=insert_biosample_model_list
@@ -141,15 +139,11 @@ def upload_file(db, analysis_id, excel_id):
         db=db, insert_biosample_analysis_list=insert_biosample_analysis_model_list
     )
     for _, row in cell_proportion_df.iterrows():
-        cell_proportion_meta = project_model.CellClusterProportionModel(
-            **row.to_dict()
-        )
+        cell_proportion_meta = project_model.CellClusterProportionModel(**row.to_dict())
         cell_proportion_meta.biosample_id = (
             cell_proportion_meta.biosample_id
             if type(cell_proportion_meta.biosample_id) == int
-            else int(
-                inserted_biosample_id_dict.get(cell_proportion_meta.biosample_id)
-            )
+            else int(inserted_biosample_id_dict.get(cell_proportion_meta.biosample_id))
         )
         cell_proportion_meta.analysis_id = analysis_id
         if cell_proportion_meta.biosample_id not in inserted_biosample_id_list:
@@ -222,8 +216,7 @@ def upload_file(db, analysis_id, excel_id):
             check_gene_expression_meta = crud.get_gene_expression(
                 db=db,
                 filters=[
-                    cellxgene.CellClusterGeneExpression.id
-                    == gene_expression_meta.id
+                    cellxgene.CellClusterGeneExpression.id == gene_expression_meta.id
                 ],
             )
             if not check_gene_expression_meta:
@@ -233,8 +226,7 @@ def upload_file(db, analysis_id, excel_id):
             crud.update_gene_expression_for_transaction(
                 db=db,
                 filters=[
-                    cellxgene.CellClusterGeneExpression.id
-                    == gene_expression_meta.id
+                    cellxgene.CellClusterGeneExpression.id == gene_expression_meta.id
                 ],
                 update_dict=gene_expression_meta.model_dump(
                     mode="json", exclude_none=True

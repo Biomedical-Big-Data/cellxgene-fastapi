@@ -7,6 +7,7 @@ from orm import crud
 from orm.db_model import cellxgene
 from sqlalchemy.orm import Session
 from orm.schema.exception_model import CREDENTIALS_EXCEPTION
+from orm.schema.response import ResponseMessage
 
 
 def create_salt(length: int = 8):
@@ -42,6 +43,21 @@ def create_token(
     return jwt_token
 
 
+def create_download_file_token(
+    file_id: str,
+    expire_time: int = config.JWT_VERIFY_EXPIRE_TIME,
+    secret_key: str = config.JWT_SECRET_KEY,
+) -> str:
+    token_dict = {
+        "expire_time": (datetime.now() + timedelta(minutes=expire_time)).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
+        "email_address": file_id,
+    }
+    jwt_token = jwt.encode(token_dict, secret_key, algorithm=config.JWT_ALGORITHMS)
+    return jwt_token
+
+
 def check_token_for_verify_email(
     db: Session, token: str, secret_key: str = config.JWT_SECRET_KEY
 ) -> str:
@@ -65,6 +81,21 @@ def check_token_for_verify_email(
         raise CREDENTIALS_EXCEPTION
     except jwt.exceptions.PyJWTError as e:
         raise CREDENTIALS_EXCEPTION
+
+
+def check_download_file_token(
+    download_file_id: str, token: str, secret_key: str = config.JWT_SECRET_KEY
+):
+    token_dict = jwt.decode(jwt=token, key=secret_key, algorithms=config.JWT_ALGORITHMS)
+    expire_time = token_dict.get("expire_time", "")
+    file_id = token_dict.get("file_id", "")
+    if not file_id or not expire_time:
+        return ResponseMessage(status="0201", data={}, message="token错误")
+    if file_id != download_file_id:
+        return ResponseMessage(status="0201", data={}, message="下载ID不一致")
+    if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
+        return ResponseMessage(status="0201", data={}, message="下载超过规定时间")
+    return True
 
 
 if __name__ == "__main__":

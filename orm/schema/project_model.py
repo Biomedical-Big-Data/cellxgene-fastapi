@@ -145,8 +145,9 @@ class AnalysisModel(BaseModel):
     project_id: int | None
     h5ad_id: str | None
     umap_id: str | None
-    pathway_id: str | None
     cell_marker_id: str | None
+    pathway_id: str | None
+    other_file_ids: str | None
     reference: str | None
     analysis_protocol: str | None
     create_at: datetime
@@ -324,6 +325,7 @@ class ProjectCreateModel(BaseModel):
     umap_id: str | None = None
     cell_marker_id: str | None = None
     pathway_id: str | None = None
+    other_file_ids: str | None = (None,)
     tags: str
     members: list
     is_publish: int

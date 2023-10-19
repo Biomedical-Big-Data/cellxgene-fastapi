@@ -154,9 +154,9 @@ def get_relation():
 def get_parent_id(relation_list, cl_id, parent_dict):
     for i in relation_list:
         if i.get("id") == cl_id:
-            parent_dict['cl_id'] = i.get("id")
-            parent_dict['parent_dict'] = {}
-            get_parent_id(relation_list, i.get("pId"), parent_dict['parent_dict'])
+            parent_dict["cl_id"] = i.get("id")
+            parent_dict["parent_dict"] = {}
+            get_parent_id(relation_list, i.get("pId"), parent_dict["parent_dict"])
         if i.get("id") == "CL:0000000":
             return parent_dict
 

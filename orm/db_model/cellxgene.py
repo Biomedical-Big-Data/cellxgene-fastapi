@@ -353,6 +353,7 @@ class Analysis(Base):
     umap_id = Column(String(255))
     cell_marker_id = Column(String(255))
     pathway_id = Column(String(255))
+    other_file_ids = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
     create_at = Column(
@@ -373,7 +374,9 @@ class Analysis(Base):
     analysis_project_meta = relationship(
         "ProjectMeta", back_populates="project_analysis_meta"
     )
-    analysis_pathway_score_meta = relationship("PathwayScore", back_populates="pathway_score_analysis_meta")
+    analysis_pathway_score_meta = relationship(
+        "PathwayScore", back_populates="pathway_score_analysis_meta"
+    )
 
 
 class CalcCellClusterProportion(Base):
@@ -592,7 +595,9 @@ class PathwayScore(Base):
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
 
-    pathway_score_analysis_meta = relationship("Analysis", back_populates="analysis_pathway_score_meta")
+    pathway_score_analysis_meta = relationship(
+        "Analysis", back_populates="analysis_pathway_score_meta"
+    )
 
 
 class User(Base):
