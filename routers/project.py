@@ -1,3 +1,5 @@
+from datetime import datetime
+import shutil
 import xlsxwriter
 from fastapi import (
     APIRouter,
@@ -447,6 +449,8 @@ async def transfer_project(
         and project_info.is_publish != config.ProjectStatus.PROJECT_STATUS_UNAVAILABLE
     ):
         try:
+            insert_transfer_model = cellxgene.TransferHistory(project_id=project_id, old_owner=project_info.owner, new_owner=transfer_to_user_info.id)
+            crud.create_transfer_history(db=db, insert_model=insert_transfer_model)
             crud.update_project(
                 db=db,
                 filters=[cellxgene.ProjectMeta.id == project_id],
@@ -474,14 +478,15 @@ async def transfer_project(
                     ),
                 )
             return ResponseMessage(status="0000", data={}, message="项目转移成功")
-        except:
+        except Exception as e:
+            print(e)
             return ResponseMessage(status="0201", data={}, message="项目转移失败")
     else:
         return ResponseMessage(status="0201", data={}, message="当前状态不可转移项目")
 
 
 @router.post(
-    "{project_id}/copy",
+    "/{project_id}/copy",
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
 )
@@ -493,7 +498,7 @@ def copy_project_id(
 ):
     copy_to_user_info = crud.get_user(
         db=db,
-        filters=[cellxgene.User.email_address == copy_to.transfer_to_email_address],
+        filters=[cellxgene.User.email_address == copy_to.copy_to_email_address],
     ).first()
     if not copy_to_user_info:
         return ResponseMessage(status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确")
@@ -503,31 +508,41 @@ def copy_project_id(
     if not project_info:
         return ResponseMessage(status="0201", data={}, message="项目不存在")
     if project_info.project_user_meta.email_address != current_user_email_address:
-        return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法转移此项目")
+        return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法复制此项目")
     if (
         project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
         and project_info.is_publish != config.ProjectStatus.PROJECT_STATUS_UNAVAILABLE
     ):
+        insert_project_dict = project_info.to_dict()
+        del insert_project_dict["id"]
+        del insert_project_dict["create_at"]
+        del insert_project_dict["update_at"]
+        insert_project_dict['owner'] = copy_to_user_info.id
         insert_project_model = cellxgene.ProjectMeta(
-            **project_info.model_dump(mode="json", exclude={"id"}, exclude_none=True)
+            **insert_project_dict
         )
-        for member_info in project_info.project_project_user_meta:
-            project_user_model = cellxgene.ProjectUser(user_id=member_info.user_id)
-            insert_project_model.project_project_user_meta.append(project_user_model)
-        # h5ad_id = str(uuid4()).replace("-", "")
-        # h5ad_id = "pbmc3k.h5ad"
-        insert_analysis_model = cellxgene.Analysis(**project_info)
+        analysis_meta = project_info.project_analysis_meta[0]
+        insert_analysis_dict = analysis_meta.to_dict()
+        del insert_analysis_dict["id"]
+        del insert_analysis_dict["create_at"]
+        del insert_analysis_dict["update_at"]
+        if analysis_meta.h5ad_id:
+            new_h5ad_id = file_util.copy_file(db=db, file_ids=analysis_meta.h5ad_id, upload_user_id=copy_to_user_info.id)
+            insert_analysis_dict['h5ad_id'] = new_h5ad_id
+        if analysis_meta.umap_id:
+            new_umap_id = file_util.copy_file(db=db, file_ids=analysis_meta.umap_id, upload_user_id=copy_to_user_info.id)
+            insert_analysis_dict['umap_id'] = new_umap_id
+        if analysis_meta.cell_marker_id:
+            new_cell_marker_id = file_util.copy_file(db=db, file_ids=analysis_meta.cell_marker_id, upload_user_id=copy_to_user_info.id)
+            insert_analysis_dict['cell_marker_id'] = new_cell_marker_id
+        if analysis_meta.pathway_id:
+            new_pathway_id = file_util.copy_file(db=db, file_ids=analysis_meta.pathway_id, upload_user_id=copy_to_user_info.id)
+            insert_analysis_dict['pathway_id'] = new_pathway_id
+        if analysis_meta.other_file_ids:
+            new_other_file_ids = file_util.copy_file(db=db, file_ids=analysis_meta.other_file_ids, upload_user_id=copy_to_user_info.id)
+            insert_analysis_dict['other_file_ids'] = new_other_file_ids
+        insert_analysis_model = cellxgene.Analysis(**insert_analysis_dict)
         insert_analysis_model.analysis_project_meta = insert_project_model
-        insert_biosample_model = cellxgene.BioSampleMeta(species_id=1, organ="organ")
-        biosample_id = crud.create_biosample(
-            db=db, insert_biosample_model=insert_biosample_model
-        )
-        insert_project_model.project_project_biosample_meta.append(
-            cellxgene.ProjectBioSample(biosample_id=biosample_id)
-        )
-        insert_analysis_model.analysis_biosample_analysis_meta.append(
-            cellxgene.BioSampleAnalysis(biosample_id=biosample_id)
-        )
         try:
             analysis_id, project_id = crud.create_analysis(
                 db=db, insert_analysis_model=insert_analysis_model
@@ -546,7 +561,7 @@ def copy_project_id(
             print(e)
             return ResponseMessage(status="0201", data={}, message="项目创建失败")
     else:
-        return ResponseMessage(status="0201", data={}, message="当前状态不可转移项目")
+        return ResponseMessage(status="0201", data={}, message="当前状态无法复制项目")
 
 
 @router.get(
@@ -1305,12 +1320,12 @@ async def get_user_h5ad_file_list(
             cellxgene.FileLibrary.file_name.like("%{}%".format(file_name))
         )
     h5ad_file_list = (
-        crud.get_h5ad(db=db, filters=filter_list)
+        crud.get_file_info(db=db, filters=filter_list)
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_h5ad(db=db, filters=filter_list).count()
+    total = crud.get_file_info(db=db, filters=filter_list).count()
     res_dict = {
         "h5ad_list": h5ad_file_list,
         "total": total,

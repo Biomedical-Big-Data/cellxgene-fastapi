@@ -282,7 +282,7 @@ def create_file_for_transaction(db: Session, insert_file_model: cellxgene.FileLi
     db.add(insert_file_model)
 
 
-def get_h5ad(db: Session, filters: List | None):
+def get_file_info(db: Session, filters: List | None):
     return db.query(cellxgene.FileLibrary).filter(and_(*filters))
 
 
@@ -317,6 +317,11 @@ def get_pathway_score(db: Session, filters: List):
     return db.query(cellxgene.PathwayScore).filter(and_(*filters))
 
 
+def create_transfer_history(db: Session, insert_model: cellxgene.TransferHistory):
+    db.add_all(insert_model)
+    db.commit()
+
+
 def get_cell_taxonomy_relation_tree(db: Session, filters: List):
     cte = (
         db.query(
@@ -344,8 +349,12 @@ if __name__ == "__main__":
     pass
     from orm.dependencies import get_db
 
-    relation_model_list = get_cell_taxonomy_relation_tree(db=next(get_db()))
-    print(len(relation_model_list), relation_model_list)
+    filter_list = [
+        cellxgene.FileLibrary.upload_user_id == 25,
+        cellxgene.FileLibrary.file_id == '918e8def0a074ec2ad8270261003ce45.h5ad'
+    ]
+    file_model = get_file_info(db=next(get_db()), filters=filter_list)
+    print(file_model)
     # create_project_biosample(db=next(get_db()))
     # update_project_biosample(db=next(get_db()))
     # delete_project_biosample(db=next(get_db()))

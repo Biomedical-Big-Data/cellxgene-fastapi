@@ -119,8 +119,11 @@ class ProjectMeta(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "project_alias_id": self.project_alias_id,
             "integrated_project": self.integrated_project,
             "title": self.title,
+            "donor_number": self.donor_number,
+            "biosample_number": self.biosample_number,
             "external_project_accesstion": self.external_project_accesstion,
             "cell_number": self.cell_number,
             "description": self.description,
@@ -132,6 +135,10 @@ class ProjectMeta(Base):
             "collaborating_organizations": self.collaborating_organizations,
             "citation": self.citation,
             "data_curators": self.data_curators,
+            "is_publish": self.is_publish,
+            "is_private": self.is_private,
+            "owner": self.owner,
+            "tags": self.tags,
             "create_at": self.create_at,
             "update_at": self.update_at,
         }
@@ -353,7 +360,7 @@ class Analysis(Base):
     umap_id = Column(String(255))
     cell_marker_id = Column(String(255))
     pathway_id = Column(String(255))
-    other_file_ids = Column(String(255))
+    # other_file_ids = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
     create_at = Column(
@@ -377,6 +384,21 @@ class Analysis(Base):
     analysis_pathway_score_meta = relationship(
         "PathwayScore", back_populates="pathway_score_analysis_meta"
     )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "h5ad_id": self.h5ad_id,
+            "umap_id": self.umap_id,
+            "cell_marker_id": self.cell_marker_id,
+            "pathway_id": self.pathway_id,
+            # "other_file_ids": self.other_file_ids,
+            "reference": self.reference,
+            "analysis_protocol": self.analysis_protocol,
+            "create_at": self.create_at,
+            "update_at": self.update_at
+        }
 
 
 class CalcCellClusterProportion(Base):
@@ -725,6 +747,23 @@ class FileLibrary(Base):
     file_id = Column(String(255), primary_key=True)
     file_name = Column(String(255))
     upload_user_id = Column(INTEGER)
+    create_at = Column(
+        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
+    update_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    )
+
+
+class TransferHistory(Base):
+    __tablename__ = "transfer_history"
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    project_id = Column(INTEGER)
+    old_owner = Column(INTEGER)
+    new_owner = Column(INTEGER)
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )

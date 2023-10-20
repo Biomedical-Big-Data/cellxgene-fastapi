@@ -334,6 +334,19 @@ class ProjectCreateModel(BaseModel):
     organ: str
 
 
+class TransferHistoryModel(BaseModel):
+    id: int
+    project_id: int
+    old_owner: int
+    new_owner: int
+    create_at: datetime
+    update_at: datetime
+
+    class Config:
+        org_mode = True
+
+
+
 if __name__ == "__main__":
     a = BiosampleModel()
     print(a.keys())
