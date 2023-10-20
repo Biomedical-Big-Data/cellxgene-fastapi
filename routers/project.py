@@ -1343,23 +1343,21 @@ async def get_cell_taxonomy_tree(
     db: Session = Depends(get_db),
     # current_user_email_address = Depends(get_current_user),
 ):
-    with open("./conf/celltype_relationship.json", "r", encoding="utf-8") as f:
-        total_relation_list = json.load(f)
     filter_list = [
         cellxgene.CellTaxonomy.specific_cell_ontology_id
         == cellxgene.CellTaxonomyRelation.cl_id,
         cellxgene.CellTaxonomy.cell_standard.like("%{}%".format(cell_standard)),
     ]
-    cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation(
-        db=db, query_list=[cellxgene.CellTaxonomyRelation], filters=filter_list
-    ).all()
+    cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
+        db=db, filters=filter_list
+    )
     res = []
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
-        # relation_dict = {"cl_id": cell_taxonomy_relation_model.cl_id}
-        res = get_parent_id(
-            total_relation_list, cell_taxonomy_relation_model.cl_id, res
-        )
-        # relation_dict["parent_dict"] = parent_dict
+        res.append({
+            "cl_id": cell_taxonomy_relation_model[0],
+            "cl_pid": cell_taxonomy_relation_model[1],
+            "name": cell_taxonomy_relation_model[2]
+        })
     return ResponseMessage(status="0000", data=res, message="ok")
 
 
@@ -1469,7 +1467,7 @@ async def project_view_h5ad(
     url_path: str,
     # request_param: Request,
     db: Session = Depends(get_db),
-    # current_user_email_address=Depends(get_current_user),
+    current_user_email_address=Depends(get_current_user),
 ):
     filter_list = [
         cellxgene.Analysis.id
@@ -1491,18 +1489,3 @@ async def project_view_h5ad(
         )
     else:
         return ResponseMessage(status="0201", data={}, message="无法查看此项目")
-
-
-def get_parent_id(relation_list, cl_id, parent_list):
-    for i in relation_list:
-        if i.get("id") == cl_id:
-            parent_dict = {
-                "cl_id": i.get("id"),
-                "cl_pid": i.get("pId"),
-                "name": i.get("name"),
-            }
-            if parent_dict not in parent_list:
-                parent_list.append(parent_dict)
-            get_parent_id(relation_list, i.get("pId"), parent_list)
-        if i.get("id") == "CL:0000000":
-            return parent_list
