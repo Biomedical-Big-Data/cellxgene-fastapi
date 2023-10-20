@@ -1,5 +1,7 @@
 from io import BytesIO
 
+from sqlalchemy.orm import Session
+
 from conf import config
 from orm import crud
 import pandas as pd
@@ -10,7 +12,7 @@ from orm.schema import project_model
 from orm.schema.response import ResponseMessage
 
 
-def upload_file(db, analysis_id, excel_id):
+def upload_file(db: Session, analysis_id: int, excel_id: str):
     # current_user_info = crud.get_user(
     #     db=db, filters=[cellxgene.User.email_address == current_admin_email_address]
     # )

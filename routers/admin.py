@@ -201,7 +201,7 @@ async def admin_update_project(
     project_id: int,
     analysis_id: int = Body(),
     title: str = Body(),
-    description: str = Body(),
+    description: str | None = Body(),
     h5ad_id: str | None = Body(),
     cell_marker_id: str | None = Body(),
     umap_id: str | None = Body(),
@@ -336,7 +336,7 @@ async def get_cell_list(
     if species_id is not None:
         filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
     if genes_positive is not None:
-        genes_positive_list = genes_positive.split(",")
+        genes_positive_list = genes_positive.replace(";", ",").split(",")
         positive_filter_list = []
         for positive in genes_positive_list:
             positive_filter_list.append(
@@ -344,7 +344,7 @@ async def get_cell_list(
             )
         filter_list.append(or_(*positive_filter_list))
     if genes_negative is not None:
-        genes_negative_list = genes_negative.split(",")
+        genes_negative_list = genes_negative.replace(";", ",").split(",")
         negative_filter_list = []
         for negative in genes_negative_list:
             negative_filter_list.append(
@@ -445,3 +445,20 @@ async def get_server_status(
 ):
     server_status_list = [value for key, value in SERVER_STATUS_DICT.items()]
     return ResponseMessage(status="0000", data=server_status_list, message="ok")
+
+
+@router.post(
+    "/project/meta/file/upload",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK
+)
+async def upload_project_meta_file(
+    meta_file: UploadFile = File(...),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    project_content = await meta_file.read()
+    project_excel_df = pd.ExcelFile(BytesIO(project_content))
+    cell_type_meta_df = project_excel_df.parse("cell_type_meta")
+    donor_meta_df = project_excel_df.parse("donor_meta")
+    gene_meta_df = project_excel_df.parse("gene_meta")
+    pathway_score_df = project_excel_df.parse("pathway_score")
