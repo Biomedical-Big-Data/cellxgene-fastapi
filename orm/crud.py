@@ -318,7 +318,7 @@ def get_pathway_score(db: Session, filters: List):
 
 
 def create_transfer_history(db: Session, insert_model: cellxgene.TransferHistory):
-    db.add_all(insert_model)
+    db.add(insert_model)
     db.commit()
 
 

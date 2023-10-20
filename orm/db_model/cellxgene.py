@@ -360,7 +360,7 @@ class Analysis(Base):
     umap_id = Column(String(255))
     cell_marker_id = Column(String(255))
     pathway_id = Column(String(255))
-    # other_file_ids = Column(String(255))
+    other_file_ids = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
     create_at = Column(
