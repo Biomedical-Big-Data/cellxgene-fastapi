@@ -256,6 +256,21 @@ def create_gene(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
     db.commit()
 
 
+def create_cell_type_meta(db: Session, insert_cell_type_model_list: List[cellxgene.CellTypeMeta]):
+    db.add_all(insert_cell_type_model_list)
+    db.commit()
+
+
+def create_donor_meta(db: Session, insert_donor_meta_list: List[cellxgene.DonorMeta]):
+    db.add_all(insert_donor_meta_list)
+    db.commit()
+
+
+def create_pathway_score(db: Session, insert_pathway_meta_list: List[cellxgene.DonorMeta]):
+    db.add_all(insert_pathway_meta_list)
+    db.commit()
+
+
 def create_taxonomy(
     db: Session, insert_taxonomy_model_list: List[cellxgene.CellTaxonomy]
 ):

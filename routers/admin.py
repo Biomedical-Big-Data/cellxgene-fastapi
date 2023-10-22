@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -7,6 +9,7 @@ from fastapi import (
     Body,
     File,
     UploadFile,
+    BackgroundTasks
 )
 from fastapi.responses import RedirectResponse
 from orm.schema import project_model, user_model
@@ -23,9 +26,6 @@ from orm.db_model import cellxgene
 from utils import auth_util, mail_util, file_util, upload_excel_util
 from conf import config
 from typing import List, Union
-from io import BytesIO
-import pandas as pd
-import numpy as np
 from orm.dependencies import get_db, get_current_admin
 from mqtt_consumer.consumer import SERVER_STATUS_DICT
 from uuid import uuid4
@@ -453,12 +453,15 @@ async def get_server_status(
     status_code=status.HTTP_200_OK
 )
 async def upload_project_meta_file(
+    background_tasks: BackgroundTasks,
     meta_file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
-    project_content = await meta_file.read()
-    project_excel_df = pd.ExcelFile(BytesIO(project_content))
-    cell_type_meta_df = project_excel_df.parse("cell_type_meta")
-    donor_meta_df = project_excel_df.parse("donor_meta")
-    gene_meta_df = project_excel_df.parse("gene_meta")
-    pathway_score_df = project_excel_df.parse("pathway_score")
+    try:
+        project_content = await meta_file.read()
+        background_tasks.add_task(file_util.update_meta_file, db, project_content, current_admin_email_address)
+    except Exception as e:
+        logging.error('[upload project meta error]: {}'.format(str(e)))
+    else:
+        return ResponseMessage(status="0000", data={}, message="上传文件成功，更新数据结果请等待邮件接收")
