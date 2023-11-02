@@ -168,6 +168,7 @@ async def send_reset_user_password_mail(
     user_dict = crud.get_user(
         db, [cellxgene.User.email_address == user.email_address]
     ).first()
+    print(user.email_address)
     if not user_dict:
         return ResponseMessage(status="0201", data={}, message="用户名错误")
     token = auth_util.create_token(

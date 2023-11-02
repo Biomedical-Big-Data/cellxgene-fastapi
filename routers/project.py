@@ -34,6 +34,7 @@ from orm.schema.project_model import (
     TransferProjectModel,
     CopyToProjectModel,
     ProjectCreateModel,
+    ProjectUpdateModel,
 )
 from fastapi.responses import (
     RedirectResponse,
@@ -302,83 +303,79 @@ async def create_project(
 
 @router.post("/update", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
 async def update_project(
-    project_id: int = Body(),
-    title: str = Body(),
-    description: str = Body(),
-    h5ad_id: str | None = Body(),
-    umap_id: str | None = Body(),
-    cell_marker_id: str | None = Body(),
-    pathway_id: str | None = Body(),
-    other_file_ids: str | None = Body(),
-    tags: str = Body(),
-    members: list = Body(),
-    is_publish: int = Body(),
-    is_private: int = Body(),
-    species_id: int = Body(),
-    organ: str = Body(),
+    update_project_model: ProjectUpdateModel,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
+    print(update_project_model)
     filter_list = [
-        cellxgene.ProjectMeta.id == project_id,
+        cellxgene.ProjectMeta.id == update_project_model.project_id,
         cellxgene.ProjectMeta.owner == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
     ]
     project_info = crud.get_project(db=db, filters=filter_list).first()
-    members.append(current_user_email_address)
+    update_project_model.members.append(current_user_email_address)
     if not project_info:
         return ResponseMessage(status="0201", data={}, message="您无权更新此项目")
     if (project_info.is_publish == config.ProjectStatus.PROJECT_STATUS_DRAFT) or (
         project_info.is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
-        and is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
+        and update_project_model.is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
         and project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
     ):
-        project_status = is_publish
+        project_status = update_project_model.is_publish
         if (
-            is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC
-            and is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
+            update_project_model.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC
+            and update_project_model.is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
         ):
             project_status = config.ProjectStatus.PROJECT_STATUS_NEED_AUDIT
         update_project_dict = {
-            "title": title,
-            "description": description,
-            "tags": tags,
+            "title": update_project_model.title,
+            "description": update_project_model.description,
+            "tags": update_project_model.tags,
             "is_publish": project_status,
-            "is_private": is_private,
+            "is_private": update_project_model.is_private,
         }
+        print('11111')
         member_info_list = crud.get_user(
-            db=db, filters=[cellxgene.User.email_address.in_(members)]
+            db=db, filters=[cellxgene.User.email_address.in_(update_project_model.members)]
         ).all()
         insert_project_user_model_list = []
         for member_info in member_info_list:
             insert_project_user_model_list.append(
-                cellxgene.ProjectUser(project_id=project_id, user_id=member_info.id)
+                cellxgene.ProjectUser(project_id=update_project_model.project_id, user_id=member_info.id)
             )
-        update_biosample_id = project_info.project_project_biosample_meta[
-            0
-        ].biosample_id
-        update_biosample_dict = {"species_id": species_id, "organ": organ}
+        print('33333')
+        if not project_info.is_private:
+            update_biosample_id = project_info.project_project_biosample_meta[
+                0
+            ].biosample_id
+            update_biosample_dict = {"species_id": update_project_model.species_id, "organ": update_project_model.organ}
+        else:
+            update_biosample_id = 0
+            update_biosample_dict = {}
         update_analysis_id = project_info.project_analysis_meta[0].id
+        print('update_analysis_id', update_analysis_id)
         # h5ad_id = str(uuid4()).replace("-", "")
         update_analysis_dict = {
-            "h5ad_id": h5ad_id if h5ad_id is not None else "",
-            "umap_id": umap_id if umap_id is not None else "",
-            "cell_marker_id": cell_marker_id if cell_marker_id is not None else "",
-            "pathway_id": pathway_id if pathway_id is not None else "",
-            "other_file_ids": other_file_ids if other_file_ids is not None else "",
+            "h5ad_id": update_project_model.h5ad_id if update_project_model.h5ad_id is not None else "",
+            "umap_id": update_project_model.umap_id if update_project_model.umap_id is not None else "",
+            "cell_marker_id": update_project_model.cell_marker_id if update_project_model.cell_marker_id is not None else "",
+            "pathway_id": update_project_model.pathway_id if update_project_model.pathway_id is not None else "",
+            "other_file_ids": update_project_model.other_file_ids if update_project_model.other_file_ids is not None else "",
         }
+        print("22222")
         crud.project_update_transaction(
             db=db,
             delete_project_user_filters=[
-                cellxgene.ProjectUser.project_id == project_id
+                cellxgene.ProjectUser.project_id == update_project_model.project_id
             ],
             insert_project_user_model_list=insert_project_user_model_list,
-            update_project_filters=[cellxgene.ProjectMeta.id == project_id],
+            update_project_filters=[cellxgene.ProjectMeta.id == update_project_model.project_id],
             update_project_dict=update_project_dict,
             update_biosample_filters=[
                 cellxgene.BioSampleMeta.id == update_biosample_id
-            ],
-            update_biosample_dict=update_biosample_dict,
+            ] if not project_info.is_private else [],
+            update_biosample_dict=update_biosample_dict if not project_info.is_private else {},
             update_analysis_filters=[cellxgene.Analysis.id == update_analysis_id],
             update_analysis_dict=update_analysis_dict,
         )
@@ -1336,13 +1333,13 @@ async def get_user_h5ad_file_list(
 
 
 @router.get(
-    "/species/list", response_model=ResponseMessage, status_code=status.HTTP_200_OK
+    "/species/list", response_model=ResponseProjectListModel, status_code=status.HTTP_200_OK
 )
 async def get_species_list(
     db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)
 ) -> ResponseMessage:
     species_list = crud.get_species_list(
-        db=db, query_list=[cellxgene.SpeciesMeta], filters=None
+        db=db, query_list=[cellxgene.SpeciesMeta], filters=[]
     ).all()
     return ResponseMessage(status="0000", data=species_list, message="ok")
 
@@ -1416,7 +1413,16 @@ async def get_csv_data(
             return Response(content=img_byte_arr, media_type="image/png")
         except:
             return ResponseMessage(status="0201", data={}, message="文件不存在")
-    elif file_type == "cellmarker":
+    elif file_type == "cell_marker":
+        try:
+            return FileResponse(
+                file_path,
+                media_type="application/octet-stream",
+                filename=file_id,
+            )
+        except:
+            return ResponseMessage(status="0201", data={}, message="文件不存在")
+    elif file_type == "pathway_score":
         try:
             return FileResponse(
                 file_path,
@@ -1427,12 +1433,12 @@ async def get_csv_data(
             return ResponseMessage(status="0201", data={}, message="文件不存在")
 
 
-@router.get("/download/file/{file_id}", status_code=status.HTTP_200_OK)
-async def download_file(
-    file_id: str,
+
+@router.get("/download/file/meta", status_code=status.HTTP_200_OK)
+async def download_meta_file(
     current_user_email_address=Depends(get_current_user),
 ):
-    file_path = config.H5AD_FILE_PATH + "/" + file_id
+    file_path = config.META_FILE_PATH
     return StreamingResponse(
         file_util.file_iterator(file_path),
         media_type="application/octet-stream",
@@ -1440,31 +1446,64 @@ async def download_file(
     )
 
 
-@router.get("/download/file/h5ad/{file_id}", status_code=status.HTTP_200_OK)
-async def download_h5ad_file(
-    file_id: str,
-    download_file_token: str = Header(),
+@router.get("/download/file/update_file", status_code=status.HTTP_200_OK)
+async def download_meta_file(
     current_user_email_address=Depends(get_current_user),
 ):
-    can_download = auth_util.check_download_file_token(
+    file_path = config.UPDATE_FILE_PATH
+    return StreamingResponse(
+        file_util.file_iterator(file_path),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f"attachment; filename={file_path}"},
+    )
+
+
+# @router.get("/download/file/{file_id}", status_code=status.HTTP_200_OK)
+# async def download_file(
+#     file_id: str,
+#     current_user_email_address=Depends(get_current_user),
+# ):
+#     file_path = config.H5AD_FILE_PATH + "/" + file_id
+#     return StreamingResponse(
+#         file_util.file_iterator(file_path),
+#         media_type="application/octet-stream",
+#         headers={"Content-Disposition": f"attachment; filename={file_path}"},
+#     )
+
+
+@router.get("/download/file/{file_id}", status_code=status.HTTP_200_OK)
+async def download_h5ad_file(
+    file_id: str,
+    download_file_token: str,
+    # current_user_email_address=Depends(get_current_user),
+):
+    can_download, message = auth_util.check_download_file_token(
         download_file_id=file_id, token=download_file_token
     )
     if can_download:
         file_path = config.H5AD_FILE_PATH + "/" + file_id
-        return StreamingResponse(
-            file_util.file_iterator(file_path),
+        return FileResponse(
+            path=file_path,
             media_type="application/octet-stream",
-            headers={"Content-Disposition": f"attachment; filename={file_path}"},
+            filename=file_id,
         )
     else:
-        return ResponseMessage(status="0201", data={}, message="TOKEN认证失败，无法下载")
+        return ResponseMessage(status="0201", data={}, message=message)
 
 
 @router.get("/download/file/{file_id}/token", status_code=status.HTTP_200_OK)
 async def get_download_h5ad_file_token(
     file_id: str,
+    db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
+    file_meta = crud.get_file_info(db=db, filters=[cellxgene.FileLibrary.file_id == file_id]).first()
+    if not file_meta:
+        return ResponseMessage(
+            status="0201",
+            data={},
+            message="该file id无对应文件",
+        )
     download_file_token = auth_util.create_download_file_token(file_id, expire_time=120)
     return ResponseMessage(
         status="0000",

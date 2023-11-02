@@ -216,9 +216,10 @@ def project_update_transaction(
     update_project_for_transaction(
         db=db, filters=update_project_filters, update_dict=update_project_dict
     )
-    update_biosample_for_transaction(
-        db=db, filters=update_biosample_filters, update_dict=update_biosample_dict
-    )
+    if update_biosample_filters:
+        update_biosample_for_transaction(
+            db=db, filters=update_biosample_filters, update_dict=update_biosample_dict
+        )
     update_analysis_for_transaction(
         db=db, filters=update_analysis_filters, update_dict=update_analysis_dict
     )

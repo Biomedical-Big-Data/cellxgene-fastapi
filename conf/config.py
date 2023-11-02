@@ -57,6 +57,8 @@ RESET_PASSWORD_URL = VERIFY_CONFIG.get("reset_password_url")
 
 CELLXGENE_GATEWAY_URL = CELLXGENE_GATEWAY_CONFIG.get("url")
 H5AD_FILE_PATH = CELLXGENE_GATEWAY_CONFIG.get("h5ad_file_path")
+META_FILE_PATH = CELLXGENE_GATEWAY_CONFIG.get("meta_file_path")
+UPDATE_FILE_PATH = CELLXGENE_GATEWAY_CONFIG.get("update_project_file_path")
 
 MQTT_BROKER_URL = MQTT_CONFIG.get("mqtt_broker_url")
 MQTT_BROKER_PORT = MQTT_CONFIG.get("mqtt_broker_port")

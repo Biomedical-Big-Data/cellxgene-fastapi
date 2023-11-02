@@ -52,7 +52,7 @@ def create_download_file_token(
         "expire_time": (datetime.now() + timedelta(minutes=expire_time)).strftime(
             "%Y-%m-%d %H:%M:%S"
         ),
-        "email_address": file_id,
+        "file_id": file_id,
     }
     jwt_token = jwt.encode(token_dict, secret_key, algorithm=config.JWT_ALGORITHMS)
     return jwt_token
@@ -90,12 +90,12 @@ def check_download_file_token(
     expire_time = token_dict.get("expire_time", "")
     file_id = token_dict.get("file_id", "")
     if not file_id or not expire_time:
-        return ResponseMessage(status="0201", data={}, message="token错误")
+        return False, "token错误"
     if file_id != download_file_id:
-        return ResponseMessage(status="0201", data={}, message="下载ID不一致")
+        return False, "下载ID不一致"
     if expire_time < datetime.now().strftime("%Y-%m-%d %H:%M:%S"):
-        return ResponseMessage(status="0201", data={}, message="下载超过规定时间")
-    return True
+        return False, "下载超过规定时间"
+    return True, "验证成功"
 
 
 if __name__ == "__main__":

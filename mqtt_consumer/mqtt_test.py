@@ -54,7 +54,7 @@ async def main(broker_host):
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
 
-    host = "124.223.82.115"
+    host = "10.15.53.107"
     # token = os.environ.get('FLESPI_TOKEN')
 
     # loop.add_signal_handler(signal.SIGINT, ask_exit)

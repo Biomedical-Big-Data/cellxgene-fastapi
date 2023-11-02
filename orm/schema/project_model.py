@@ -325,13 +325,30 @@ class ProjectCreateModel(BaseModel):
     umap_id: str | None = None
     cell_marker_id: str | None = None
     pathway_id: str | None = None
-    other_file_ids: str | None = (None,)
+    other_file_ids: str | None = None
     tags: str
     members: list
     is_publish: int
     is_private: int
-    species_id: int
-    organ: str
+    species_id: int | None = None
+    organ: str | None = None
+
+
+class ProjectUpdateModel(BaseModel):
+    project_id: int
+    title: str
+    description: str
+    h5ad_id: str
+    umap_id: str | None = None
+    cell_marker_id: str | None = None
+    pathway_id: str | None = None
+    other_file_ids: str | None = None
+    tags: str
+    members: list
+    is_publish: int
+    is_private: int
+    species_id: int | None = None
+    organ: str | None = None
 
 
 class TransferHistoryModel(BaseModel):
