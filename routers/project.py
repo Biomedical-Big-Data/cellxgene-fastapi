@@ -537,7 +537,7 @@ def copy_project_id(
         insert_project_model = cellxgene.ProjectMeta(
             **insert_project_dict
         )
-        insert_project_model.project_project_user_meta = cellxgene.ProjectUser(user_id=copy_to_user_info.id)
+        insert_project_model.project_project_user_meta = [cellxgene.ProjectUser(user_id=copy_to_user_info.id)]
         analysis_meta = project_info.project_analysis_meta[0]
         insert_analysis_dict = analysis_meta.to_dict()
         del insert_analysis_dict["id"]
