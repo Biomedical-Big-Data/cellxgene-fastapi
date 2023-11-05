@@ -1515,13 +1515,13 @@ async def get_download_h5ad_file_token(
     )
 
 
-@router.get("/view/{analysis_id}/{url_path:path}", status_code=status.HTTP_200_OK)
+@router.get("/view/{analysis_id}", status_code=status.HTTP_200_OK)
 async def project_view_h5ad(
     analysis_id: int,
-    url_path: str,
+    # url_path: str,
     # request_param: Request,
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_user),
+    # current_user_email_address=Depends(get_current_user),
 ):
     filter_list = [
         cellxgene.Analysis.id
@@ -1537,7 +1537,7 @@ async def project_view_h5ad(
         return RedirectResponse(
             config.CELLXGENE_GATEWAY_URL
             + "/view/"
-            + "{}/{}".format(analysis_info.h5ad_id, url_path)
+            + "{}".format(analysis_info.h5ad_id)
             # + "?"
             # + str(request_param.query_params)
         )
