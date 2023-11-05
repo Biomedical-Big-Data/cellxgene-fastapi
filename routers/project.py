@@ -26,7 +26,7 @@ from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
 from conf import config
-from typing import List, Union
+from typing import List, Union, Annotated
 import pandas as pd
 from sqlalchemy import and_, or_, distinct, func
 from orm.dependencies import get_current_user
@@ -64,9 +64,12 @@ async def get_view_homepage(db: Session = Depends(get_db)):
             db=db,
             query_list=[
                 cellxgene.SpeciesMeta.species,
-                func.count(cellxgene.SpeciesMeta.id),
+                cellxgene.SpeciesMeta.id,
+                func.count(cellxgene.ProjectMeta.id),
             ],
-            filters=[],
+            filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+                     cellxgene.SpeciesMeta.id == cellxgene.BioSampleMeta.species_id],
         )
         .group_by(cellxgene.SpeciesMeta.species)
         .all()
@@ -76,9 +79,10 @@ async def get_view_homepage(db: Session = Depends(get_db)):
             db=db,
             query_list=[
                 cellxgene.BioSampleMeta.biosample_type,
-                func.count(cellxgene.BioSampleMeta.id),
+                func.count(cellxgene.ProjectMeta.id),
             ],
-            filters=[],
+            filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id],
         )
         .group_by(cellxgene.BioSampleMeta.biosample_type)
         .all()
@@ -88,15 +92,18 @@ async def get_view_homepage(db: Session = Depends(get_db)):
             db=db,
             query_list=[
                 cellxgene.BioSampleMeta.organ,
-                func.count(cellxgene.BioSampleMeta.id),
+                func.count(cellxgene.ProjectMeta.id),
             ],
-            filters=[],
+            filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id],
         )
         .group_by(cellxgene.BioSampleMeta.organ)
         .all()
     )
     project_meta_list = (
-        crud.get_project(db=db, filters=[])
+        crud.get_project(db=db, filters=[cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+                                         cellxgene.ProjectMeta.is_publish == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                                         cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED])
         .order_by(cellxgene.ProjectMeta.id.desc())
         .limit(config.ProjectStatus.HOMEPAGE_SHOW_PROJECT_LIMIT)
         .all()
@@ -104,7 +111,7 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     return_species_list, return_biosample_type_list, return_organ_list = [], [], []
     for species_meta in species_list:
         return_species_list.append(
-            {"species": species_meta[0], "count": species_meta[1]}
+            {"species": species_meta[0], "count": species_meta[2], "id": species_meta[1]}
         )
     for biosample_type_meta in sample_list:
         return_biosample_type_list.append(
@@ -173,18 +180,32 @@ async def get_user_project(
 async def get_project_info(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_user),
+    Authorization: Annotated[str | None, Header()] = None,
 ) -> ResponseMessage:
     filter_list = [
         cellxgene.ProjectMeta.id == project_id,
-        cellxgene.ProjectMeta.id == cellxgene.ProjectUser.project_id,
-        cellxgene.ProjectUser.user_id == cellxgene.User.id,
-        cellxgene.User.email_address == current_user_email_address,
     ]
     project_info_model = crud.get_project(db=db, filters=filter_list).first()
-    if not project_info_model:
+    if project_info_model.is_publish and project_info_model.is_audit and not project_info_model.is_private:
+        return ResponseMessage(status="0000", data=project_info_model, message="ok")
+    elif project_info_model.is_private:
+        if Authorization:
+            current_user_email_address = await get_current_user(token=Authorization.split()[1])
+            private_filter_list = [
+                cellxgene.ProjectMeta.id == project_id,
+                cellxgene.ProjectMeta.id == cellxgene.ProjectUser.project_id,
+                cellxgene.ProjectUser.user_id == cellxgene.User.id,
+                cellxgene.User.email_address == current_user_email_address
+            ]
+            private_project_info_model = crud.get_project(db=db, filters=private_filter_list).first()
+            if private_project_info_model:
+                return ResponseMessage(status="0000", data=private_project_info_model, message="ok")
+            else:
+                return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
+        else:
+            return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
+    else:
         return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
-    return ResponseMessage(status="0000", data=project_info_model, message="ok")
 
 
 @router.get(
@@ -501,6 +522,7 @@ def copy_project_id(
         insert_project_model = cellxgene.ProjectMeta(
             **insert_project_dict
         )
+        insert_project_model.project_project_user_meta = cellxgene.ProjectUser(user_id=copy_to_user_info.id)
         analysis_meta = project_info.project_analysis_meta[0]
         insert_analysis_dict = analysis_meta.to_dict()
         del insert_analysis_dict["id"]
@@ -1293,7 +1315,7 @@ async def upload_file(
 async def get_user_h5ad_file_list(
     file_name: Union[str, None] = None,
     page: int = 1,
-    page_size: int = 20,
+    page_size: int = 10,
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
@@ -1308,6 +1330,7 @@ async def get_user_h5ad_file_list(
         )
     h5ad_file_list = (
         crud.get_file_info(db=db, filters=filter_list)
+        .order_by(cellxgene.FileLibrary.create_at.desc())
         .offset(search_page)
         .limit(page_size)
         .all()
@@ -1326,7 +1349,7 @@ async def get_user_h5ad_file_list(
     "/species/list", response_model=ResponseProjectListModel, status_code=status.HTTP_200_OK
 )
 async def get_species_list(
-    db: Session = Depends(get_db), current_user_email_address=Depends(get_current_user)
+    db: Session = Depends(get_db)
 ) -> ResponseMessage:
     species_list = crud.get_species_list(
         db=db, query_list=[cellxgene.SpeciesMeta], filters=[]
@@ -1357,8 +1380,8 @@ async def get_cell_taxonomy_tree(
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
         res.append({
             "cl_id": cell_taxonomy_relation_model[0],
-            "cl_pid": cell_taxonomy_relation_model[1],
-            "name": cell_taxonomy_relation_model[2]
+            "cl_pid": cell_taxonomy_relation_model[2],
+            "name": cell_taxonomy_relation_model[1]
         })
     return ResponseMessage(status="0000", data=res, message="ok")
 

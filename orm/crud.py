@@ -252,14 +252,31 @@ def get_species_list(db: Session, query_list: List, filters: List | None):
     return db.query(*query_list).filter(and_(*filters))
 
 
+def create_species(db: Session, insert_species_model_list: List[cellxgene.SpeciesMeta]):
+    db.add_all(insert_species_model_list)
+    db.commit()
+
+
+def get_gene_meta(db: Session,  filters: List | None):
+    return db.query(cellxgene.GeneMeta).filter(and_(*filters))
+
+
 def create_gene(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
     db.add_all(insert_gene_model_list)
     db.commit()
 
 
+def get_cell_meta(db: Session, filters: List | None):
+    return db.query(cellxgene.CellTypeMeta).filter(and_(*filters))
+
+
 def create_cell_type_meta(db: Session, insert_cell_type_model_list: List[cellxgene.CellTypeMeta]):
     db.add_all(insert_cell_type_model_list)
     db.commit()
+
+
+def get_donor_meta(db: Session, filters: List | None):
+    return db.query(cellxgene.DonorMeta).filter(and_(*filters))
 
 
 def create_donor_meta(db: Session, insert_donor_meta_list: List[cellxgene.DonorMeta]):

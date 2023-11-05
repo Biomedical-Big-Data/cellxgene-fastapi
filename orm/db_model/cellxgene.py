@@ -322,6 +322,7 @@ class DonorMeta(Base):
 
     # ID
     id = Column(INTEGER, primary_key=True)
+    donor_name = Column(String(255))
     sex = Column(String(255))
     # 种族
     ethnicity = Column(String(255))

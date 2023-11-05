@@ -155,6 +155,8 @@ async def edit_user_info(
 )
 async def get_project_list(
     is_publish: Union[int, None] = None,
+    is_private: Union[int, None] = None,
+    is_audit: Union[int, None] = None,
     create_at: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
@@ -166,6 +168,10 @@ async def get_project_list(
     filter_list = []
     if is_publish is not None:
         filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
+    if is_private is not None:
+        filter_list.append(cellxgene.ProjectMeta.is_private == is_private)
+    if is_audit is not None:
+        filter_list.append(cellxgene.ProjectMeta.is_audit == is_audit)
     if asc:
         project_info_model_list = (
             crud.get_project(db=db, filters=filter_list)
@@ -210,7 +216,6 @@ async def admin_update_project(
     members: list = Body(),
     is_publish: int = Body(),
     is_private: int = Body(),
-    is_audit: int = Body(),
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
@@ -227,9 +232,8 @@ async def admin_update_project(
             "title": title,
             "description": description,
             "tags": tags,
-            "is_publish": is_publish,
+            "is_publish": is_publish if is_publish else project_info.is_publish,
             "is_private": is_private,
-            "is_audit": is_audit,
         }
         member_info_list = crud.get_user(
             db=db, filters=[cellxgene.User.email_address.in_(members)]
@@ -265,7 +269,7 @@ async def admin_update_project(
         )
         if excel_id is not None:
             upload_excel_util.upload_file(
-                db=db, analysis_id=analysis_id, excel_id=excel_id
+                db=db, project_id=project_id, analysis_id=analysis_id, excel_id=excel_id
             )
     except Exception as e:
         print(e)
@@ -316,15 +320,12 @@ async def update_project(
 
 
 @router.get(
-    "/project/cell/list",
+    "/cell/list",
     response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
 )
 async def get_cell_list(
-    cell_id: Union[int, None] = None,
-    species_id: Union[int, None] = None,
-    genes_positive: Union[str, None] = None,
-    genes_negative: Union[str, None] = None,
+    cell_type_name: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
@@ -332,36 +333,16 @@ async def get_cell_list(
 ):
     filter_list = []
     search_page = (page - 1) * page_size
-    if cell_id is not None:
-        filter_list.append(cellxgene.CellTypeMeta.id == cell_id)
-    if species_id is not None:
-        filter_list.append(cellxgene.CellTypeMeta.species_id == species_id)
-    if genes_positive is not None:
-        genes_positive_list = genes_positive.replace(";", ",").split(",")
-        positive_filter_list = []
-        for positive in genes_positive_list:
-            positive_filter_list.append(
-                cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
-            )
-        filter_list.append(or_(*positive_filter_list))
-    if genes_negative is not None:
-        genes_negative_list = genes_negative.replace(";", ",").split(",")
-        negative_filter_list = []
-        for negative in genes_negative_list:
-            negative_filter_list.append(
-                cellxgene.CellTypeMeta.marker_gene_symbol.notlike(
-                    "%{}%".format(negative)
-                )
-            )
-        filter_list.append(and_(*negative_filter_list))
+    if cell_type_name is not None:
+        filter_list.append(cellxgene.CellTypeMeta.cell_type_name.like("%{}%".format(cell_type_name)))
     cell_type_list = (
-        crud.get_project_by_cell(db=db, filters=filter_list, public_filter_list=[])
+        crud.get_cell_meta(db=db, filters=filter_list)
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_project_by_cell(
-        db=db, filters=filter_list, public_filter_list=[]
+    total = crud.get_cell_meta(
+        db=db, filters=filter_list
     ).count()
     res_dict = {
         "cell_type_list": cell_type_list,
@@ -373,13 +354,76 @@ async def get_cell_list(
 
 
 @router.get(
-    "/project/gene/list",
+    "/donor/list",
     response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
 )
-async def get_project_list_by_gene(
+async def get_donor_list(
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    filter_list = []
+    search_page = (page - 1) * page_size
+    donor_meta_list = (
+        crud.get_donor_meta(db=db, filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_donor_meta(
+        db=db, filters=filter_list
+    ).count()
+    res_dict = {
+        "donor_list": donor_meta_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
+    "/species/list",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_species_list(
+    species: Union[str, None] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    filter_list = []
+    search_page = (page - 1) * page_size
+    if species is not None:
+        filter_list.append(cellxgene.SpeciesMeta.species.like("%{}%".format(species)))
+    species_meta_list = (
+        crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=filter_list)
+        .offset(search_page)
+        .limit(page_size)
+        .all()
+    )
+    total = crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=filter_list).count()
+    res_dict = {
+        "species_list": species_meta_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
+    "/gene/list",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_gene_list(
     gene_symbol: Union[str, None] = None,
-    species_id: Union[int, None] = None,
+    gene_name: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
@@ -391,27 +435,23 @@ async def get_project_list_by_gene(
         filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         )
-    if species_id is not None:
-        filter_list.append(cellxgene.GeneMeta.species_id == species_id)
+    if gene_name is not None:
+        filter_list.append(cellxgene.GeneMeta.gene_name.like("%{}%".format(gene_name)))
     gene_meta_list = (
-        crud.get_project_by_gene(
+        crud.get_gene_meta(
             db=db,
-            query_list=[cellxgene.CellClusterGeneExpression],
             filters=filter_list,
-            public_filter_list=[],
         )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_project_by_gene(
+    total = crud.get_gene_meta(
         db=db,
-        query_list=[cellxgene.CellClusterGeneExpression],
         filters=filter_list,
-        public_filter_list=[],
     ).count()
     res_dict = {
-        "gene_meta_list": gene_meta_list,
+        "gene_list": gene_meta_list,
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -455,13 +495,21 @@ async def get_server_status(
 )
 async def upload_project_meta_file(
     background_tasks: BackgroundTasks,
+    file_type: str = Body(),
     meta_file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
     try:
         project_content = await meta_file.read()
-        background_tasks.add_task(file_util.update_meta_file, db, project_content, current_admin_email_address)
+        if file_type == "cell_type":
+            background_tasks.add_task(file_util.update_cell_type_meta_file, db, project_content, current_admin_email_address)
+        elif file_type == "gene":
+            background_tasks.add_task(file_util.update_gene_meta_file, db, project_content, current_admin_email_address)
+        if file_type == "donor":
+            background_tasks.add_task(file_util.update_donor_meta_file, db, project_content, current_admin_email_address)
+        if file_type == "species":
+            background_tasks.add_task(file_util.update_species_meta_file, db, project_content, current_admin_email_address)
     except Exception as e:
         logging.error('[upload project meta error]: {}'.format(str(e)))
     else:

@@ -26,6 +26,20 @@ class GeneListModel(BaseModel):
     page_size: int
 
 
+class SpeciesListModel(BaseModel):
+    species_list: List[project_model.SpeciesModel]
+    total: int
+    page: int
+    page_size: int
+
+
+class DonorListModel(BaseModel):
+    donor_list: List[project_model.DonorModel]
+    total: int
+    page: int
+    page_size: int
+
+
 class H5adListModel(BaseModel):
     h5ad_list: List[project_model.FileLibraryModel]
     total: int
@@ -47,7 +61,7 @@ class ProjectListModel(BaseModel):
 
 class ResponseProjectListModel(BaseModel):
     status: str
-    data: Union[ProjectListModel, CellTypeListModel, GeneListModel, H5adListModel, List[project_model.SpeciesModel]]
+    data: Union[ProjectListModel, CellTypeListModel, GeneListModel, DonorListModel, SpeciesListModel, H5adListModel, List[project_model.SpeciesModel]]
     message: str
 
 

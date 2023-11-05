@@ -14,6 +14,7 @@ class SpeciesModel(BaseModel):
 
 class DonorModel(BaseModel):
     id: int
+    donor_name: str | None
     sex: str | None
     ethnicity: str | None
     race: str | None

@@ -12,7 +12,7 @@ from orm.schema import project_model
 from orm.schema.response import ResponseMessage
 
 
-def upload_file(db: Session, analysis_id: int, excel_id: str):
+def upload_file(db: Session, project_id: int, analysis_id: int, excel_id: str):
     # current_user_info = crud.get_user(
     #     db=db, filters=[cellxgene.User.email_address == current_admin_email_address]
     # )
@@ -28,6 +28,7 @@ def upload_file(db: Session, analysis_id: int, excel_id: str):
     biosample_df = biosample_df.replace(np.nan, None)
     cell_proportion_df = cell_proportion_df.replace(np.nan, None)
     gene_expression_df = gene_expression_df.replace(np.nan, None)
+    print(project_df)
     # cell_marker_file_id = await file_util.save_file(
     #     db=db,
     #     file=cell_marker_file,
@@ -46,7 +47,6 @@ def upload_file(db: Session, analysis_id: int, excel_id: str):
     #     },
     # )
     update_project_dict = project_df.to_dict("records")[0]
-    project_id = update_project_dict.get("id")
     analysis_id_info = crud.get_analysis(
         db=db,
         filters=[
@@ -238,3 +238,8 @@ def upload_file(db: Session, analysis_id: int, excel_id: str):
         db=db,
         insert_gene_expression_model_list=insert_gene_expression_model_list,
     )
+
+
+if __name__ == "__main__":
+    from orm.dependencies import get_db
+    upload_file(db=next(get_db()), project_id=10, analysis_id=10, excel_id="75ca5ebe8a304f50939adb2171b120e2.xlsx")
