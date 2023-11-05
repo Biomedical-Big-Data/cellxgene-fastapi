@@ -69,9 +69,14 @@ async def get_view_homepage(db: Session = Depends(get_db)):
             ],
             filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
                      cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
-                     cellxgene.SpeciesMeta.id == cellxgene.BioSampleMeta.species_id],
+                     cellxgene.SpeciesMeta.id == cellxgene.BioSampleMeta.species_id,
+                     cellxgene.ProjectMeta.is_publish
+                     == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                     cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+                     cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
+                     ],
         )
-        .group_by(cellxgene.SpeciesMeta.species)
+        .group_by(cellxgene.SpeciesMeta.id)
         .all()
     )
     sample_list = (
@@ -82,7 +87,12 @@ async def get_view_homepage(db: Session = Depends(get_db)):
                 func.count(cellxgene.ProjectMeta.id),
             ],
             filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
-                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id],
+                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+                     cellxgene.ProjectMeta.is_publish
+                     == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                     cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+                     cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
+                     ],
         )
         .group_by(cellxgene.BioSampleMeta.biosample_type)
         .all()
@@ -95,7 +105,12 @@ async def get_view_homepage(db: Session = Depends(get_db)):
                 func.count(cellxgene.ProjectMeta.id),
             ],
             filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
-                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id],
+                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+                     cellxgene.ProjectMeta.is_publish
+                     == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                     cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+                     cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
+                     ],
         )
         .group_by(cellxgene.BioSampleMeta.organ)
         .all()
