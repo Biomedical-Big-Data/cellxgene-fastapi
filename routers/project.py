@@ -220,7 +220,7 @@ async def create_project(
         .first()
         .id
     )
-    project_status = config.ProjectStatus.PROJECT_STATUS_DRAFT
+    audit_status = config.ProjectStatus.PROJECT_STATUS_NEED_AUDIT
     create_project_model.members.append(current_user_email_address)
     member_info_list = []
     if create_project_model.is_private:
@@ -234,16 +234,14 @@ async def create_project(
                 return ResponseMessage(
                     status="0201", data={}, message="项目创建失败，最多上传五份其他文件"
                 )
-    if create_project_model.is_publish:
-        if create_project_model.is_private:
-            project_status = config.ProjectStatus.PROJECT_STATUS_AVAILABLE
-        else:
-            project_status = config.ProjectStatus.PROJECT_STATUS_NEED_AUDIT
+    if create_project_model.is_private and create_project_model.is_publish:
+        audit_status = config.ProjectStatus.PROJECT_STATUS_IS_AUDITED
     insert_project_model = cellxgene.ProjectMeta(
         title=create_project_model.title,
         description=create_project_model.description,
-        is_publish=project_status,
+        is_publish=create_project_model.is_publish,
         is_private=create_project_model.is_private,
+        is_audit=audit_status,
         tags=create_project_model.tags,
         owner=owner,
     )
@@ -307,7 +305,6 @@ async def update_project(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    print(update_project_model)
     filter_list = [
         cellxgene.ProjectMeta.id == update_project_model.project_id,
         cellxgene.ProjectMeta.owner == cellxgene.User.id,
@@ -317,25 +314,18 @@ async def update_project(
     update_project_model.members.append(current_user_email_address)
     if not project_info:
         return ResponseMessage(status="0201", data={}, message="您无权更新此项目")
-    if (project_info.is_publish == config.ProjectStatus.PROJECT_STATUS_DRAFT) or (
-        project_info.is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
-        and update_project_model.is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
-        and project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
-    ):
-        project_status = update_project_model.is_publish
-        if (
-            update_project_model.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC
-            and update_project_model.is_publish == config.ProjectStatus.PROJECT_STATUS_AVAILABLE
-        ):
-            project_status = config.ProjectStatus.PROJECT_STATUS_NEED_AUDIT
+    if (not project_info.is_publish) or project_info.is_private:
+        audit_status = config.ProjectStatus.PROJECT_STATUS_NEED_AUDIT
+        if update_project_model.is_private and update_project_model.is_publish:
+            audit_status = config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH
         update_project_dict = {
             "title": update_project_model.title,
             "description": update_project_model.description,
             "tags": update_project_model.tags,
-            "is_publish": project_status,
+            "is_publish": update_project_model.is_publish,
             "is_private": update_project_model.is_private,
+            "is_audit": audit_status,
         }
-        print('11111')
         member_info_list = crud.get_user(
             db=db, filters=[cellxgene.User.email_address.in_(update_project_model.members)]
         ).all()
@@ -344,7 +334,6 @@ async def update_project(
             insert_project_user_model_list.append(
                 cellxgene.ProjectUser(project_id=update_project_model.project_id, user_id=member_info.id)
             )
-        print('33333')
         if not project_info.is_private:
             update_biosample_id = project_info.project_project_biosample_meta[
                 0
@@ -354,7 +343,6 @@ async def update_project(
             update_biosample_id = 0
             update_biosample_dict = {}
         update_analysis_id = project_info.project_analysis_meta[0].id
-        print('update_analysis_id', update_analysis_id)
         # h5ad_id = str(uuid4()).replace("-", "")
         update_analysis_dict = {
             "h5ad_id": update_project_model.h5ad_id if update_project_model.h5ad_id is not None else "",
@@ -363,7 +351,6 @@ async def update_project(
             "pathway_id": update_project_model.pathway_id if update_project_model.pathway_id is not None else "",
             "other_file_ids": update_project_model.other_file_ids if update_project_model.other_file_ids is not None else "",
         }
-        print("22222")
         crud.project_update_transaction(
             db=db,
             delete_project_user_filters=[
@@ -402,7 +389,7 @@ async def offline_project(
     project_info = crud.get_project(db=db, filters=filter_list).first()
     if not project_info:
         return ResponseMessage(status="0201", data={}, message="您无权下线此项目")
-    if project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE:
+    if project_info.is_private:
         is_publish = config.ProjectStatus.PROJECT_STATUS_DRAFT
         try:
             crud.update_project(
@@ -441,10 +428,7 @@ async def transfer_project(
         return ResponseMessage(status="0201", data={}, message="项目不存在")
     if project_info.project_user_meta.email_address != current_user_email_address:
         return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法转移此项目")
-    if (
-        project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
-        and project_info.is_publish != config.ProjectStatus.PROJECT_STATUS_UNAVAILABLE
-    ):
+    if project_info.is_private:
         try:
             insert_transfer_model = cellxgene.TransferHistory(project_id=project_id, old_owner=project_info.owner, new_owner=transfer_to_user_info.id)
             crud.create_transfer_history(db=db, insert_model=insert_transfer_model)
@@ -508,7 +492,6 @@ def copy_project_id(
         return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法复制此项目")
     if (
         project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
-        and project_info.is_publish != config.ProjectStatus.PROJECT_STATUS_UNAVAILABLE
     ):
         insert_project_dict = project_info.to_dict()
         del insert_project_dict["id"]
@@ -647,8 +630,9 @@ async def get_project_list_by_sample(
         cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
         cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
-        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
     ]
     if organ is not None:
         # filter_list.append(cellxgene.BioSampleMeta.organ == organ)
@@ -724,8 +708,9 @@ async def download_project_list_by_sample(
         cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
         cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
-        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
     ]
     if organ is not None:
         # filter_list.append(cellxgene.BioSampleMeta.organ == organ)
@@ -827,8 +812,9 @@ async def get_project_list_by_cell(
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
-        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
     ]
     if cell_id is not None:
         # filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
@@ -903,8 +889,9 @@ async def download_project_list_by_cell(
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
-        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
     ]
     if cell_id is not None:
         public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
@@ -1031,8 +1018,9 @@ async def get_project_list_by_gene(
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
-        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
     ]
     if gene_symbol is not None:
         # filter_list.append(
@@ -1094,8 +1082,9 @@ async def download_project_list_by_gene(
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
-        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
     ]
     if gene_symbol is not None:
         public_filter_list.append(
@@ -1198,8 +1187,9 @@ async def get_project_list_by_gene(
         cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
-        == config.ProjectStatus.PROJECT_STATUS_AVAILABLE,
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_audit == config.ProjectStatus.PROJECT_STATUS_IS_AUDITED,
     ]
     if gene_symbol is not None:
         filter_list.append(
