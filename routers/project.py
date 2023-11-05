@@ -358,7 +358,7 @@ async def update_project(
             "title": update_project_model.title,
             "description": update_project_model.description,
             "tags": update_project_model.tags,
-            "is_publish": update_project_model.is_publish,
+            "is_publish": update_project_model.is_publish if update_project_model.is_publish else project_info.is_publish,
             "is_private": update_project_model.is_private,
             "is_audit": audit_status,
         }
@@ -1461,29 +1461,28 @@ async def get_csv_data(
             return ResponseMessage(status="0201", data={}, message="文件不存在")
 
 
-
-@router.get("/download/file/meta", status_code=status.HTTP_200_OK)
-async def download_meta_file(
-    current_user_email_address=Depends(get_current_user),
-):
-    file_path = config.META_FILE_PATH
-    return StreamingResponse(
-        file_util.file_iterator(file_path),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename={file_path}"},
-    )
-
-
-@router.get("/download/file/update_file", status_code=status.HTTP_200_OK)
-async def download_meta_file(
-    current_user_email_address=Depends(get_current_user),
-):
-    file_path = config.UPDATE_FILE_PATH
-    return StreamingResponse(
-        file_util.file_iterator(file_path),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename={file_path}"},
-    )
+# @router.get("/download/file/meta", status_code=status.HTTP_200_OK)
+# async def download_meta_file(
+#     current_user_email_address=Depends(get_current_user),
+# ):
+#     file_path = config.META_FILE_PATH
+#     return StreamingResponse(
+#         file_util.file_iterator(file_path),
+#         media_type="application/octet-stream",
+#         headers={"Content-Disposition": f"attachment; filename={file_path}"},
+#     )
+#
+#
+# @router.get("/download/file/update_file", status_code=status.HTTP_200_OK)
+# async def download_meta_file(
+#     current_user_email_address=Depends(get_current_user),
+# ):
+#     file_path = config.UPDATE_FILE_PATH
+#     return StreamingResponse(
+#         file_util.file_iterator(file_path),
+#         media_type="application/octet-stream",
+#         headers={"Content-Disposition": f"attachment; filename={file_path}"},
+#     )
 
 
 # @router.get("/download/file/{file_id}", status_code=status.HTTP_200_OK)
