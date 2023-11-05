@@ -50,6 +50,7 @@ class ProjectModel(BaseModel):
     data_curators: str | None
     is_publish: int | None
     is_private: int | None
+    is_audit: int | None
     owner: int | None
     tags: str | None
     create_at: datetime | None
@@ -296,7 +297,7 @@ class CopyToProjectModel(BaseModel):
 
 
 class UpdateProjectModel(BaseModel):
-    project_status: int
+    is_audit: int
 
 
 class PathwayScoreModel(BaseModel):

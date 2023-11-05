@@ -210,6 +210,7 @@ async def admin_update_project(
     members: list = Body(),
     is_publish: int = Body(),
     is_private: int = Body(),
+    is_audit: int = Body(),
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
@@ -222,13 +223,13 @@ async def admin_update_project(
         project_info = crud.get_project(db=db, filters=filter_list).first()
         if not project_info:
             return ResponseMessage(status="0201", data={}, message="您无权更新此项目")
-        project_status = is_publish
         update_project_dict = {
             "title": title,
             "description": description,
             "tags": tags,
-            "is_publish": project_status,
+            "is_publish": is_publish,
             "is_private": is_private,
+            "is_audit": is_audit,
         }
         member_info_list = crud.get_user(
             db=db, filters=[cellxgene.User.email_address.in_(members)]
@@ -299,7 +300,7 @@ async def get_project_list(
 )
 async def update_project(
     project_id: int,
-    project_status: project_model.UpdateProjectModel = Body(),
+    update_project_model: project_model.UpdateProjectModel = Body(),
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
@@ -307,7 +308,7 @@ async def update_project(
         crud.update_project(
             db=db,
             filters=[cellxgene.ProjectMeta.id == project_id],
-            update_dict={"status": project_status},
+            update_dict={"is_audit": update_project_model.is_audit},
         )
         return ResponseMessage(status="0000", data={}, message="项目状态更新成功")
     except:

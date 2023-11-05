@@ -93,6 +93,7 @@ class ProjectMeta(Base):
     # draft = Column(TINYINT(1), nullable=False)
     is_publish = Column(INTEGER)
     is_private = Column(INTEGER)
+    is_audit = Column(INTEGER)
     owner = Column(INTEGER, ForeignKey("users.id"))
     tags = Column(String(255))
 
@@ -137,6 +138,7 @@ class ProjectMeta(Base):
             "data_curators": self.data_curators,
             "is_publish": self.is_publish,
             "is_private": self.is_private,
+            "is_audit": self.is_audit,
             "owner": self.owner,
             "tags": self.tags,
             "create_at": self.create_at,
