@@ -652,6 +652,7 @@ class User(Base):
 
     def to_dict(self):
         return {
+            "id": self.id,
             "user_name": self.user_name,
             "email_address": self.email_address,
             "organization": self.organization,
