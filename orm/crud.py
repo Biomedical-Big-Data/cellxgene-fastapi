@@ -102,12 +102,12 @@ def create_cell_proprotion_for_transaction(
     db: Session,
     insert_cell_proportion_model_list: List[cellxgene.CalcCellClusterProportion],
 ):
-    inserted_id_list = []
+    inserted_id_dict = {}
     for insert_cell_proportion_model in insert_cell_proportion_model_list:
         db.add(insert_cell_proportion_model)
         db.flush()
-        inserted_id_list.append(insert_cell_proportion_model.calculated_cell_cluster_id)
-    return inserted_id_list
+        inserted_id_dict[insert_cell_proportion_model.calculated_cell_cluster_alias_id] = insert_cell_proportion_model.calculated_cell_cluster_id
+    return inserted_id_dict
 
 
 def get_cell_proportion(db: Session, filters: List):
@@ -284,7 +284,7 @@ def create_donor_meta(db: Session, insert_donor_meta_list: List[cellxgene.DonorM
     db.commit()
 
 
-def create_pathway_score(db: Session, insert_pathway_meta_list: List[cellxgene.DonorMeta]):
+def create_pathway_score(db: Session, insert_pathway_meta_list: List[cellxgene.PathwayScore]):
     db.add_all(insert_pathway_meta_list)
     db.commit()
 

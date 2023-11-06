@@ -13,7 +13,7 @@ class SpeciesModel(BaseModel):
 
 
 class DonorModel(BaseModel):
-    id: int
+    id: int | str
     donor_name: str | None
     sex: str | None
     ethnicity: str | None
@@ -24,8 +24,8 @@ class DonorModel(BaseModel):
     nutritional_state: str | None
     smoking_history: str | None
     test_results: str | None
-    create_at: datetime
-    update_at: datetime
+    create_at: datetime | None = None
+    update_at: datetime | None = None
 
     class Config:
         org_mode = True
@@ -63,6 +63,7 @@ class ProjectModel(BaseModel):
 
 class BiosampleModel(BaseModel):
     id: int | str
+    biosample_name: str | None
     external_sample_accesstion: str | None
     biosample_type: str | None
     species_id: int | None
@@ -72,7 +73,7 @@ class BiosampleModel(BaseModel):
     sample_collection_time: str | None
     geographical_region: str | None
     organism_age: int | None
-    organism_age_unit: int | None
+    organism_age_unit: str | None
     mouse_strain: str | None
     culture_duration: int | None
     culture_duration_unit: int | None
@@ -132,7 +133,7 @@ class BiosampleModel(BaseModel):
     spike_in_kit: str | None
     strand: str | None
     read_length: int | None
-    paired_ends: str | None
+    paired_ends: int | None
     number_of_cells: int | None
     number_of_reads: int | None
     create_at: datetime | None = None
@@ -161,9 +162,10 @@ class AnalysisModel(BaseModel):
 
 class CellClusterProportionModel(BaseModel):
     calculated_cell_cluster_id: int | str
+    calculated_cell_cluster_alias_id: str | None
     biosample_id: int | str | None
     analysis_id: int | None = None
-    cell_type_id: int | None
+    cell_type_id: str | None
     cell_proportion: float | None
     cell_number: int | None
     cell_cluster_method: str | None
@@ -194,8 +196,8 @@ class CellClusterGeneExpressionModel(BaseModel):
 
 
 class CellTypeModel(BaseModel):
-    cell_type_id: int
-    cell_type_alias_id: str | None
+    id: int
+    cell_type_id: str
     species_id: int
     marker_gene_symbol: str | None
     cell_taxonomy_id: str | None
@@ -302,19 +304,19 @@ class UpdateProjectModel(BaseModel):
 
 
 class PathwayScoreModel(BaseModel):
-    id: int
+    id: int | str
     pathway_source: str | None
     pathway_name: str | None
     species_id: int | None
     geneset_gene_symbols: str | None
-    analysis_id: int | None
+    analysis_id: int | None = None
     biosample_id: int | None
     cell_type_name: str | None
-    calculated_cell_cluster_id: int | None
+    calculated_cell_cluster_alias_id: str | None
     score_function: str | None
     score: float | None
-    create_at: datetime
-    update_at: datetime
+    create_at: datetime | None = None
+    update_at: datetime | None = None
 
     class Config:
         org_mode = True

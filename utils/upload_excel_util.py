@@ -240,6 +240,118 @@ def upload_file(db: Session, project_id: int, analysis_id: int, excel_id: str):
     )
 
 
+def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str):
+    file_path = config.H5AD_FILE_PATH + "/" + excel_id
+    with open(file_path, "rb") as file:
+        project_content = file.read()
+    project_excel_df = pd.ExcelFile(BytesIO(project_content))
+    project_df = project_excel_df.parse("project_meta")
+    biosample_df = project_excel_df.parse("biosample_meta")
+    donor_df = project_excel_df.parse("donor_meta")
+    cell_proportion_df = project_excel_df.parse("calc_cell_cluster_proportion")
+    pathway_score_df = project_excel_df.parse("pathway_score")
+    # gene_expression_df = project_excel_df.parse("cell_cluster_gene_expression")
+    donor_df = donor_df.replace(np.nan, None)
+    donor_df = donor_df.replace("unknown", None)
+    biosample_df = biosample_df.replace(np.nan, None)
+    biosample_df = biosample_df.replace("unknown", None)
+    cell_proportion_df = cell_proportion_df.replace(np.nan, None)
+    cell_proportion_df = cell_proportion_df.replace("unknown", None)
+    pathway_score_df = pathway_score_df.replace(np.nan, None)
+    pathway_score_df = pathway_score_df.replace("unknown", None)
+    insert_donor_model_list = []
+    insert_biosample_model_list = []
+    insert_project_biosample_model_list = []
+    insert_biosample_analysis_model_list = []
+    insert_cell_proportion_model_list = []
+    insert_pathway_meta_list = []
+    # for _, row in donor_df.iterrows():
+    #     donor_meta = project_model.DonorModel(**row.to_dict())
+    #     print(donor_meta)
+    #     insert_donor_model_list.append(
+    #         cellxgene.DonorMeta(
+    #             **donor_meta.model_dump(
+    #                 mode="json", exclude={"id"}, exclude_none=True
+    #             )
+    #         )
+    #     )
+    # crud.create_donor_meta(db=db, insert_donor_meta_list=insert_donor_model_list)
+    # for _, row in biosample_df.iterrows():
+    #     biosample_meta = project_model.BiosampleModel(**row.to_dict())
+    #     print(biosample_meta)
+    #     insert_biosample_model_list.append(
+    #             cellxgene.BioSampleMeta(
+    #                 **biosample_meta.model_dump(
+    #                     mode="json", exclude={"id"}, exclude_none=True
+    #                 )
+    #             )
+    #         )
+    # crud.create_biosample_for_transaction(db=db, insert_biosample_model_list=insert_biosample_model_list)
+    # db.commit()
+    # inserted_biosample_id_list = [i for i in range(141, 173)]
+    # print(inserted_biosample_id_list)
+    # for inserted_biosample_id in inserted_biosample_id_list:
+    #     insert_project_biosample_model_list.append(
+    #         cellxgene.ProjectBioSample(
+    #             project_id=project_id, biosample_id=inserted_biosample_id
+    #         )
+    #     )
+    #     insert_biosample_analysis_model_list.append(
+    #         cellxgene.BioSampleAnalysis(
+    #             biosample_id=inserted_biosample_id, analysis_id=analysis_id
+    #         )
+    #     )
+    # crud.delete_project_biosample_for_transaction(
+    #     db=db, filters=[cellxgene.ProjectBioSample.project_id == project_id]
+    # )
+    # crud.create_project_biosample_for_transaction(
+    #     db=db,
+    #     insert_project_biosample_model_list=insert_project_biosample_model_list,
+    # )
+    # crud.delete_biosample_analysis_for_transaction(
+    #     db=db,
+    #     filters=[
+    #         cellxgene.BioSampleAnalysis.analysis_id == analysis_id,
+    #         cellxgene.ProjectBioSample.project_id == project_id,
+    #         cellxgene.BioSampleAnalysis.biosample_id
+    #         == cellxgene.ProjectBioSample.biosample_id,
+    #     ],
+    # )
+    # crud.create_biosample_analysis_for_transaction(
+    #     db=db, insert_biosample_analysis_list=insert_biosample_analysis_model_list
+    # )
+    # db.commit()
+    # for _, row in cell_proportion_df.iterrows():
+    #     cell_proportion_meta = project_model.CellClusterProportionModel(**row.to_dict())
+    #     cell_proportion_meta.analysis_id = analysis_id
+    #     print(cell_proportion_meta)
+    #     insert_cell_proportion_model_list.append(
+    #             cellxgene.CalcCellClusterProportion(
+    #                 **cell_proportion_meta.model_dump(
+    #                     mode="json", exclude={"calculated_cell_cluster_id"}, exclude_none=True
+    #                 )
+    #             )
+    #         )
+    # inserted_cell_proportion_id_dict = crud.create_cell_proprotion_for_transaction(
+    #     db=db, insert_cell_proportion_model_list=insert_cell_proportion_model_list
+    # )
+    # print(inserted_cell_proportion_id_dict)
+    for _, row in pathway_score_df.iterrows():
+        pathway_score_meta = project_model.PathwayScoreModel(**row.to_dict())
+        pathway_score_meta.analysis_id = analysis_id
+        # print(pathway_score_meta)
+        insert_pathway_meta_list.append(
+                cellxgene.PathwayScore(
+                    **pathway_score_meta.model_dump(
+                        mode="json", exclude={"id"}, exclude_none=True
+                    )
+                )
+            )
+    crud.create_pathway_score(
+        db=db, insert_pathway_meta_list=insert_pathway_meta_list
+    )
+
+
 if __name__ == "__main__":
     from orm.dependencies import get_db
-    upload_file(db=next(get_db()), project_id=10, analysis_id=10, excel_id="75ca5ebe8a304f50939adb2171b120e2.xlsx")
+    upload_file_v2(db=next(get_db()), project_id=25, analysis_id=25, excel_id="update_file.xlsx")

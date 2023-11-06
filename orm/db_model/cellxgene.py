@@ -8,6 +8,7 @@ from sqlalchemy import (
     VARCHAR,
     INTEGER,
     ForeignKey,
+    BOOLEAN
 )
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship, backref
@@ -170,7 +171,7 @@ class BioSampleMeta(Base):
     # 有机体年龄
     organism_age = Column(INTEGER)
     # 有机体年龄单位
-    organism_age_unit = Column(INTEGER)
+    organism_age_unit = Column(String(255))
     # 鼠应变
     mouse_strain = Column(String(255))
     # 持续时间
@@ -289,7 +290,7 @@ class BioSampleMeta(Base):
     strand = Column(String(255))
     read_length = Column(INTEGER)
     # 成对末端
-    paired_ends = Column(String(255))
+    paired_ends = Column(TINYINT)
     # 细胞数
     number_of_cells = Column(INTEGER)
     # 参照
@@ -408,11 +409,12 @@ class CalcCellClusterProportion(Base):
     __tablename__ = "calc_cell_cluster_proportion"
     # ID
     calculated_cell_cluster_id = Column(INTEGER, primary_key=True)
+    calculated_cell_cluster_alias_id = Column(String(255))
     # 生物样品ID
     biosample_id = Column(INTEGER)
     analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # 细胞类型ID
-    cell_type_id = Column(INTEGER, ForeignKey("cell_type_meta.cell_type_id"))
+    cell_type_id = Column(String(255), ForeignKey("cell_type_meta.cell_type_id"))
     # 细胞类型ID比例
     cell_proportion = Column(Double)
     # 细胞类型ID数量
@@ -443,8 +445,8 @@ class CellTypeMeta(Base):
     __tablename__ = "cell_type_meta"
 
     # ID
-    cell_type_id = Column(INTEGER, primary_key=True)
-    cell_type_alias_id = Column(String(255))
+    id = Column(INTEGER, primary_key=True)
+    cell_type_id = Column(String(255))
     # 物种ID
     species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 标记符号
@@ -603,8 +605,8 @@ class PathwayScore(Base):
     # 细胞类型名称
     cell_type_name = Column(String(255))
     # 细胞集群标识
-    calculated_cell_cluster_id = Column(
-        INTEGER, ForeignKey("calc_cell_cluster_proportion.calculated_cell_cluster_id")
+    calculated_cell_cluster_alias_id = Column(
+        String(255), ForeignKey("calc_cell_cluster_proportion.calculated_cell_cluster_id")
     )
     # 得分函数
     score_function = Column(String(255))
