@@ -63,7 +63,7 @@ class ProjectModel(BaseModel):
 
 class BiosampleModel(BaseModel):
     id: int | str
-    biosample_name: str | None
+    # biosample_name: str | None
     external_sample_accesstion: str | None
     biosample_type: str | None
     species_id: int | None
