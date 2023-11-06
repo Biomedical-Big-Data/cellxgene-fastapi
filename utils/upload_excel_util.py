@@ -1,3 +1,4 @@
+import time
 from io import BytesIO
 
 from sqlalchemy.orm import Session
@@ -259,12 +260,14 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
     cell_proportion_df = cell_proportion_df.replace("unknown", None)
     pathway_score_df = pathway_score_df.replace(np.nan, None)
     pathway_score_df = pathway_score_df.replace("unknown", None)
+    pathway_score_df["cell_type_name"] = pathway_score_df["calculated_cell_cluster_alias_id"].apply(lambda xx: xx.split('_')[3])
     insert_donor_model_list = []
     insert_biosample_model_list = []
     insert_project_biosample_model_list = []
     insert_biosample_analysis_model_list = []
     insert_cell_proportion_model_list = []
     insert_pathway_meta_list = []
+    write_count = 10000
     # for _, row in donor_df.iterrows():
     #     donor_meta = project_model.DonorModel(**row.to_dict())
     #     print(donor_meta)
@@ -336,6 +339,7 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
     #     db=db, insert_cell_proportion_model_list=insert_cell_proportion_model_list
     # )
     # print(inserted_cell_proportion_id_dict)
+    start_time = time.time()
     for _, row in pathway_score_df.iterrows():
         pathway_score_meta = project_model.PathwayScoreModel(**row.to_dict())
         pathway_score_meta.analysis_id = analysis_id
@@ -347,9 +351,16 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
                     )
                 )
             )
+    pathway_insert_count = int(len(insert_pathway_meta_list) / write_count)
+    for i in range(1, pathway_insert_count + 1):
+        crud.create_pathway_score(
+            db=db, insert_pathway_meta_list=insert_pathway_meta_list[write_count * (i - 1): write_count * i]
+        )
+        print('{} count'.format(str(i)))
     crud.create_pathway_score(
-        db=db, insert_pathway_meta_list=insert_pathway_meta_list
+        db=db, insert_pathway_meta_list=insert_pathway_meta_list[pathway_insert_count * write_count:]
     )
+    print('taken:', str(time.time() - start_time))
 
 
 if __name__ == "__main__":
