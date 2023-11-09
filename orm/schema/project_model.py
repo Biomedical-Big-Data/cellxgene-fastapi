@@ -51,7 +51,6 @@ class ProjectModel(BaseModel):
     data_curators: str | None
     is_publish: int | None
     is_private: int | None
-    is_audit: int | None
     owner: int | None
     tags: str | None
     create_at: datetime | None
@@ -161,7 +160,7 @@ class AnalysisModel(BaseModel):
 
 
 class CellClusterProportionModel(BaseModel):
-    calculated_cell_cluster_id: int | str
+    calculated_cell_cluster_id: int | str | None = None
     calculated_cell_cluster_alias_id: str | None
     biosample_id: int | str | None
     analysis_id: int | None = None
@@ -177,16 +176,18 @@ class CellClusterProportionModel(BaseModel):
 
 
 class CellClusterGeneExpressionModel(BaseModel):
-    id: int | str
-    calculated_cell_cluster_id: int | str | None
+    id: int | str | None = None
+    calculated_cell_cluster_alias_id: int | str | None
+    cell_type_id: str | None
+    analysis_id: int | None = None
     gene_ensemble_id: str | None
     gene_symbol: str | None
     average_gene_expression: float | None
     cell_proportion_expression_the_gene: float | None
-    cell_rank_gene_by_proportion: int | None
-    cell_rank_gene_by_expression: int | None
-    gene_rank_cell_by_expression: int | None
-    gene_rank_cell_by_proportion: int | None
+    cell_rank_gene_by_proportion: int | None = None
+    cell_rank_gene_by_expression: int | None = None
+    gene_rank_cell_by_expression: int | None = None
+    gene_rank_cell_by_proportion: int | None = None
     suggested_surfaceome_protein_for_facs_sorting: str | None
     create_at: datetime | None = None
     update_at: datetime | None = None
@@ -300,7 +301,7 @@ class CopyToProjectModel(BaseModel):
 
 
 class UpdateProjectModel(BaseModel):
-    is_audit: int
+    is_publish: int
 
 
 class PathwayScoreModel(BaseModel):

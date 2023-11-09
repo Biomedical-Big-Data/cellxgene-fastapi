@@ -156,7 +156,6 @@ async def edit_user_info(
 async def get_project_list(
     is_publish: Union[int, None] = None,
     is_private: Union[int, None] = None,
-    is_audit: Union[int, None] = None,
     create_at: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
@@ -170,8 +169,6 @@ async def get_project_list(
         filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
     if is_private is not None:
         filter_list.append(cellxgene.ProjectMeta.is_private == is_private)
-    if is_audit is not None:
-        filter_list.append(cellxgene.ProjectMeta.is_audit == is_audit)
     if asc:
         project_info_model_list = (
             crud.get_project(db=db, filters=filter_list)
@@ -220,9 +217,7 @@ async def admin_update_project(
     current_admin_email_address=Depends(get_current_admin),
 ):
     filter_list = [
-        cellxgene.ProjectMeta.id == project_id,
-        cellxgene.ProjectMeta.id == cellxgene.Analysis.project_id,
-        cellxgene.Analysis.id == analysis_id,
+        cellxgene.ProjectMeta.id == project_id
     ]
     try:
         project_info = crud.get_project(db=db, filters=filter_list).first()
@@ -312,7 +307,7 @@ async def update_project(
         crud.update_project(
             db=db,
             filters=[cellxgene.ProjectMeta.id == project_id],
-            update_dict={"is_audit": update_project_model.is_audit},
+            update_dict={"is_publish": update_project_model.is_publish},
         )
         return ResponseMessage(status="0000", data={}, message="项目状态更新成功")
     except:

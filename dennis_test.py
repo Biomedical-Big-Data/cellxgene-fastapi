@@ -183,9 +183,38 @@ def excel_test():
         print(project_meta)
 
 
+def create_cell_type_meta(db: Session):
+    file_path = "/Users/dennis/Documents/cell_type.csv"
+    file_data_df = pd.read_csv(file_path)
+    file_data_df = file_data_df.replace(np.nan, None)
+    print(file_data_df)
+    species_meta_list = crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=[])
+    species_dict = {}
+    for species_meta in species_meta_list:
+        species_dict[species_meta.species] = species_meta.id
+    print(species_dict)
+    insert_list = []
+    for _, row in file_data_df.iterrows():
+        cell_type_id = row['ct_id']
+        species_id = species_dict.get(row['species'])
+        marker_gene_symbol = row['marker_gene_symbol']
+        cell_taxonomy_id = row['ct_id']
+        cell_taxonomy_url = "https://ngdc.cncb.ac.cn/celltaxonomy/celltype/" + row['ct_id']
+        cell_ontology_id = row['specific_cell_ontology_id']
+        cell_type_name = row['cell_standard']
+        insert_list.append(cellxgene.CellTypeMeta(cell_type_id=cell_type_id, species_id=species_id,
+                                                  marker_gene_symbol=marker_gene_symbol,
+                                                  cell_taxonomy_id=cell_taxonomy_id,
+                                                  cell_taxonomy_url=cell_taxonomy_url,
+                                                  cell_ontology_id=cell_ontology_id,
+                                                  cell_type_name=cell_type_name))
+    crud.create_cell_type_meta(db=db, insert_cell_type_model_list=insert_list)
+
+
 if __name__ == "__main__":
     pass
-    get_relation()
+    create_cell_type_meta(next(get_db()))
+    # get_relation()
     # import_relation_json()
     # excel_test()
     # read_update_file(next(get_db()))

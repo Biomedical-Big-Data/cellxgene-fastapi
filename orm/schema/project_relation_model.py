@@ -65,7 +65,7 @@ class BiosampleModelRelation(BiosampleModel):
 
 
 class BiosampleModelRelationForCell(BiosampleModel):
-    biosample_donor_meta: DonorModel
+    biosample_donor_meta: Union[DonorModel, None]
     biosample_species_meta: SpeciesModel
 
     class Config:
@@ -111,7 +111,8 @@ class CellTypeRelation(CellTypeModel):
 
 
 class GeneExpressionRelation(CellClusterGeneExpressionModel):
-    gene_expression_proportion_meta: CellClusterProportionRelation
+    gene_expression_analysis_meta: AnalysisRelation
+    # gene_expression_cell_type_meta: CellTypeModel
 
     class Config:
         org_mode = True

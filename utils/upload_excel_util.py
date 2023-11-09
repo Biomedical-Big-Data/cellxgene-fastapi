@@ -242,16 +242,23 @@ def upload_file(db: Session, project_id: int, analysis_id: int, excel_id: str):
 
 
 def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str):
+    start_time = time.time()
     file_path = config.H5AD_FILE_PATH + "/" + excel_id
     with open(file_path, "rb") as file:
         project_content = file.read()
+    species_meta_list = crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=[])
+    species_dict = {}
+    for species_meta in species_meta_list:
+        species_dict[species_meta.species] = species_meta.id
+    print(species_dict)
     project_excel_df = pd.ExcelFile(BytesIO(project_content))
     project_df = project_excel_df.parse("project_meta")
+    analysis_df = project_excel_df.parse("analysis_meta")
     biosample_df = project_excel_df.parse("biosample_meta")
     donor_df = project_excel_df.parse("donor_meta")
     cell_proportion_df = project_excel_df.parse("calc_cell_cluster_proportion")
     pathway_score_df = project_excel_df.parse("pathway_score")
-    # gene_expression_df = project_excel_df.parse("cell_cluster_gene_expression")
+    gene_expression_df = project_excel_df.parse("gene_expression")
     donor_df = donor_df.replace(np.nan, None)
     donor_df = donor_df.replace("unknown", None)
     biosample_df = biosample_df.replace(np.nan, None)
@@ -261,24 +268,38 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
     pathway_score_df = pathway_score_df.replace(np.nan, None)
     pathway_score_df = pathway_score_df.replace("unknown", None)
     pathway_score_df["cell_type_name"] = pathway_score_df["calculated_cell_cluster_alias_id"].apply(lambda xx: xx.split('_')[3])
+    gene_expression_df = gene_expression_df.replace(np.nan, None)
+    gene_expression_df = gene_expression_df.replace("unknown", None)
+    gene_expression_df = gene_expression_df.replace(np.inf, 3.91E+303)
+    gene_expression_df['gene_symbol'] = gene_expression_df['gene_symbol'].astype(str)
+    update_project_dict = project_df.to_dict("records")[0]
+    update_analysis_dict = analysis_df.to_dict("records")[0]
     insert_donor_model_list = []
     insert_biosample_model_list = []
     insert_project_biosample_model_list = []
     insert_biosample_analysis_model_list = []
     insert_cell_proportion_model_list = []
-    insert_pathway_meta_list = []
+    insert_pathway_model_list = []
+    insert_gene_expression_model_list = []
     write_count = 10000
-    # for _, row in donor_df.iterrows():
-    #     donor_meta = project_model.DonorModel(**row.to_dict())
-    #     print(donor_meta)
-    #     insert_donor_model_list.append(
-    #         cellxgene.DonorMeta(
-    #             **donor_meta.model_dump(
-    #                 mode="json", exclude={"id"}, exclude_none=True
-    #             )
-    #         )
-    #     )
-    # crud.create_donor_meta(db=db, insert_donor_meta_list=insert_donor_model_list)
+    crud.update_project_for_transaction(db=db, filters=[cellxgene.ProjectMeta.id == project_id], update_dict=update_project_dict)
+    crud.update_analysis_for_transaction(db=db, filters=[cellxgene.Analysis.id == analysis_id], update_dict=update_analysis_dict)
+    crud.delete_donor_for_transaction(db=db, filters=[cellxgene.ProjectBioSample.project_id == project_id,
+                                                      cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+                                                      cellxgene.BioSampleMeta.donor_id == cellxgene.DonorMeta.id])
+    crud.delete_project_biosample_for_transaction(db=db, filters=[cellxgene.ProjectBioSample.project_id == project_id])
+    crud.delete_biosample_analysis_for_transaction(db=db, filters=[cellxgene.BioSampleAnalysis.analysis_id == analysis_id])
+    for _, row in donor_df.iterrows():
+        donor_meta = project_model.DonorModel(**row.to_dict())
+        print(donor_meta)
+        insert_donor_model_list.append(
+            cellxgene.DonorMeta(
+                **donor_meta.model_dump(
+                    mode="json", exclude={"id"}, exclude_none=True
+                )
+            )
+        )
+    crud.create_donor_meta(db=db, insert_donor_meta_list=insert_donor_model_list)
     # for _, row in biosample_df.iterrows():
     #     biosample_meta = project_model.BiosampleModel(**row.to_dict())
     #     print(biosample_meta)
@@ -324,42 +345,66 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
     #     db=db, insert_biosample_analysis_list=insert_biosample_analysis_model_list
     # )
     # db.commit()
-    # for _, row in cell_proportion_df.iterrows():
-    #     cell_proportion_meta = project_model.CellClusterProportionModel(**row.to_dict())
-    #     cell_proportion_meta.analysis_id = analysis_id
-    #     print(cell_proportion_meta)
-    #     insert_cell_proportion_model_list.append(
-    #             cellxgene.CalcCellClusterProportion(
-    #                 **cell_proportion_meta.model_dump(
-    #                     mode="json", exclude={"calculated_cell_cluster_id"}, exclude_none=True
-    #                 )
-    #             )
-    #         )
-    # inserted_cell_proportion_id_dict = crud.create_cell_proprotion_for_transaction(
-    #     db=db, insert_cell_proportion_model_list=insert_cell_proportion_model_list
-    # )
-    # print(inserted_cell_proportion_id_dict)
-    start_time = time.time()
-    for _, row in pathway_score_df.iterrows():
-        pathway_score_meta = project_model.PathwayScoreModel(**row.to_dict())
-        pathway_score_meta.analysis_id = analysis_id
-        # print(pathway_score_meta)
-        insert_pathway_meta_list.append(
-                cellxgene.PathwayScore(
-                    **pathway_score_meta.model_dump(
-                        mode="json", exclude={"id"}, exclude_none=True
+    for _, row in cell_proportion_df.iterrows():
+        cell_proportion_meta = project_model.CellClusterProportionModel(**row.to_dict())
+        cell_proportion_meta.analysis_id = analysis_id
+        print(cell_proportion_meta)
+        insert_cell_proportion_model_list.append(
+                cellxgene.CalcCellClusterProportion(
+                    **cell_proportion_meta.model_dump(
+                        mode="json", exclude={"calculated_cell_cluster_id"}, exclude_none=True
                     )
                 )
             )
-    pathway_insert_count = int(len(insert_pathway_meta_list) / write_count)
-    for i in range(1, pathway_insert_count + 1):
-        crud.create_pathway_score(
-            db=db, insert_pathway_meta_list=insert_pathway_meta_list[write_count * (i - 1): write_count * i]
-        )
-        print('{} count'.format(str(i)))
-    crud.create_pathway_score(
-        db=db, insert_pathway_meta_list=insert_pathway_meta_list[pathway_insert_count * write_count:]
+    inserted_cell_proportion_id_dict = crud.create_cell_proprotion_for_transaction(
+        db=db, insert_cell_proportion_model_list=insert_cell_proportion_model_list
     )
+    db.commit()
+    print(inserted_cell_proportion_id_dict)
+    # for _, row in pathway_score_df.iterrows():
+    #     pathway_score_meta = project_model.PathwayScoreModel(**row.to_dict())
+    #     pathway_score_meta.analysis_id = analysis_id
+    #     # print(pathway_score_meta)
+    #     insert_pathway_model_list.append(
+    #             cellxgene.PathwayScore(
+    #                 **pathway_score_meta.model_dump(
+    #                     mode="json", exclude={"id"}, exclude_none=True
+    #                 )
+    #             )
+    #         )
+    # pathway_insert_count = int(len(insert_pathway_model_list) / write_count)
+    # for i in range(1, pathway_insert_count + 1):
+    #     crud.create_pathway_score(
+    #         db=db, insert_pathway_model_list=insert_pathway_model_list[write_count * (i - 1): write_count * i]
+    #     )
+    #     print('{} count'.format(str(i)))
+    # crud.create_pathway_score(
+    #     db=db, insert_pathway_model_list=insert_pathway_model_list[pathway_insert_count * write_count:]
+    # )
+    # print('taken:', str(time.time() - start_time))
+    # for _, row in gene_expression_df.iterrows():
+    #     gene_expression_meta = project_model.CellClusterGeneExpressionModel(**row.to_dict())
+    #     gene_expression_meta.analysis_id = analysis_id
+    #     # print(gene_expression_meta)
+    #     insert_gene_expression_model_list.append(
+    #             cellxgene.CellClusterGeneExpression(
+    #                 **gene_expression_meta.model_dump(
+    #                     mode="json", exclude={"id"}, exclude_none=True
+    #                 )
+    #             )
+    #         )
+    # gene_expression_insert_count = int(len(insert_gene_expression_model_list) / write_count)
+    # for i in range(1, gene_expression_insert_count + 1):
+    #     # print(write_count * (i - 1), write_count * i)
+    #     crud.create_gene_expression_for_transaction(
+    #         db=db, insert_gene_expression_model_list=insert_gene_expression_model_list[write_count * (i - 1): write_count * i]
+    #     )
+    #     print('{} count'.format(str(i)))
+    # crud.create_gene_expression_for_transaction(
+    #     db=db, insert_gene_expression_model_list=insert_gene_expression_model_list[gene_expression_insert_count * write_count:]
+    # )
+    # # print(gene_expression_insert_count * write_count)
+    # db.commit()
     print('taken:', str(time.time() - start_time))
 
 

@@ -97,37 +97,37 @@ def update_cell_type_meta_file(db: Session, project_content, send_mail_address):
         logging.error('[update_meta_file error]: {}'.format(str(e)))
 
 
-def update_donor_meta_file(db: Session, project_content, send_mail_address):
-    project_excel_df = pd.ExcelFile(BytesIO(project_content))
-    try:
-        donor_meta_df = project_excel_df.parse("donor_meta")
-        donor_meta_df = donor_meta_df.fillna('')
-        if not donor_meta_df.empty:
-            insert_donor_meta_list = []
-            for _, row in donor_meta_df.iterrows():
-                insert_donor_meta_list.append(
-                    cellxgene.DonorMeta(
-                        donor_name=row['donor_name'] if row['donor_name'] else None,
-                        sex=row['sex'] if row['sex'] else None,
-                        ethnicity=row['ethnicity'] if row['ethnicity'] else None,
-                        race=row['race'] if row['race'] else None,
-                        mhc_genotype=row['mhc_genotype'] if row['mhc_genotype'] else None,
-                        alcohol_history=row['alcohol_history'] if row['alcohol_history'] else None,
-                        medications=row['medications'] if row['medications'] else None,
-                        nutritional_state=row['nutritional_state'] if row['nutritional_state'] else None,
-                        smoking_history=row['smoking_history'] if row['smoking_history'] else None,
-                        test_results=row['test_results'] if row['test_results'] else None
-                    )
-                )
-            crud.create_donor_meta(db=db, insert_donor_meta_list=insert_donor_meta_list)
-        mail_util.send_mail(
-            mail_template="您上传的Meta信息更新成功", subject="Meta信息更新成功", to_list=send_mail_address
-        )
-    except Exception as e:
-        mail_util.send_mail(
-            mail_template="您上传的Meta信息更新失败", subject="Meta信息更新失败", to_list=send_mail_address
-        )
-        logging.error('[update_meta_file error]: {}'.format(str(e)))
+# def update_donor_meta_file(db: Session, project_content, send_mail_address):
+#     project_excel_df = pd.ExcelFile(BytesIO(project_content))
+#     try:
+#         donor_meta_df = project_excel_df.parse("donor_meta")
+#         donor_meta_df = donor_meta_df.fillna('')
+#         if not donor_meta_df.empty:
+#             insert_donor_meta_list = []
+#             for _, row in donor_meta_df.iterrows():
+#                 insert_donor_meta_list.append(
+#                     cellxgene.DonorMeta(
+#                         donor_name=row['donor_name'] if row['donor_name'] else None,
+#                         sex=row['sex'] if row['sex'] else None,
+#                         ethnicity=row['ethnicity'] if row['ethnicity'] else None,
+#                         race=row['race'] if row['race'] else None,
+#                         mhc_genotype=row['mhc_genotype'] if row['mhc_genotype'] else None,
+#                         alcohol_history=row['alcohol_history'] if row['alcohol_history'] else None,
+#                         medications=row['medications'] if row['medications'] else None,
+#                         nutritional_state=row['nutritional_state'] if row['nutritional_state'] else None,
+#                         smoking_history=row['smoking_history'] if row['smoking_history'] else None,
+#                         test_results=row['test_results'] if row['test_results'] else None
+#                     )
+#                 )
+#             crud.create_donor_meta(db=db, insert_donor_meta_list=insert_donor_meta_list)
+#         mail_util.send_mail(
+#             mail_template="您上传的Meta信息更新成功", subject="Meta信息更新成功", to_list=send_mail_address
+#         )
+#     except Exception as e:
+#         mail_util.send_mail(
+#             mail_template="您上传的Meta信息更新失败", subject="Meta信息更新失败", to_list=send_mail_address
+#         )
+#         logging.error('[update_meta_file error]: {}'.format(str(e)))
 
 
 def update_gene_meta_file(db: Session, project_content, send_mail_address):

@@ -94,7 +94,6 @@ class ProjectMeta(Base):
     # draft = Column(TINYINT(1), nullable=False)
     is_publish = Column(INTEGER)
     is_private = Column(INTEGER)
-    is_audit = Column(INTEGER)
     owner = Column(INTEGER, ForeignKey("users.id"))
     tags = Column(String(255))
 
@@ -139,7 +138,6 @@ class ProjectMeta(Base):
             "data_curators": self.data_curators,
             "is_publish": self.is_publish,
             "is_private": self.is_private,
-            "is_audit": self.is_audit,
             "owner": self.owner,
             "tags": self.tags,
             "create_at": self.create_at,
@@ -388,6 +386,7 @@ class Analysis(Base):
     analysis_pathway_score_meta = relationship(
         "PathwayScore", back_populates="pathway_score_analysis_meta"
     )
+    analysis_gene_expression_meta = relationship("CellClusterGeneExpression", back_populates="gene_expression_analysis_meta")
 
     def to_dict(self):
         return {
@@ -433,9 +432,6 @@ class CalcCellClusterProportion(Base):
     proportion_cell_type_meta = relationship(
         "CellTypeMeta", back_populates="cell_type_proportion_meta"
     )
-    proportion_gene_expression = relationship(
-        "CellClusterGeneExpression", back_populates="gene_expression_proportion_meta"
-    )
     cell_proportion_analysis_meta = relationship(
         "Analysis", back_populates="analysis_cell_proportion_meta"
     )
@@ -450,7 +446,7 @@ class CellTypeMeta(Base):
     # 物种ID
     species_id = Column(INTEGER, ForeignKey("species_meta.id"))
     # 标记符号
-    marker_gene_symbol = Column(String(255))
+    marker_gene_symbol = Column(TEXT)
     # 细胞分类标识
     cell_taxonomy_id = Column(String(255), ForeignKey("cell_taxonomy.ct_id"))
     # 细胞分类URL
@@ -481,6 +477,7 @@ class CellTypeMeta(Base):
     cell_type_cell_taxonomy_ct_meta = relationship(
         "CellTaxonomy", back_populates="cell_taxonomy_ct_cell_type_meta"
     )
+    # cell_type_gene_expression_meta = relationship("CellClusterGeneExpression", back_populates="gene_expression_cell_type_meta")
     # cell_type_cell_taxonomy_ontology_meta = relationship("CellTaxonomy", back_populates="cell_taxonomy_ontology_cell_type_meta")
 
 
@@ -489,9 +486,9 @@ class CellClusterGeneExpression(Base):
     # ID
     id = Column(INTEGER, primary_key=True)
     # 细胞集群ID
-    calculated_cell_cluster_id = Column(
-        INTEGER, ForeignKey("calc_cell_cluster_proportion.calculated_cell_cluster_id")
-    )
+    calculated_cell_cluster_alias_id = Column(String(255))
+    cell_type_id = Column(String(255))
+    analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # 基因组ID
     gene_ensemble_id = Column(String(255), ForeignKey("gene_meta.gene_ensemble_id"))
     # 基因符号
@@ -519,12 +516,11 @@ class CellClusterGeneExpression(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
     )
-    gene_expression_proportion_meta = relationship(
-        "CalcCellClusterProportion", back_populates="proportion_gene_expression"
-    )
     gene_expression_gene_meta = relationship(
         "GeneMeta", back_populates="gene_gene_expression_meta"
     )
+    gene_expression_analysis_meta = relationship("Analysis", back_populates="analysis_gene_expression_meta")
+    # gene_expression_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_gene_expression_meta")
 
 
 class SpeciesMeta(Base):

@@ -59,9 +59,17 @@ class ProjectListModel(BaseModel):
     page_size: int
 
 
+class ProjectListForSearch(BaseModel):
+    project_list: list
+    cell_type_list: Union[List[project_model.CellTypeModel], None] = None
+    total: int
+    page: int
+    page_size: int
+
+
 class ResponseProjectListModel(BaseModel):
     status: str
-    data: Union[ProjectListModel, CellTypeListModel, GeneListModel, DonorListModel, SpeciesListModel, H5adListModel, List[project_model.SpeciesModel]]
+    data: Union[ProjectListForSearch, ProjectListModel, CellTypeListModel, GeneListModel, DonorListModel, SpeciesListModel, H5adListModel, List[project_model.SpeciesModel]]
     message: str
 
 
