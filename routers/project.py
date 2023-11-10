@@ -138,14 +138,15 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     project_count = crud.get_project(db=db, filters=[]).count()
     sample_count = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=[]).count()
     cell_type_count = crud.get_cell_meta(db=db, filters=[]).count()
+    statical_list = [{"statical": 'project', "count":project_count},
+                     {"statical": 'sample', "count":sample_count},
+                     {"statical": 'cell_type', "count":cell_type_count},]
     res_dict = {
         "species_list": return_species_list,
         # "sample_list": return_biosample_type_list,
         "organ_list": return_organ_list,
         "project_list": [project_meta.to_dict() for project_meta in project_meta_list],
-        "project_count": project_count,
-        "sample_count": sample_count,
-        "cell_type_count": cell_type_count
+        "statical_list": statical_list
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
