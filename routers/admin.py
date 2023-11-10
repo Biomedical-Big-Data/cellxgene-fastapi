@@ -263,7 +263,7 @@ async def admin_update_project(
             update_analysis_dict=update_analysis_dict,
         )
         if excel_id is not None:
-            upload_excel_util.upload_file(
+            upload_excel_util.upload_file_v2(
                 db=db, project_id=project_id, analysis_id=analysis_id, excel_id=excel_id
             )
     except Exception as e:

@@ -129,20 +129,29 @@ def update_biosample(db: Session, filters: List, update_dict: Dict):
     db.commit()
 
 
+def delete_biosample_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.BioSampleMeta).filter(and_(*filters)).delete()
+
+
 def create_cell_proprotion_for_transaction(
     db: Session,
     insert_cell_proportion_model_list: List[cellxgene.CalcCellClusterProportion],
 ):
-    inserted_id_dict = {}
-    for insert_cell_proportion_model in insert_cell_proportion_model_list:
-        db.add(insert_cell_proportion_model)
-        db.flush()
-        inserted_id_dict[insert_cell_proportion_model.calculated_cell_cluster_alias_id] = insert_cell_proportion_model.calculated_cell_cluster_id
-    return inserted_id_dict
+    db.add_all(insert_cell_proportion_model_list)
+    # inserted_id_dict = {}
+    # for insert_cell_proportion_model in insert_cell_proportion_model_list:
+    #     db.add(insert_cell_proportion_model)
+    #     db.flush()
+    #     inserted_id_dict[insert_cell_proportion_model.calculated_cell_cluster_alias_id] = insert_cell_proportion_model.calculated_cell_cluster_id
+    # return inserted_id_dict
 
 
 def get_cell_proportion(db: Session, filters: List):
     return db.query(cellxgene.CalcCellClusterProportion).filter(and_(*filters))
+
+
+def delete_cell_proportion_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.CalcCellClusterProportion).filter(and_(*filters)).delete()
 
 
 def update_cell_proportion_for_transaction(
@@ -170,6 +179,10 @@ def create_gene_expression_for_transaction(
     insert_gene_expression_model_list: List[cellxgene.CellClusterGeneExpression],
 ):
     db.add_all(insert_gene_expression_model_list)
+
+
+def delete_gene_expression_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.CellClusterGeneExpression).filter(and_(*filters)).delete()
 
 
 def get_project_biosample(db: Session, filters: List):
@@ -320,12 +333,21 @@ def create_donor_meta(db: Session, insert_donor_meta_list: List[cellxgene.DonorM
 
 
 def create_donor_meta_for_transaction(db: Session, insert_donor_meta_list: List[cellxgene.DonorMeta]):
-    db.add_all(insert_donor_meta_list)
+    inserted_id_list = []
+    for insert_donor_model in insert_donor_meta_list:
+        db.add(insert_donor_model)
+        db.flush()
+        inserted_id_list.append(insert_donor_model.id)
+    return inserted_id_list
 
 
-def create_pathway_score(db: Session, insert_pathway_meta_list: List[cellxgene.PathwayScore]):
+def create_pathway_score_for_transaction(db: Session, insert_pathway_meta_list: List[cellxgene.PathwayScore]):
     db.add_all(insert_pathway_meta_list)
-    db.commit()
+    # db.commit()
+
+
+def delete_pathway_score_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.PathwayScore).filter(and_(*filters)).delete()
 
 
 def create_taxonomy(

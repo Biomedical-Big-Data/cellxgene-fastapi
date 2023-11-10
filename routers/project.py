@@ -138,9 +138,9 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     project_count = crud.get_project(db=db, filters=[]).count()
     sample_count = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=[]).count()
     cell_type_count = crud.get_cell_meta(db=db, filters=[]).count()
-    statical_list = [{"statical": 'project', "count":project_count},
-                     {"statical": 'sample', "count":sample_count},
-                     {"statical": 'cell_type', "count":cell_type_count},]
+    statical_list = [{"statical": 'project', "count": project_count},
+                     {"statical": 'sample', "count": sample_count},
+                     {"statical": 'cell_type', "count": cell_type_count},]
     res_dict = {
         "species_list": return_species_list,
         # "sample_list": return_biosample_type_list,
@@ -726,6 +726,7 @@ async def get_project_list_by_sample(
         project_dict['analysis_meta'] = analysis_meta
         project_dict['project_meta'] = project_meta
         project_dict['biosample_meta'] = biosample_meta
+        project_dict['donor_meta'] = dict_util.row2dict(biosample_meta_list[0].biosample_donor_meta) if biosample_meta_list[0].biosample_donor_meta else {}
         project_list.append(project_dict)
     total = (
         crud.get_project_by_sample_join(db=db, query_list=[func.count(1)], public_filter_list=public_filter_list)
@@ -913,6 +914,7 @@ async def get_project_list_by_cell(
         project_dict['analysis_meta'] = analysis_meta
         project_dict['project_meta'] = project_meta
         project_dict['biosample_meta'] = biosample_meta
+        project_dict['donor_meta'] = dict_util.row2dict(cell_proportion_meta_list[3].biosample_donor_meta) if cell_proportion_meta_list[3].biosample_donor_meta else {}
         project_list.append(project_dict)
     total = (
         crud.get_project_by_cell_join(db=db, query_list=[func.count(1)], public_filter_list=[cellxgene.CellTypeMeta.species_id == species_id,
@@ -1115,6 +1117,7 @@ async def get_project_list_by_gene(
         project_dict['analysis_meta'] = analysis_meta
         project_dict['project_meta'] = project_meta
         project_dict['biosample_meta'] = biosample_meta
+        project_dict['donor_meta'] = dict_util.row2dict(gene_meta[3].biosample_donor_meta) if gene_meta[3].biosample_donor_meta else {}
         cell_type_id_list.append(gene_meta[0].cell_type_id)
         project_list.append(project_dict)
     cell_type_filter_list = [

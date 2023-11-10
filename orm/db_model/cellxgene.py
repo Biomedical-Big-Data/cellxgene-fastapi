@@ -81,9 +81,9 @@ class ProjectMeta(Base):
     # 联系方式
     contact = Column(String(255))
     # 发布人
-    publications = Column(TINYINT(1))
+    publications = Column(String(255))
     # 贡献者
-    contributors = Column(TINYINT(1))
+    contributors = Column(String(255))
     # 协作组织
     collaborating_organizations = Column(String(255))
     # 引文

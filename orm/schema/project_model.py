@@ -13,7 +13,7 @@ class SpeciesModel(BaseModel):
 
 
 class DonorModel(BaseModel):
-    id: int | str
+    id: int | str | None = None
     donor_name: str | None
     sex: str | None
     ethnicity: str | None
@@ -44,8 +44,8 @@ class ProjectModel(BaseModel):
     anatomical_entity: str | None
     release_date: str | None
     contact: str | None
-    publications: int | None
-    contributors: int | None
+    publications: str | None
+    contributors: str | None
     collaborating_organizations: str | None
     citation: str | None
     data_curators: str | None
@@ -61,11 +61,11 @@ class ProjectModel(BaseModel):
 
 
 class BiosampleModel(BaseModel):
-    id: int | str
+    id: int | str | None = None
     # biosample_name: str | None
     external_sample_accesstion: str | None
     biosample_type: str | None
-    species_id: int | None
+    species_id: int | None = None
     donor_id: int | None
     bmi: float | None
     is_living: int | None

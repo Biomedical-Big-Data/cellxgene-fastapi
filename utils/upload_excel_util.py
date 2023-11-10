@@ -250,7 +250,6 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
     species_dict = {}
     for species_meta in species_meta_list:
         species_dict[species_meta.species] = species_meta.id
-    print(species_dict)
     project_excel_df = pd.ExcelFile(BytesIO(project_content))
     project_df = project_excel_df.parse("project_meta")
     analysis_df = project_excel_df.parse("analysis_meta")
@@ -259,6 +258,8 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
     cell_proportion_df = project_excel_df.parse("calc_cell_cluster_proportion")
     pathway_score_df = project_excel_df.parse("pathway_score")
     gene_expression_df = project_excel_df.parse("gene_expression")
+    analysis_df = analysis_df.replace(np.nan, None)
+    analysis_df = analysis_df.replace("unknown", None)
     donor_df = donor_df.replace(np.nan, None)
     donor_df = donor_df.replace("unknown", None)
     biosample_df = biosample_df.replace(np.nan, None)
@@ -282,16 +283,14 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
     insert_pathway_model_list = []
     insert_gene_expression_model_list = []
     write_count = 10000
+    check_donor_id_list = []
+    del update_project_dict['project_id']
     crud.update_project_for_transaction(db=db, filters=[cellxgene.ProjectMeta.id == project_id], update_dict=update_project_dict)
     crud.update_analysis_for_transaction(db=db, filters=[cellxgene.Analysis.id == analysis_id], update_dict=update_analysis_dict)
-    crud.delete_donor_for_transaction(db=db, filters=[cellxgene.ProjectBioSample.project_id == project_id,
-                                                      cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
-                                                      cellxgene.BioSampleMeta.donor_id == cellxgene.DonorMeta.id])
-    crud.delete_project_biosample_for_transaction(db=db, filters=[cellxgene.ProjectBioSample.project_id == project_id])
-    crud.delete_biosample_analysis_for_transaction(db=db, filters=[cellxgene.BioSampleAnalysis.analysis_id == analysis_id])
     for _, row in donor_df.iterrows():
-        donor_meta = project_model.DonorModel(**row.to_dict())
-        print(donor_meta)
+        donor_dict = row.to_dict()
+        donor_meta = project_model.DonorModel(**donor_dict)
+        check_donor_id_list.append(donor_dict['donor_id'])
         insert_donor_model_list.append(
             cellxgene.DonorMeta(
                 **donor_meta.model_dump(
@@ -299,115 +298,108 @@ def upload_file_v2(db: Session, project_id: int, analysis_id: int, excel_id: str
                 )
             )
         )
-    crud.create_donor_meta(db=db, insert_donor_meta_list=insert_donor_model_list)
-    # for _, row in biosample_df.iterrows():
-    #     biosample_meta = project_model.BiosampleModel(**row.to_dict())
-    #     print(biosample_meta)
-    #     insert_biosample_model_list.append(
-    #             cellxgene.BioSampleMeta(
-    #                 **biosample_meta.model_dump(
-    #                     mode="json", exclude={"id"}, exclude_none=True
-    #                 )
-    #             )
-    #         )
-    # crud.create_biosample_for_transaction(db=db, insert_biosample_model_list=insert_biosample_model_list)
-    # db.commit()
-    # inserted_biosample_id_list = [i for i in range(141, 173)]
-    # print(inserted_biosample_id_list)
-    # for inserted_biosample_id in inserted_biosample_id_list:
-    #     insert_project_biosample_model_list.append(
-    #         cellxgene.ProjectBioSample(
-    #             project_id=project_id, biosample_id=inserted_biosample_id
-    #         )
-    #     )
-    #     insert_biosample_analysis_model_list.append(
-    #         cellxgene.BioSampleAnalysis(
-    #             biosample_id=inserted_biosample_id, analysis_id=analysis_id
-    #         )
-    #     )
-    # crud.delete_project_biosample_for_transaction(
-    #     db=db, filters=[cellxgene.ProjectBioSample.project_id == project_id]
-    # )
-    # crud.create_project_biosample_for_transaction(
-    #     db=db,
-    #     insert_project_biosample_model_list=insert_project_biosample_model_list,
-    # )
-    # crud.delete_biosample_analysis_for_transaction(
-    #     db=db,
-    #     filters=[
-    #         cellxgene.BioSampleAnalysis.analysis_id == analysis_id,
-    #         cellxgene.ProjectBioSample.project_id == project_id,
-    #         cellxgene.BioSampleAnalysis.biosample_id
-    #         == cellxgene.ProjectBioSample.biosample_id,
-    #     ],
-    # )
-    # crud.create_biosample_analysis_for_transaction(
-    #     db=db, insert_biosample_analysis_list=insert_biosample_analysis_model_list
-    # )
-    # db.commit()
-    for _, row in cell_proportion_df.iterrows():
-        cell_proportion_meta = project_model.CellClusterProportionModel(**row.to_dict())
-        cell_proportion_meta.analysis_id = analysis_id
-        print(cell_proportion_meta)
-        insert_cell_proportion_model_list.append(
-                cellxgene.CalcCellClusterProportion(
-                    **cell_proportion_meta.model_dump(
-                        mode="json", exclude={"calculated_cell_cluster_id"}, exclude_none=True
+    inserted_donor_id_list = crud.create_donor_meta_for_transaction(db=db, insert_donor_meta_list=insert_donor_model_list)
+    inserted_donor_id_dict = dict(
+        zip(check_donor_id_list, inserted_donor_id_list)
+    )
+    check_biosample_id_list = []
+    biosample_df["species_id"] = biosample_df["species"].apply(lambda xx: species_dict[xx.strip()])
+    biosample_df["donor_id"] = biosample_df["donor_id"].apply(lambda xx: int(inserted_donor_id_dict.get(xx, 0)))
+    for _, row in biosample_df.iterrows():
+        biosample_dict = row.to_dict()
+        biosample_meta = project_model.BiosampleModel(**biosample_dict)
+        check_biosample_id_list.append(biosample_dict['biosample_id'])
+        # print(biosample_meta)
+        insert_biosample_model_list.append(
+                cellxgene.BioSampleMeta(
+                    **biosample_meta.model_dump(
+                        mode="json", exclude={"id"}, exclude_none=True
                     )
                 )
             )
-    inserted_cell_proportion_id_dict = crud.create_cell_proprotion_for_transaction(
+    inserted_biosample_id_list = crud.create_biosample_for_transaction(db=db, insert_biosample_model_list=insert_biosample_model_list)
+    inserted_biosample_id_dict = dict(
+        zip(check_biosample_id_list, inserted_biosample_id_list)
+    )
+    for inserted_biosample_id in inserted_biosample_id_list:
+        insert_project_biosample_model_list.append(
+            cellxgene.ProjectBioSample(
+                project_id=project_id, biosample_id=inserted_biosample_id
+            )
+        )
+        insert_biosample_analysis_model_list.append(
+            cellxgene.BioSampleAnalysis(
+                biosample_id=inserted_biosample_id, analysis_id=analysis_id
+            )
+        )
+    crud.create_project_biosample_for_transaction(
+        db=db,
+        insert_project_biosample_model_list=insert_project_biosample_model_list,
+    )
+    crud.create_biosample_analysis_for_transaction(
+        db=db, insert_biosample_analysis_list=insert_biosample_analysis_model_list
+    )
+    cell_proportion_df["biosample_id"] = cell_proportion_df["biosample_id"].apply(lambda xx: int(inserted_biosample_id_dict.get(xx, 0)))
+    for _, row in cell_proportion_df.iterrows():
+        cell_proportion_meta = project_model.CellClusterProportionModel(**row.to_dict())
+        cell_proportion_meta.analysis_id = analysis_id
+        insert_cell_proportion_model_list.append(
+            cellxgene.CalcCellClusterProportion(
+                **cell_proportion_meta.model_dump(
+                    mode="json", exclude={"calculated_cell_cluster_id"}, exclude_none=True
+                )
+            )
+        )
+    crud.create_cell_proprotion_for_transaction(
         db=db, insert_cell_proportion_model_list=insert_cell_proportion_model_list
     )
-    db.commit()
-    print(inserted_cell_proportion_id_dict)
-    # for _, row in pathway_score_df.iterrows():
-    #     pathway_score_meta = project_model.PathwayScoreModel(**row.to_dict())
-    #     pathway_score_meta.analysis_id = analysis_id
-    #     # print(pathway_score_meta)
-    #     insert_pathway_model_list.append(
-    #             cellxgene.PathwayScore(
-    #                 **pathway_score_meta.model_dump(
-    #                     mode="json", exclude={"id"}, exclude_none=True
-    #                 )
-    #             )
-    #         )
-    # pathway_insert_count = int(len(insert_pathway_model_list) / write_count)
-    # for i in range(1, pathway_insert_count + 1):
-    #     crud.create_pathway_score(
-    #         db=db, insert_pathway_model_list=insert_pathway_model_list[write_count * (i - 1): write_count * i]
-    #     )
-    #     print('{} count'.format(str(i)))
-    # crud.create_pathway_score(
-    #     db=db, insert_pathway_model_list=insert_pathway_model_list[pathway_insert_count * write_count:]
-    # )
+    pathway_score_df["species_id"] = pathway_score_df["species"].apply(lambda xx: species_dict[xx.strip()])
+    pathway_score_df['biosample_id'] = pathway_score_df['biosample_id'].apply(lambda xx: inserted_biosample_id_dict.get(xx, 0))
+    for _, row in pathway_score_df.iterrows():
+        pathway_score_meta = project_model.PathwayScoreModel(**row.to_dict())
+        pathway_score_meta.analysis_id = analysis_id
+        # print(pathway_score_meta)
+        insert_pathway_model_list.append(
+                cellxgene.PathwayScore(
+                    **pathway_score_meta.model_dump(
+                        mode="json", exclude={"id"}, exclude_none=True
+                    )
+                )
+            )
+    pathway_insert_count = int(len(insert_pathway_model_list) / write_count)
+    for i in range(1, pathway_insert_count + 1):
+        crud.create_pathway_score_for_transaction(
+            db=db, insert_pathway_meta_list=insert_pathway_model_list[write_count * (i - 1): write_count * i]
+        )
+    crud.create_pathway_score_for_transaction(
+        db=db, insert_pathway_meta_list=insert_pathway_model_list[pathway_insert_count * write_count:]
+    )
     # print('taken:', str(time.time() - start_time))
-    # for _, row in gene_expression_df.iterrows():
-    #     gene_expression_meta = project_model.CellClusterGeneExpressionModel(**row.to_dict())
-    #     gene_expression_meta.analysis_id = analysis_id
-    #     # print(gene_expression_meta)
-    #     insert_gene_expression_model_list.append(
-    #             cellxgene.CellClusterGeneExpression(
-    #                 **gene_expression_meta.model_dump(
-    #                     mode="json", exclude={"id"}, exclude_none=True
-    #                 )
-    #             )
-    #         )
-    # gene_expression_insert_count = int(len(insert_gene_expression_model_list) / write_count)
-    # for i in range(1, gene_expression_insert_count + 1):
-    #     # print(write_count * (i - 1), write_count * i)
-    #     crud.create_gene_expression_for_transaction(
-    #         db=db, insert_gene_expression_model_list=insert_gene_expression_model_list[write_count * (i - 1): write_count * i]
-    #     )
-    #     print('{} count'.format(str(i)))
-    # crud.create_gene_expression_for_transaction(
-    #     db=db, insert_gene_expression_model_list=insert_gene_expression_model_list[gene_expression_insert_count * write_count:]
-    # )
-    # # print(gene_expression_insert_count * write_count)
-    # db.commit()
+    for _, row in gene_expression_df.iterrows():
+        gene_expression_meta = project_model.CellClusterGeneExpressionModel(**row.to_dict())
+        gene_expression_meta.analysis_id = analysis_id
+        # print(gene_expression_meta)
+        insert_gene_expression_model_list.append(
+                cellxgene.CellClusterGeneExpression(
+                    **gene_expression_meta.model_dump(
+                        mode="json", exclude={"id"}, exclude_none=True
+                    )
+                )
+            )
+    gene_expression_insert_count = int(len(insert_gene_expression_model_list) / write_count)
+    for i in range(1, gene_expression_insert_count + 1):
+        # print(write_count * (i - 1), write_count * i)
+        crud.create_gene_expression_for_transaction(
+            db=db, insert_gene_expression_model_list=insert_gene_expression_model_list[write_count * (i - 1): write_count * i]
+        )
+    crud.create_gene_expression_for_transaction(
+        db=db, insert_gene_expression_model_list=insert_gene_expression_model_list[gene_expression_insert_count * write_count:]
+    )
+    db.commit()
     print('taken:', str(time.time() - start_time))
 
 
 if __name__ == "__main__":
     from orm.dependencies import get_db
-    upload_file_v2(db=next(get_db()), project_id=25, analysis_id=25, excel_id="update_file.xlsx")
+
+    upload_file_v2(db=next(get_db()), project_id=26, analysis_id=26, excel_id="update_file_test.xlsx")
