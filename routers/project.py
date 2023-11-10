@@ -135,11 +135,17 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     #     )
     for organ_meta in organ_list:
         return_organ_list.append({"organ": organ_meta[0], "count": organ_meta[1]})
+    project_count = crud.get_project(db=db, filters=[]).count()
+    sample_count = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=[]).count()
+    cell_type_count = crud.get_cell_meta(db=db, filters=[]).count()
     res_dict = {
         "species_list": return_species_list,
         # "sample_list": return_biosample_type_list,
         "organ_list": return_organ_list,
         "project_list": [project_meta.to_dict() for project_meta in project_meta_list],
+        "project_count": project_count,
+        "sample_count": sample_count,
+        "cell_type_count": cell_type_count
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
@@ -644,7 +650,7 @@ async def get_gene_symbol_list(
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_sample(
-    species_id: int,
+    species_id: Union[int, None] = None,
     organ: Union[str, None] = None,
     external_sample_accesstion: Union[str, None] = None,
     disease: Union[str, None] = None,
@@ -664,13 +670,14 @@ async def get_project_list_by_sample(
     #     cellxgene.User.email_address == current_user_email_address,
     # ]
     public_filter_list = [
-        cellxgene.BioSampleMeta.species_id == species_id,
         cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
         cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
         cellxgene.ProjectMeta.is_publish
         == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
+    if species_id is not None:
+        public_filter_list.append(cellxgene.BioSampleMeta.species_id == species_id)
     if organ is not None:
         # filter_list.append(cellxgene.BioSampleMeta.organ == organ)
         public_filter_list.append(cellxgene.BioSampleMeta.organ == organ)
