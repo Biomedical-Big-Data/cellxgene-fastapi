@@ -42,7 +42,7 @@ class ProjectModel(BaseModel):
     cell_number: str | None
     description: str | None
     anatomical_entity: str | None
-    release_date: str | None
+    release_date: datetime | None
     contact: str | None
     publications: str | None
     contributors: str | None
