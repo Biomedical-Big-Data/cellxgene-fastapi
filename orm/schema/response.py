@@ -69,7 +69,16 @@ class ProjectListForSearch(BaseModel):
 
 class ResponseProjectListModel(BaseModel):
     status: str
-    data: Union[ProjectListForSearch, ProjectListModel, CellTypeListModel, GeneListModel, DonorListModel, SpeciesListModel, H5adListModel, List[project_model.SpeciesModel]]
+    data: Union[
+        ProjectListForSearch,
+        ProjectListModel,
+        CellTypeListModel,
+        GeneListModel,
+        DonorListModel,
+        SpeciesListModel,
+        H5adListModel,
+        List[project_model.SpeciesModel],
+    ]
     message: str
 
 

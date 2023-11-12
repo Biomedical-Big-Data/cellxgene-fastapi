@@ -9,7 +9,7 @@ from fastapi import (
     Body,
     File,
     UploadFile,
-    BackgroundTasks
+    BackgroundTasks,
 )
 from fastapi.responses import RedirectResponse
 from orm.schema import project_model, user_model
@@ -201,6 +201,7 @@ async def get_project_list(
     status_code=status.HTTP_200_OK,
 )
 async def admin_update_project(
+    background_tasks: BackgroundTasks,
     project_id: int,
     analysis_id: int = Body(),
     title: str = Body(),
@@ -216,9 +217,7 @@ async def admin_update_project(
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
-    filter_list = [
-        cellxgene.ProjectMeta.id == project_id
-    ]
+    filter_list = [cellxgene.ProjectMeta.id == project_id]
     try:
         project_info = crud.get_project(db=db, filters=filter_list).first()
         if not project_info:
@@ -263,8 +262,13 @@ async def admin_update_project(
             update_analysis_dict=update_analysis_dict,
         )
         if excel_id is not None:
-            upload_excel_util.upload_file_v2(
-                db=db, project_id=project_id, analysis_id=analysis_id, excel_id=excel_id
+            background_tasks.add_task(
+                upload_excel_util.upload_file_v2,
+                db,
+                project_id,
+                analysis_id,
+                excel_id,
+                current_admin_email_address,
             )
     except Exception as e:
         print(e)
@@ -329,15 +333,19 @@ async def get_cell_list(
     filter_list = []
     search_page = (page - 1) * page_size
     if cell_type_name is not None:
-        filter_list.append(cellxgene.CellTypeMeta.cell_type_name.like("%{}%".format(cell_type_name)))
+        filter_list.append(
+            cellxgene.CellTypeMeta.cell_type_name.like("%{}%".format(cell_type_name))
+        )
     cell_type_list = (
-        crud.get_cell_meta(db=db, filters=filter_list)
+        crud.get_cell_meta(
+            db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list
+        )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
     total = crud.get_cell_meta(
-        db=db, filters=filter_list
+        db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list
     ).count()
     res_dict = {
         "cell_type_list": cell_type_list,
@@ -367,9 +375,7 @@ async def get_donor_list(
         .limit(page_size)
         .all()
     )
-    total = crud.get_donor_meta(
-        db=db, filters=filter_list
-    ).count()
+    total = crud.get_donor_meta(db=db, filters=filter_list).count()
     res_dict = {
         "donor_list": donor_meta_list,
         "total": total,
@@ -396,12 +402,16 @@ async def get_species_list(
     if species is not None:
         filter_list.append(cellxgene.SpeciesMeta.species.like("%{}%".format(species)))
     species_meta_list = (
-        crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=filter_list)
+        crud.get_species_list(
+            db=db, query_list=[cellxgene.SpeciesMeta], filters=filter_list
+        )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=filter_list).count()
+    total = crud.get_species_list(
+        db=db, query_list=[cellxgene.SpeciesMeta], filters=filter_list
+    ).count()
     res_dict = {
         "species_list": species_meta_list,
         "total": total,
@@ -486,7 +496,7 @@ async def get_server_status(
 @router.post(
     "/project/meta/file/upload",
     response_model=ResponseMessage,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
 async def upload_project_meta_file(
     background_tasks: BackgroundTasks,
@@ -498,14 +508,34 @@ async def upload_project_meta_file(
     try:
         project_content = await meta_file.read()
         if file_type == "cell_type":
-            background_tasks.add_task(file_util.update_cell_type_meta_file, db, project_content, current_admin_email_address)
+            background_tasks.add_task(
+                file_util.update_cell_type_meta_file,
+                db,
+                project_content,
+                current_admin_email_address,
+            )
         elif file_type == "gene":
-            background_tasks.add_task(file_util.update_gene_meta_file, db, project_content, current_admin_email_address)
+            background_tasks.add_task(
+                file_util.update_gene_meta_file,
+                db,
+                project_content,
+                current_admin_email_address,
+            )
         if file_type == "donor":
-            background_tasks.add_task(file_util.update_donor_meta_file, db, project_content, current_admin_email_address)
+            background_tasks.add_task(
+                file_util.update_donor_meta_file,
+                db,
+                project_content,
+                current_admin_email_address,
+            )
         if file_type == "species":
-            background_tasks.add_task(file_util.update_species_meta_file, db, project_content, current_admin_email_address)
+            background_tasks.add_task(
+                file_util.update_species_meta_file,
+                db,
+                project_content,
+                current_admin_email_address,
+            )
     except Exception as e:
-        logging.error('[upload project meta error]: {}'.format(str(e)))
+        logging.error("[upload project meta error]: {}".format(str(e)))
     else:
         return ResponseMessage(status="0000", data={}, message="上传文件成功，更新数据结果请等待邮件接收")

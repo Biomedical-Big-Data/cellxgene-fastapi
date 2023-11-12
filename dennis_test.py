@@ -151,14 +151,14 @@ def get_relation():
     #     print('------')
 
 
-def get_parent_id(relation_list, cl_id, parent_dict):
-    for i in relation_list:
-        if i.get("id") == cl_id:
-            parent_dict["cl_id"] = i.get("id")
-            parent_dict["parent_dict"] = {}
-            get_parent_id(relation_list, i.get("pId"), parent_dict["parent_dict"])
-        if i.get("id") == "CL:0000000":
-            return parent_dict
+# def get_parent_id(relation_list, cl_id, parent_dict):
+#     for i in relation_list:
+#         if i.get("id") == cl_id:
+#             parent_dict["cl_id"] = i.get("id")
+#             parent_dict["parent_dict"] = {}
+#             get_parent_id(relation_list, i.get("pId"), parent_dict["parent_dict"])
+#         if i.get("id") == "CL:0000000":
+#             return parent_dict
 
 
 def dennis_test():
@@ -188,32 +188,82 @@ def create_cell_type_meta(db: Session):
     file_data_df = pd.read_csv(file_path)
     file_data_df = file_data_df.replace(np.nan, None)
     print(file_data_df)
-    species_meta_list = crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=[])
+    species_meta_list = crud.get_species_list(
+        db=db, query_list=[cellxgene.SpeciesMeta], filters=[]
+    )
     species_dict = {}
     for species_meta in species_meta_list:
         species_dict[species_meta.species] = species_meta.id
     print(species_dict)
     insert_list = []
     for _, row in file_data_df.iterrows():
-        cell_type_id = row['ct_id']
-        species_id = species_dict.get(row['species'])
-        marker_gene_symbol = row['marker_gene_symbol']
-        cell_taxonomy_id = row['ct_id']
-        cell_taxonomy_url = "https://ngdc.cncb.ac.cn/celltaxonomy/celltype/" + row['ct_id']
-        cell_ontology_id = row['specific_cell_ontology_id']
-        cell_type_name = row['cell_standard']
-        insert_list.append(cellxgene.CellTypeMeta(cell_type_id=cell_type_id, species_id=species_id,
-                                                  marker_gene_symbol=marker_gene_symbol,
-                                                  cell_taxonomy_id=cell_taxonomy_id,
-                                                  cell_taxonomy_url=cell_taxonomy_url,
-                                                  cell_ontology_id=cell_ontology_id,
-                                                  cell_type_name=cell_type_name))
+        cell_type_id = row["ct_id"]
+        species_id = species_dict.get(row["species"])
+        marker_gene_symbol = row["marker_gene_symbol"]
+        cell_taxonomy_id = row["ct_id"]
+        cell_taxonomy_url = (
+            "https://ngdc.cncb.ac.cn/celltaxonomy/celltype/" + row["ct_id"]
+        )
+        cell_ontology_id = row["specific_cell_ontology_id"]
+        cell_type_name = row["cell_standard"]
+        insert_list.append(
+            cellxgene.CellTypeMeta(
+                cell_type_id=cell_type_id,
+                species_id=species_id,
+                marker_gene_symbol=marker_gene_symbol,
+                cell_taxonomy_id=cell_taxonomy_id,
+                cell_taxonomy_url=cell_taxonomy_url,
+                cell_ontology_id=cell_ontology_id,
+                cell_type_name=cell_type_name,
+            )
+        )
     crud.create_cell_type_meta(db=db, insert_cell_type_model_list=insert_list)
+
+
+def cell_taxonomy_tree(db: Session):
+    from conf import config
+    from sqlalchemy import and_, or_, distinct, func
+    proportion_filter_list = [
+        cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        cellxgene.ProjectMeta.is_publish == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+        cellxgene.ProjectMeta.id == cellxgene.Analysis.project_id,
+        cellxgene.Analysis.id == cellxgene.CalcCellClusterProportion.analysis_id
+    ]
+    cell_proportion_list = crud.get_cell_proportion(db=db,
+                                                    query_list=[cellxgene.CalcCellClusterProportion.cell_type_id,
+                                                                func.sum(cellxgene.CalcCellClusterProportion.cell_number)],
+                                                    filters=proportion_filter_list)\
+        .group_by(cellxgene.CalcCellClusterProportion.cell_type_id)\
+        .all()
+    cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
+        db=db, filters=[]
+    )
+    res = []
+    for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
+        res.append(
+            {
+                "cl_id": cell_taxonomy_relation_model[0],
+                "cl_pid": cell_taxonomy_relation_model[2],
+                "name": cell_taxonomy_relation_model[1],
+            }
+        )
+    print(cell_proportion_list)
+
+
+def get_parent_id(relation_list, cl_id, parent_dict):
+    for i in relation_list:
+        if i.get("id") == cl_id:
+            parent_dict['cl_id'] = i.get("id")
+            parent_dict['parent_dict'] = {}
+            get_parent_id(relation_list, i.get("pId"), parent_dict['parent_dict'])
+        if i.get("id") == "CL:0000000":
+            return parent_dict
 
 
 if __name__ == "__main__":
     pass
-    create_cell_type_meta(next(get_db()))
+    cell_taxonomy_tree(next(get_db()))
+    # create_cell_type_meta(next(get_db()))
     # get_relation()
     # import_relation_json()
     # excel_test()

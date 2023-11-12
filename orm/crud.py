@@ -48,32 +48,59 @@ def get_project_by_sample(db: Session, public_filter_list: List):
 
 
 def get_project_by_sample_join(db: Session, query_list: List, public_filter_list: List):
-    return db.query(*query_list) \
-        .select_from(cellxgene.BioSampleMeta)\
-        .join(cellxgene.ProjectBioSample, cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id)\
-        .join(cellxgene.ProjectMeta, cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id)\
-        .join(cellxgene.Analysis, cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id)\
+    return (
+        db.query(*query_list)
+        .select_from(cellxgene.BioSampleMeta)
+        .join(
+            cellxgene.ProjectBioSample,
+            cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+        )
+        .join(
+            cellxgene.ProjectMeta,
+            cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
+        )
+        .join(
+            cellxgene.Analysis,
+            cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        )
         .filter(and_(*public_filter_list))
+    )
 
 
 def get_project_by_cell(db: Session, query_list: List, public_filter_list: List):
-    return db.query(*query_list).filter(
-        and_(*public_filter_list)
-    )
+    return db.query(*query_list).filter(and_(*public_filter_list))
     # return db.query(cellxgene.CalcCellClusterProportion).filter(
     #     or_((and_(*filters)), (and_(*public_filter_list)))
     # )
 
 
 def get_project_by_cell_join(db: Session, query_list: List, public_filter_list: List):
-    return db.query(*query_list) \
-        .select_from(cellxgene.CellTypeMeta)\
-        .join(cellxgene.CalcCellClusterProportion, cellxgene.CellTypeMeta.cell_type_id == cellxgene.CalcCellClusterProportion.cell_type_id)\
-        .join(cellxgene.Analysis, cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id)\
-        .join(cellxgene.ProjectMeta, cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id)\
-        .join(cellxgene.ProjectBioSample, cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id)\
-        .join(cellxgene.BioSampleMeta, cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id)\
+    return (
+        db.query(*query_list)
+        .select_from(cellxgene.CellTypeMeta)
+        .join(
+            cellxgene.CalcCellClusterProportion,
+            cellxgene.CellTypeMeta.cell_type_id
+            == cellxgene.CalcCellClusterProportion.cell_type_id,
+        )
+        .join(
+            cellxgene.Analysis,
+            cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        )
+        .join(
+            cellxgene.ProjectMeta,
+            cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        )
+        .join(
+            cellxgene.ProjectBioSample,
+            cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+        )
+        .join(
+            cellxgene.BioSampleMeta,
+            cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+        )
         .filter(and_(*public_filter_list))
+    )
 
 
 def get_project_by_gene(db: Session, query_list: List, public_filter_list: List):
@@ -84,14 +111,32 @@ def get_project_by_gene(db: Session, query_list: List, public_filter_list: List)
 
 
 def get_project_by_gene_join(db: Session, query_list: List, public_filter_list: List):
-    return db.query(*query_list) \
-        .select_from(cellxgene.GeneMeta)\
-        .join(cellxgene.CellClusterGeneExpression, cellxgene.GeneMeta.gene_ensemble_id == cellxgene.CellClusterGeneExpression.gene_ensemble_id)\
-        .join(cellxgene.Analysis, cellxgene.CellClusterGeneExpression.analysis_id == cellxgene.Analysis.id)\
-        .join(cellxgene.ProjectMeta, cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id)\
-        .join(cellxgene.ProjectBioSample, cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id)\
-        .join(cellxgene.BioSampleMeta, cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id)\
+    return (
+        db.query(*query_list)
+        .select_from(cellxgene.GeneMeta)
+        .join(
+            cellxgene.CellClusterGeneExpression,
+            cellxgene.GeneMeta.gene_ensemble_id
+            == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
+        )
+        .join(
+            cellxgene.Analysis,
+            cellxgene.CellClusterGeneExpression.analysis_id == cellxgene.Analysis.id,
+        )
+        .join(
+            cellxgene.ProjectMeta,
+            cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        )
+        .join(
+            cellxgene.ProjectBioSample,
+            cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+        )
+        .join(
+            cellxgene.BioSampleMeta,
+            cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+        )
         .filter(and_(*public_filter_list))
+    )
 
 
 def get_organ_list(db: Session, filters: List):
@@ -146,8 +191,8 @@ def create_cell_proprotion_for_transaction(
     # return inserted_id_dict
 
 
-def get_cell_proportion(db: Session, filters: List):
-    return db.query(cellxgene.CalcCellClusterProportion).filter(and_(*filters))
+def get_cell_proportion(db: Session, query_list: List, filters: List):
+    return db.query(*query_list).filter(and_(*filters))
 
 
 def delete_cell_proportion_for_transaction(db: Session, filters: List):
@@ -305,7 +350,7 @@ def create_species(db: Session, insert_species_model_list: List[cellxgene.Specie
     db.commit()
 
 
-def get_gene_meta(db: Session,  filters: List | None):
+def get_gene_meta(db: Session, filters: List | None):
     return db.query(cellxgene.GeneMeta).filter(and_(*filters))
 
 
@@ -314,11 +359,13 @@ def create_gene(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
     db.commit()
 
 
-def get_cell_meta(db: Session, filters: List | None):
-    return db.query(cellxgene.CellTypeMeta).filter(and_(*filters))
+def get_cell_meta(db: Session, query_list: List, filters: List | None):
+    return db.query(*query_list).filter(and_(*filters))
 
 
-def create_cell_type_meta(db: Session, insert_cell_type_model_list: List[cellxgene.CellTypeMeta]):
+def create_cell_type_meta(
+    db: Session, insert_cell_type_model_list: List[cellxgene.CellTypeMeta]
+):
     db.add_all(insert_cell_type_model_list)
     db.commit()
 
@@ -332,7 +379,9 @@ def create_donor_meta(db: Session, insert_donor_meta_list: List[cellxgene.DonorM
     db.commit()
 
 
-def create_donor_meta_for_transaction(db: Session, insert_donor_meta_list: List[cellxgene.DonorMeta]):
+def create_donor_meta_for_transaction(
+    db: Session, insert_donor_meta_list: List[cellxgene.DonorMeta]
+):
     inserted_id_list = []
     for insert_donor_model in insert_donor_meta_list:
         db.add(insert_donor_model)
@@ -341,7 +390,9 @@ def create_donor_meta_for_transaction(db: Session, insert_donor_meta_list: List[
     return inserted_id_list
 
 
-def create_pathway_score_for_transaction(db: Session, insert_pathway_meta_list: List[cellxgene.PathwayScore]):
+def create_pathway_score_for_transaction(
+    db: Session, insert_pathway_meta_list: List[cellxgene.PathwayScore]
+):
     db.add_all(insert_pathway_meta_list)
     # db.commit()
 
@@ -445,7 +496,7 @@ if __name__ == "__main__":
 
     filter_list = [
         cellxgene.FileLibrary.upload_user_id == 25,
-        cellxgene.FileLibrary.file_id == '918e8def0a074ec2ad8270261003ce45.h5ad'
+        cellxgene.FileLibrary.file_id == "918e8def0a074ec2ad8270261003ce45.h5ad",
     ]
     file_model = get_file_info(db=next(get_db()), filters=filter_list)
     print(file_model)

@@ -36,7 +36,7 @@ from orm.schema.project_model import (
     CopyToProjectModel,
     ProjectCreateModel,
     ProjectUpdateModel,
-    ProjectModel
+    ProjectModel,
 )
 from fastapi.responses import (
     RedirectResponse,
@@ -49,9 +49,7 @@ from utils import file_util, auth_util, dict_util
 from mqtt_consumer.consumer import SERVER_STATUS_DICT
 from orm.database import cellxgene_engine
 
-
 PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-
 
 router = APIRouter(
     prefix="/project",
@@ -71,13 +69,15 @@ async def get_view_homepage(db: Session = Depends(get_db)):
                 cellxgene.SpeciesMeta.species_ontology_label,
                 func.count(cellxgene.ProjectMeta.id),
             ],
-            filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
-                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
-                     cellxgene.SpeciesMeta.id == cellxgene.BioSampleMeta.species_id,
-                     cellxgene.ProjectMeta.is_publish
-                     == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
-                     cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
-                     ],
+            filters=[
+                cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+                cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+                cellxgene.SpeciesMeta.id == cellxgene.BioSampleMeta.species_id,
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+            ],
         )
         .distinct()
         .group_by(cellxgene.SpeciesMeta.id)
@@ -107,19 +107,28 @@ async def get_view_homepage(db: Session = Depends(get_db)):
                 cellxgene.BioSampleMeta.organ,
                 func.count(cellxgene.ProjectMeta.id),
             ],
-            filters=[cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
-                     cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
-                     cellxgene.ProjectMeta.is_publish
-                     == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
-                     cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
-                     ],
+            filters=[
+                cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+                cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+            ],
         )
         .group_by(cellxgene.BioSampleMeta.organ)
         .all()
     )
     project_meta_list = (
-        crud.get_project(db=db, filters=[cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
-                                         cellxgene.ProjectMeta.is_publish == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,])
+        crud.get_project(
+            db=db,
+            filters=[
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+            ],
+        )
         .order_by(cellxgene.ProjectMeta.id.desc())
         .limit(config.ProjectStatus.HOMEPAGE_SHOW_PROJECT_LIMIT)
         .all()
@@ -127,7 +136,12 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     return_species_list, return_biosample_type_list, return_organ_list = [], [], []
     for species_meta in species_list:
         return_species_list.append(
-            {"species": species_meta[1], "species_label": species_meta[2], "count": species_meta[3], "id": species_meta[0]}
+            {
+                "species": species_meta[1],
+                "species_label": species_meta[2],
+                "count": species_meta[3],
+                "id": species_meta[0],
+            }
         )
     # for biosample_type_meta in sample_list:
     #     return_biosample_type_list.append(
@@ -135,18 +149,81 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     #     )
     for organ_meta in organ_list:
         return_organ_list.append({"organ": organ_meta[0], "count": organ_meta[1]})
-    project_count = crud.get_project(db=db, filters=[]).count()
-    sample_count = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=[]).count()
-    cell_type_count = crud.get_cell_meta(db=db, filters=[]).count()
-    statical_list = [{"statical": 'project', "count": project_count},
-                     {"statical": 'sample', "count": sample_count},
-                     {"statical": 'cell_type', "count": cell_type_count},]
+    project_count = crud.get_project(
+        db=db,
+        filters=[
+            cellxgene.ProjectMeta.is_publish
+            == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+            cellxgene.ProjectMeta.is_private
+            == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+        ],
+    ).count()
+    sample_count = (
+        crud.get_biosample(
+            db=db,
+            query_list=[func.sum(cellxgene.ProjectMeta.biosample_number)],
+            filters=[
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+            ],
+        )
+        .distinct()
+        .first()
+    )[0]
+    cell_type_count = (
+        crud.get_project_by_cell_join(
+            db=db,
+            query_list=[cellxgene.CalcCellClusterProportion.cell_type_id],
+            public_filter_list=[
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+                cellxgene.ProjectMeta.id
+                == cellxgene.Analysis.project_id,
+                cellxgene.CalcCellClusterProportion.analysis_id
+                == cellxgene.Analysis.id
+            ],
+        )
+        .distinct()
+        .count()
+    )
+    cell_number_list = (
+        crud.get_project_by_cell_join(
+            db=db,
+            query_list=[
+                cellxgene.CalcCellClusterProportion],
+            public_filter_list=[
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+                cellxgene.ProjectMeta.id
+                == cellxgene.Analysis.project_id,
+                cellxgene.CalcCellClusterProportion.analysis_id
+                == cellxgene.Analysis.id
+            ],
+        )
+        .distinct()
+        .all()
+    )
+    cell_number_count = 0
+    for cell_number_meta in cell_number_list:
+        cell_number_count += cell_number_meta.cell_number
+    statical_list = [
+        {"statical": "project", "count": project_count},
+        {"statical": "sample", "count": sample_count},
+        {"statical": "cell_type", "count": cell_type_count},
+        {"statical": "cell_number", "count": cell_number_count},
+    ]
     res_dict = {
         "species_list": return_species_list,
         # "sample_list": return_biosample_type_list,
         "organ_list": return_organ_list,
         "project_list": [project_meta.to_dict() for project_meta in project_meta_list],
-        "statical_list": statical_list
+        "statical_list": statical_list,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
 
@@ -213,16 +290,22 @@ async def get_project_info(
         return ResponseMessage(status="0000", data=project_info_model, message="ok")
     elif project_info_model.is_private:
         if Authorization:
-            current_user_email_address = await get_current_user(token=Authorization.split()[1])
+            current_user_email_address = await get_current_user(
+                token=Authorization.split()[1]
+            )
             private_filter_list = [
                 cellxgene.ProjectMeta.id == project_id,
                 cellxgene.ProjectMeta.id == cellxgene.ProjectUser.project_id,
                 cellxgene.ProjectUser.user_id == cellxgene.User.id,
-                cellxgene.User.email_address == current_user_email_address
+                cellxgene.User.email_address == current_user_email_address,
             ]
-            private_project_info_model = crud.get_project(db=db, filters=private_filter_list).first()
+            private_project_info_model = crud.get_project(
+                db=db, filters=private_filter_list
+            ).first()
             if private_project_info_model:
-                return ResponseMessage(status="0000", data=private_project_info_model, message="ok")
+                return ResponseMessage(
+                    status="0000", data=private_project_info_model, message="ok"
+                )
             else:
                 return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
         else:
@@ -369,29 +452,45 @@ async def update_project(
             "is_private": update_project_model.is_private,
         }
         member_info_list = crud.get_user(
-            db=db, filters=[cellxgene.User.email_address.in_(update_project_model.members)]
+            db=db,
+            filters=[cellxgene.User.email_address.in_(update_project_model.members)],
         ).all()
         insert_project_user_model_list = []
         for member_info in member_info_list:
             insert_project_user_model_list.append(
-                cellxgene.ProjectUser(project_id=update_project_model.project_id, user_id=member_info.id)
+                cellxgene.ProjectUser(
+                    project_id=update_project_model.project_id, user_id=member_info.id
+                )
             )
         if not project_info.is_private:
             update_biosample_id = project_info.project_project_biosample_meta[
                 0
             ].biosample_id
-            update_biosample_dict = {"species_id": update_project_model.species_id, "organ": update_project_model.organ}
+            update_biosample_dict = {
+                "species_id": update_project_model.species_id,
+                "organ": update_project_model.organ,
+            }
         else:
             update_biosample_id = 0
             update_biosample_dict = {}
         update_analysis_id = project_info.project_analysis_meta[0].id
         # h5ad_id = str(uuid4()).replace("-", "")
         update_analysis_dict = {
-            "h5ad_id": update_project_model.h5ad_id if update_project_model.h5ad_id is not None else "",
-            "umap_id": update_project_model.umap_id if update_project_model.umap_id is not None else "",
-            "cell_marker_id": update_project_model.cell_marker_id if update_project_model.cell_marker_id is not None else "",
-            "pathway_id": update_project_model.pathway_id if update_project_model.pathway_id is not None else "",
-            "other_file_ids": update_project_model.other_file_ids if update_project_model.other_file_ids is not None else "",
+            "h5ad_id": update_project_model.h5ad_id
+            if update_project_model.h5ad_id is not None
+            else "",
+            "umap_id": update_project_model.umap_id
+            if update_project_model.umap_id is not None
+            else "",
+            "cell_marker_id": update_project_model.cell_marker_id
+            if update_project_model.cell_marker_id is not None
+            else "",
+            "pathway_id": update_project_model.pathway_id
+            if update_project_model.pathway_id is not None
+            else "",
+            "other_file_ids": update_project_model.other_file_ids
+            if update_project_model.other_file_ids is not None
+            else "",
         }
         crud.project_update_transaction(
             db=db,
@@ -399,12 +498,16 @@ async def update_project(
                 cellxgene.ProjectUser.project_id == update_project_model.project_id
             ],
             insert_project_user_model_list=insert_project_user_model_list,
-            update_project_filters=[cellxgene.ProjectMeta.id == update_project_model.project_id],
+            update_project_filters=[
+                cellxgene.ProjectMeta.id == update_project_model.project_id
+            ],
             update_project_dict=update_project_dict,
-            update_biosample_filters=[
-                cellxgene.BioSampleMeta.id == update_biosample_id
-            ] if not project_info.is_private else [],
-            update_biosample_dict=update_biosample_dict if not project_info.is_private else {},
+            update_biosample_filters=[cellxgene.BioSampleMeta.id == update_biosample_id]
+            if not project_info.is_private
+            else [],
+            update_biosample_dict=update_biosample_dict
+            if not project_info.is_private
+            else {},
             update_analysis_filters=[cellxgene.Analysis.id == update_analysis_id],
             update_analysis_dict=update_analysis_dict,
         )
@@ -472,7 +575,11 @@ async def transfer_project(
         return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法转移此项目")
     if project_info.is_private:
         try:
-            insert_transfer_model = cellxgene.TransferHistory(project_id=project_id, old_owner=project_info.owner, new_owner=transfer_to_user_info.id)
+            insert_transfer_model = cellxgene.TransferHistory(
+                project_id=project_id,
+                old_owner=project_info.owner,
+                new_owner=transfer_to_user_info.id,
+            )
             crud.create_transfer_history(db=db, insert_model=insert_transfer_model)
             crud.update_project(
                 db=db,
@@ -532,38 +639,56 @@ def copy_project_id(
         return ResponseMessage(status="0201", data={}, message="项目不存在")
     if project_info.project_user_meta.email_address != current_user_email_address:
         return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法复制此项目")
-    if (
-        project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE
-    ):
+    if project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE:
         insert_project_dict = project_info.to_dict()
         del insert_project_dict["id"]
         del insert_project_dict["create_at"]
         del insert_project_dict["update_at"]
-        insert_project_dict['owner'] = copy_to_user_info.id
-        insert_project_model = cellxgene.ProjectMeta(
-            **insert_project_dict
-        )
-        insert_project_model.project_project_user_meta = [cellxgene.ProjectUser(user_id=copy_to_user_info.id)]
+        insert_project_dict["owner"] = copy_to_user_info.id
+        insert_project_model = cellxgene.ProjectMeta(**insert_project_dict)
+        insert_project_model.project_project_user_meta = [
+            cellxgene.ProjectUser(user_id=copy_to_user_info.id)
+        ]
         analysis_meta = project_info.project_analysis_meta[0]
         insert_analysis_dict = analysis_meta.to_dict()
         del insert_analysis_dict["id"]
         del insert_analysis_dict["create_at"]
         del insert_analysis_dict["update_at"]
         if analysis_meta.h5ad_id:
-            new_h5ad_id = file_util.copy_file(db=db, file_ids=analysis_meta.h5ad_id, upload_user_id=copy_to_user_info.id)
-            insert_analysis_dict['h5ad_id'] = new_h5ad_id
+            new_h5ad_id = file_util.copy_file(
+                db=db,
+                file_ids=analysis_meta.h5ad_id,
+                upload_user_id=copy_to_user_info.id,
+            )
+            insert_analysis_dict["h5ad_id"] = new_h5ad_id
         if analysis_meta.umap_id:
-            new_umap_id = file_util.copy_file(db=db, file_ids=analysis_meta.umap_id, upload_user_id=copy_to_user_info.id)
-            insert_analysis_dict['umap_id'] = new_umap_id
+            new_umap_id = file_util.copy_file(
+                db=db,
+                file_ids=analysis_meta.umap_id,
+                upload_user_id=copy_to_user_info.id,
+            )
+            insert_analysis_dict["umap_id"] = new_umap_id
         if analysis_meta.cell_marker_id:
-            new_cell_marker_id = file_util.copy_file(db=db, file_ids=analysis_meta.cell_marker_id, upload_user_id=copy_to_user_info.id)
-            insert_analysis_dict['cell_marker_id'] = new_cell_marker_id
+            new_cell_marker_id = file_util.copy_file(
+                db=db,
+                file_ids=analysis_meta.cell_marker_id,
+                upload_user_id=copy_to_user_info.id,
+            )
+            insert_analysis_dict["cell_marker_id"] = new_cell_marker_id
         if analysis_meta.pathway_id:
-            new_pathway_id = file_util.copy_file(db=db, file_ids=analysis_meta.pathway_id, upload_user_id=copy_to_user_info.id)
-            insert_analysis_dict['pathway_id'] = new_pathway_id
+            new_pathway_id = file_util.copy_file(
+                db=db,
+                file_ids=analysis_meta.pathway_id,
+                upload_user_id=copy_to_user_info.id,
+            )
+            insert_analysis_dict["pathway_id"] = new_pathway_id
         if analysis_meta.other_file_ids:
-            new_other_file_ids = file_util.copy_file(db=db, file_ids=analysis_meta.other_file_ids, upload_user_id=copy_to_user_info.id)
-            insert_analysis_dict['other_file_ids'] = new_other_file_ids
+            new_other_file_ids = file_util.copy_file(
+                db=db,
+                file_ids=analysis_meta.other_file_ids,
+                upload_user_id=copy_to_user_info.id,
+            )
+            insert_analysis_dict["other_file_ids"] = new_other_file_ids
         insert_analysis_model = cellxgene.Analysis(**insert_analysis_dict)
         insert_analysis_model.analysis_project_meta = insert_project_model
         try:
@@ -651,6 +776,8 @@ async def get_gene_symbol_list(
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list_by_sample(
+    order_by: Union[str, None] = None,
+    asc: Union[bool, None] = None,
     species_id: Union[int, None] = None,
     organ: Union[str, None] = None,
     external_sample_accesstion: Union[str, None] = None,
@@ -711,25 +838,75 @@ async def get_project_list_by_sample(
         public_filter_list.append(
             cellxgene.BioSampleMeta.biosample_type == biosample_type
         )
-    biosample_list = (
-        crud.get_project_by_sample_join(db=db, query_list=[cellxgene.BioSampleMeta, cellxgene.Analysis, cellxgene.ProjectMeta], public_filter_list=public_filter_list)
-        .distinct()
-        .offset(search_page)
-        .limit(page_size)
-        .all()
-    )
+    if order_by is not None:
+        if asc:
+            biosample_list = (
+                crud.get_project_by_sample_join(
+                    db=db,
+                    query_list=[
+                        cellxgene.BioSampleMeta,
+                        cellxgene.Analysis,
+                        cellxgene.ProjectMeta,
+                    ],
+                    public_filter_list=public_filter_list,
+                )
+                .distinct()
+                .order_by(order_by.asc())
+                .offset(search_page)
+                .limit(page_size)
+                .all()
+            )
+        else:
+            biosample_list = (
+                crud.get_project_by_sample_join(
+                    db=db,
+                    query_list=[
+                        cellxgene.BioSampleMeta,
+                        cellxgene.Analysis,
+                        cellxgene.ProjectMeta,
+                    ],
+                    public_filter_list=public_filter_list,
+                )
+                .distinct()
+                .order_by(order_by.desc())
+                .offset(search_page)
+                .limit(page_size)
+                .all()
+            )
+    else:
+        biosample_list = (
+            crud.get_project_by_sample_join(
+                db=db,
+                query_list=[
+                    cellxgene.BioSampleMeta,
+                    cellxgene.Analysis,
+                    cellxgene.ProjectMeta,
+                ],
+                public_filter_list=public_filter_list,
+            )
+            .distinct()
+            .offset(search_page)
+            .limit(page_size)
+            .all()
+        )
     for biosample_meta_list in biosample_list:
         project_dict = {}
         biosample_meta = dict_util.row2dict(biosample_meta_list[0])
         analysis_meta = dict_util.row2dict(biosample_meta_list[1])
         project_meta = dict_util.row2dict(biosample_meta_list[2])
-        project_dict['analysis_meta'] = analysis_meta
-        project_dict['project_meta'] = project_meta
-        project_dict['biosample_meta'] = biosample_meta
-        project_dict['donor_meta'] = dict_util.row2dict(biosample_meta_list[0].biosample_donor_meta) if biosample_meta_list[0].biosample_donor_meta else {}
+        project_dict["analysis_meta"] = analysis_meta
+        project_dict["project_meta"] = project_meta
+        project_dict["biosample_meta"] = biosample_meta
+        project_dict["donor_meta"] = (
+            dict_util.row2dict(biosample_meta_list[0].biosample_donor_meta)
+            if biosample_meta_list[0].biosample_donor_meta
+            else {}
+        )
         project_list.append(project_dict)
     total = (
-        crud.get_project_by_sample_join(db=db, query_list=[func.count(1)], public_filter_list=public_filter_list)
+        crud.get_project_by_sample_join(
+            db=db, query_list=[func.count(1)], public_filter_list=public_filter_list
+        )
         .distinct()
         .first()
     )[0]
@@ -839,7 +1016,7 @@ async def download_project_list_by_sample(
 )
 async def get_project_list_by_cell(
     species_id: int,
-    cell_id: Union[int, None] = None,
+    ct_id: Union[int, None] = None,
     cell_standard: Union[str, None] = None,
     genes_positive: Union[str, None] = None,
     genes_negative: Union[str, None] = None,
@@ -868,9 +1045,9 @@ async def get_project_list_by_cell(
         == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
-    if cell_id is not None:
+    if ct_id is not None:
         # filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
-        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id.in_(ct_id))
     if cell_standard is not None:
         cell_standard_filter_list = [
             cellxgene.CellTaxonomy.ct_id == cellxgene.CellTypeMeta.cell_taxonomy_id,
@@ -898,7 +1075,16 @@ async def get_project_list_by_cell(
         # filter_list.append(and_(*negative_filter_list))
         public_filter_list.append(and_(*negative_filter_list))
     cell_proportion_list = (
-        crud.get_project_by_cell_join(db=db, query_list=[cellxgene.CalcCellClusterProportion, cellxgene.Analysis, cellxgene.ProjectMeta, cellxgene.BioSampleMeta], public_filter_list=public_filter_list)
+        crud.get_project_by_cell_join(
+            db=db,
+            query_list=[
+                cellxgene.CalcCellClusterProportion,
+                cellxgene.Analysis,
+                cellxgene.ProjectMeta,
+                cellxgene.BioSampleMeta,
+            ],
+            public_filter_list=public_filter_list,
+        )
         .distinct()
         .offset(search_page)
         .limit(page_size)
@@ -910,18 +1096,28 @@ async def get_project_list_by_cell(
         analysis_meta = dict_util.row2dict(cell_proportion_meta_list[1])
         project_meta = dict_util.row2dict(cell_proportion_meta_list[2])
         biosample_meta = dict_util.row2dict(cell_proportion_meta_list[3])
-        project_dict['cell_proportion_meta'] = cell_proportion_meta
-        project_dict['analysis_meta'] = analysis_meta
-        project_dict['project_meta'] = project_meta
-        project_dict['biosample_meta'] = biosample_meta
-        project_dict['donor_meta'] = dict_util.row2dict(cell_proportion_meta_list[3].biosample_donor_meta) if cell_proportion_meta_list[3].biosample_donor_meta else {}
+        project_dict["cell_proportion_meta"] = cell_proportion_meta
+        project_dict["analysis_meta"] = analysis_meta
+        project_dict["project_meta"] = project_meta
+        project_dict["biosample_meta"] = biosample_meta
+        project_dict["donor_meta"] = (
+            dict_util.row2dict(cell_proportion_meta_list[3].biosample_donor_meta)
+            if cell_proportion_meta_list[3].biosample_donor_meta
+            else {}
+        )
         project_list.append(project_dict)
     total = (
-        crud.get_project_by_cell_join(db=db, query_list=[func.count(1)], public_filter_list=[cellxgene.CellTypeMeta.species_id == species_id,
-                                                                                             cellxgene.ProjectMeta.is_publish
-                                                                                             == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
-                                                                                             cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC
-                                                                                             ])
+        crud.get_project_by_cell_join(
+            db=db,
+            query_list=[func.count(1)],
+            public_filter_list=[
+                cellxgene.CellTypeMeta.species_id == species_id,
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+            ],
+        )
         .distinct()
         .first()
     )[0]
@@ -986,7 +1182,11 @@ async def download_project_list_by_cell(
         # filter_list.append(and_(*negative_filter_list))
         public_filter_list.append(and_(*negative_filter_list))
     cell_proportion_list = (
-        crud.get_project_by_cell(db=db, query_list=[cellxgene.CalcCellClusterProportion], public_filter_list=public_filter_list)
+        crud.get_project_by_cell(
+            db=db,
+            query_list=[cellxgene.CalcCellClusterProportion],
+            public_filter_list=public_filter_list,
+        )
         .distinct()
         .all()
     )
@@ -1096,7 +1296,12 @@ async def get_project_list_by_gene(
     gene_meta_list = (
         crud.get_project_by_gene_join(
             db=db,
-            query_list=[cellxgene.CellClusterGeneExpression, cellxgene.Analysis, cellxgene.ProjectMeta, cellxgene.BioSampleMeta],
+            query_list=[
+                cellxgene.CellClusterGeneExpression,
+                cellxgene.Analysis,
+                cellxgene.ProjectMeta,
+                cellxgene.BioSampleMeta,
+            ],
             # filters=filter_list,
             public_filter_list=public_filter_list,
         )
@@ -1113,28 +1318,36 @@ async def get_project_list_by_gene(
         analysis_meta = dict_util.row2dict(gene_meta[1])
         project_meta = dict_util.row2dict(gene_meta[2])
         biosample_meta = dict_util.row2dict(gene_meta[3])
-        project_dict['gene_expression_meta'] = gene_expression_meta
-        project_dict['analysis_meta'] = analysis_meta
-        project_dict['project_meta'] = project_meta
-        project_dict['biosample_meta'] = biosample_meta
-        project_dict['donor_meta'] = dict_util.row2dict(gene_meta[3].biosample_donor_meta) if gene_meta[3].biosample_donor_meta else {}
+        project_dict["gene_expression_meta"] = gene_expression_meta
+        project_dict["analysis_meta"] = analysis_meta
+        project_dict["project_meta"] = project_meta
+        project_dict["biosample_meta"] = biosample_meta
+        project_dict["donor_meta"] = (
+            dict_util.row2dict(gene_meta[3].biosample_donor_meta)
+            if gene_meta[3].biosample_donor_meta
+            else {}
+        )
         cell_type_id_list.append(gene_meta[0].cell_type_id)
         project_list.append(project_dict)
     cell_type_filter_list = [
         cellxgene.CellTypeMeta.species_id == species_id,
         cellxgene.CellTypeMeta.cell_type_id.in_(cell_type_id_list),
     ]
-    cell_type_meta_list = crud.get_cell_meta(db=db, filters=cell_type_filter_list)
+    cell_type_meta_list = crud.get_cell_meta(
+        db=db, query_list=[cellxgene.CellTypeMeta], filters=cell_type_filter_list
+    )
     total = (
         crud.get_project_by_gene_join(
             db=db,
             query_list=[func.count(1)],
             # filters=filter_list,
-            public_filter_list=[cellxgene.GeneMeta.species_id == species_id,
-                                cellxgene.ProjectMeta.is_publish
-                                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
-                                cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC
-                                ],
+            public_filter_list=[
+                cellxgene.GeneMeta.species_id == species_id,
+                cellxgene.ProjectMeta.is_publish
+                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+                cellxgene.ProjectMeta.is_private
+                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+            ],
         )
         .distinct()
         .first()
@@ -1277,14 +1490,19 @@ async def get_project_list_graph_by_gene(
         # filter_list.append(
         #     cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         # )
-        public_filter_list.extend([
-            cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))]
+        public_filter_list.extend(
+            [cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))]
         )
     if species_id is not None:
         # filter_list.append(cellxgene.GeneMeta.species_id == species_id)
-        public_filter_list.extend([cellxgene.GeneMeta.species_id == species_id,
-                                   cellxgene.CellClusterGeneExpression.cell_type_id == cellxgene.CellTypeMeta.cell_type_id,
-                                   cellxgene.CellTypeMeta.species_id == species_id])
+        public_filter_list.extend(
+            [
+                cellxgene.GeneMeta.species_id == species_id,
+                cellxgene.CellClusterGeneExpression.cell_type_id
+                == cellxgene.CellTypeMeta.cell_type_id,
+                cellxgene.CellTypeMeta.species_id == species_id,
+            ]
+        )
     gene_meta_list = (
         crud.get_project_by_gene(
             db=db,
@@ -1322,7 +1540,7 @@ async def view_cell_number_graph(
     # current_user_email_address=Depends(get_current_user),
 ):
     cell_proportion_meta_list = crud.get_cell_proportion(
-        db=db, filters=[cellxgene.CalcCellClusterProportion.analysis_id == analysis_id]
+        db=db, query_list=[cellxgene.CalcCellClusterProportion], filters=[cellxgene.CalcCellClusterProportion.analysis_id == analysis_id]
     )
     return ResponseMessage(status="0000", data=cell_proportion_meta_list, message="ok")
 
@@ -1408,11 +1626,11 @@ async def get_user_h5ad_file_list(
 
 
 @router.get(
-    "/species/list", response_model=ResponseProjectListModel, status_code=status.HTTP_200_OK
+    "/species/list",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
 )
-async def get_species_list(
-    db: Session = Depends(get_db)
-) -> ResponseMessage:
+async def get_species_list(db: Session = Depends(get_db)) -> ResponseMessage:
     species_list = crud.get_species_list(
         db=db, query_list=[cellxgene.SpeciesMeta], filters=[]
     ).all()
@@ -1440,12 +1658,50 @@ async def get_cell_taxonomy_tree(
     )
     res = []
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
-        res.append({
-            "cl_id": cell_taxonomy_relation_model[0],
-            "cl_pid": cell_taxonomy_relation_model[2],
-            "name": cell_taxonomy_relation_model[1]
-        })
+        res.append(
+            {
+                "cl_id": cell_taxonomy_relation_model[0],
+                "cl_pid": cell_taxonomy_relation_model[2],
+                "name": cell_taxonomy_relation_model[1],
+            }
+        )
     return ResponseMessage(status="0000", data=res, message="ok")
+
+
+@router.get("/view/table/cell_taxonomy",
+    response_model = ResponseMessage,
+    status_code = status.HTTP_200_OK,
+)
+async def get_cell_taxonomy_table(
+    species_id: int,
+    genes_positive: str,
+    genes_negative: str,
+    db: Session = Depends(get_db)
+):
+    res_list = []
+    genes_positive_re_match_str = genes_positive.replace(",", "|")
+    genes_positive_list = genes_positive.split(",")
+    genes_negative_re_match_str = genes_negative.replace(",", "|")
+    filter_list = [cellxgene.CellTypeMeta.species_id == species_id,
+                   cellxgene.CellTypeMeta.marker_gene_symbol.op('regexp')(genes_positive_re_match_str),
+                   cellxgene.CellTypeMeta.marker_gene_symbol.op('not regexp')(genes_negative_re_match_str),
+                   ]
+    cell_type_meta_list = crud.get_cell_meta(db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list).all()
+    print(cell_type_meta_list)
+    for cell_type_meta in cell_type_meta_list:
+        marker_gene_symbol_list = cell_type_meta.marker_gene_symbol.split(',')
+        intersection_list = list(set(marker_gene_symbol_list).intersection(set(genes_positive_list)))
+        cell_type_name = cell_type_meta.cell_type_name
+        cell_type_id = cell_type_meta.cell_type_id
+        score = len(intersection_list) / len(marker_gene_symbol_list)
+        res_list.append({
+            "cell_type_id": cell_type_id,
+            "cell_type_name": cell_type_name,
+            "marker_gene_symbol": cell_type_meta.marker_gene_symbol,
+            "intersection_list": intersection_list,
+            "score": score
+        })
+    return ResponseMessage(status="0000", data=res_list, message="ok")
 
 
 @router.get(
@@ -1571,7 +1827,9 @@ async def get_download_h5ad_file_token(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
-    file_meta = crud.get_file_info(db=db, filters=[cellxgene.FileLibrary.file_id == file_id]).first()
+    file_meta = crud.get_file_info(
+        db=db, filters=[cellxgene.FileLibrary.file_id == file_id]
+    ).first()
     if not file_meta:
         return ResponseMessage(
             status="0201",

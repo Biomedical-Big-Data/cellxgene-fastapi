@@ -46,14 +46,20 @@ def file_iterator(file_path, block_size=65536):
 
 
 def copy_file(db: Session, file_ids: str, upload_user_id: int):
-    file_id_list = file_ids.split(',')
-    return_file_id = ''
+    file_id_list = file_ids.split(",")
+    return_file_id = ""
     for file_id in file_id_list:
         old_file_path = config.H5AD_FILE_PATH + "/" + file_id
         file_name_list = file_id.split(".")
-        file_name_suffix = file_name_list[len(file_name_list) - 1:][0]
+        file_name_suffix = file_name_list[len(file_name_list) - 1 :][0]
         new_file_id = str(uuid4()).replace("-", "") + "." + file_name_suffix
-        file_name = crud.get_file_info(db=db, filters=[cellxgene.FileLibrary.file_id == file_id]).first().file_name
+        file_name = (
+            crud.get_file_info(
+                db=db, filters=[cellxgene.FileLibrary.file_id == file_id]
+            )
+            .first()
+            .file_name
+        )
         insert_h5ad_model = cellxgene.FileLibrary(
             file_id=new_file_id, file_name=file_name, upload_user_id=upload_user_id
         )
@@ -68,33 +74,55 @@ def update_cell_type_meta_file(db: Session, project_content, send_mail_address):
     project_excel_df = pd.ExcelFile(BytesIO(project_content))
     try:
         cell_type_meta_df = project_excel_df.parse("cell_type_meta")
-        cell_type_meta_df = cell_type_meta_df.fillna('')
+        cell_type_meta_df = cell_type_meta_df.fillna("")
         if not cell_type_meta_df.empty:
             insert_cell_type_meta_list = []
             for _, row in cell_type_meta_df.iterrows():
                 insert_cell_type_meta_list.append(
                     cellxgene.CellTypeMeta(
-                        cell_type_alias_id=row['cell_type_alias_id'] if row['cell_type_alias_id'] else None,
-                        species_id=row['species_id'] if row['species_id'] else None,
-                        marker_gene_symbol=row['marker_gene_symbol'] if row['marker_gene_symbol'] else None,
-                        cell_taxonomy_id=row['cell_taxonomy_id'] if row['cell_taxonomy_id'] else None,
-                        cell_taxonomy_url=row['cell_taxonomy_url'] if row['cell_taxonomy_url'] else None,
-                        cell_ontology_id=row['cell_ontology_id'] if row['cell_ontology_id'] else None,
-                        cell_type_name=row['cell_type_name'] if row['cell_type_name'] else None,
-                        cell_type_description=row['cell_type_description'] if row['cell_type_description'] else None,
-                        cell_type_ontology_label=row['cell_type_ontology_label'] if row['cell_type_ontology_label'] else None
+                        cell_type_alias_id=row["cell_type_alias_id"]
+                        if row["cell_type_alias_id"]
+                        else None,
+                        species_id=row["species_id"] if row["species_id"] else None,
+                        marker_gene_symbol=row["marker_gene_symbol"]
+                        if row["marker_gene_symbol"]
+                        else None,
+                        cell_taxonomy_id=row["cell_taxonomy_id"]
+                        if row["cell_taxonomy_id"]
+                        else None,
+                        cell_taxonomy_url=row["cell_taxonomy_url"]
+                        if row["cell_taxonomy_url"]
+                        else None,
+                        cell_ontology_id=row["cell_ontology_id"]
+                        if row["cell_ontology_id"]
+                        else None,
+                        cell_type_name=row["cell_type_name"]
+                        if row["cell_type_name"]
+                        else None,
+                        cell_type_description=row["cell_type_description"]
+                        if row["cell_type_description"]
+                        else None,
+                        cell_type_ontology_label=row["cell_type_ontology_label"]
+                        if row["cell_type_ontology_label"]
+                        else None,
                     )
                 )
-            crud.create_cell_type_meta(db=db, insert_cell_type_model_list=insert_cell_type_meta_list)
+            crud.create_cell_type_meta(
+                db=db, insert_cell_type_model_list=insert_cell_type_meta_list
+            )
 
         mail_util.send_mail(
-            mail_template="您上传的Meta信息更新成功", subject="Meta信息更新成功", to_list=send_mail_address
+            mail_template="您上传的Meta信息更新成功",
+            subject="Meta信息更新成功",
+            to_list=send_mail_address,
         )
     except Exception as e:
         mail_util.send_mail(
-            mail_template="您上传的Meta信息更新失败", subject="Meta信息更新失败", to_list=send_mail_address
+            mail_template="您上传的Meta信息更新失败",
+            subject="Meta信息更新失败",
+            to_list=send_mail_address,
         )
-        logging.error('[update_meta_file error]: {}'.format(str(e)))
+        logging.error("[update_meta_file error]: {}".format(str(e)))
 
 
 # def update_donor_meta_file(db: Session, project_content, send_mail_address):
@@ -135,8 +163,10 @@ def update_gene_meta_file(db: Session, project_content, send_mail_address):
     project_excel_df = pd.ExcelFile(BytesIO(project_content))
     try:
         gene_meta_df = project_excel_df.parse("gene_meta")
-        gene_meta_df = gene_meta_df.fillna('')
-        species_meta_list = crud.get_species_list(db=db, query_list=[cellxgene.SpeciesMeta], filters=[])
+        gene_meta_df = gene_meta_df.fillna("")
+        species_meta_list = crud.get_species_list(
+            db=db, query_list=[cellxgene.SpeciesMeta], filters=[]
+        )
         species_id_dict = {}
         for species_meta in species_meta_list:
             if species_meta.species not in species_id_dict.keys():
@@ -147,30 +177,42 @@ def update_gene_meta_file(db: Session, project_content, send_mail_address):
                 insert_gene_model_list.append(
                     cellxgene.GeneMeta(
                         gene_ensemble_id=row["gene_ensemble_id"],
-                        species_id=species_id_dict.get(row['species']) if row.get('species') else 1,
+                        species_id=species_id_dict.get(row["species"])
+                        if row.get("species")
+                        else 1,
                         ortholog=None if not row["ortholog"] else row["ortholog"],
                         gene_symbol=row["gene_symbol"],
-                        gene_name=None if row["gene_name"] == "NULL" else row["gene_name"],
+                        gene_name=None
+                        if row["gene_name"] == "NULL"
+                        else row["gene_name"],
                         alias=None if row["alias"] == "NULL" else row["alias"],
                         gene_ontology=None if row["alias"] == "NULL" else row["alias"],
                         gpcr=None if row["gpcr"] == "NULL" else row["gpcr"],
                         tf=None if row["tf"] == "NULL" else row["tf"],
-                        surfaceome=None if row["surfaceome"] == "NULL" else row["surfaceome"],
+                        surfaceome=None
+                        if row["surfaceome"] == "NULL"
+                        else row["surfaceome"],
                         drugbank_drugtarget=None
                         if row["drugbank_drugtarget"] == "NULL"
                         else row["drugbank_drugtarget"],
-                        phenotype=None if row["phenotype"] == "NULL" else row["phenotype"],
+                        phenotype=None
+                        if row["phenotype"] == "NULL"
+                        else row["phenotype"],
                     )
                 )
             crud.create_gene(db=db, insert_gene_model_list=insert_gene_model_list)
         mail_util.send_mail(
-            mail_template="您上传的Meta信息更新成功", subject="Meta信息更新成功", to_list=send_mail_address
+            mail_template="您上传的Meta信息更新成功",
+            subject="Meta信息更新成功",
+            to_list=send_mail_address,
         )
     except Exception as e:
         mail_util.send_mail(
-            mail_template="您上传的Meta信息更新失败", subject="Meta信息更新失败", to_list=send_mail_address
+            mail_template="您上传的Meta信息更新失败",
+            subject="Meta信息更新失败",
+            to_list=send_mail_address,
         )
-        logging.error('[update_meta_file error]: {}'.format(str(e)))
+        logging.error("[update_meta_file error]: {}".format(str(e)))
 
 
 def update_species_meta_file(db: Session, project_content, send_mail_address):
@@ -178,25 +220,31 @@ def update_species_meta_file(db: Session, project_content, send_mail_address):
     project_excel_df = pd.ExcelFile(BytesIO(project_content))
     try:
         species_meta_df = project_excel_df.parse("species_meta")
-        species_meta_df = species_meta_df.fillna('')
+        species_meta_df = species_meta_df.fillna("")
         if not species_meta_df.empty:
             insert_species_meta_list = []
             for _, row in species_meta_df.iterrows():
                 insert_species_meta_list.append(
                     cellxgene.SpeciesMeta(
-                            species=row['species'],
-                            species_ontology_label=row['species_ontology_label']
-                        )
+                        species=row["species"],
+                        species_ontology_label=row["species_ontology_label"],
+                    )
                 )
-            crud.create_species(db=db, insert_species_model_list=insert_species_meta_list)
+            crud.create_species(
+                db=db, insert_species_model_list=insert_species_meta_list
+            )
         mail_util.send_mail(
-            mail_template="您上传的Meta信息更新成功", subject="Meta信息更新成功", to_list=send_mail_address
+            mail_template="您上传的Meta信息更新成功",
+            subject="Meta信息更新成功",
+            to_list=send_mail_address,
         )
     except Exception as e:
         mail_util.send_mail(
-            mail_template="您上传的Meta信息更新失败", subject="Meta信息更新失败", to_list=send_mail_address
+            mail_template="您上传的Meta信息更新失败",
+            subject="Meta信息更新失败",
+            to_list=send_mail_address,
         )
-        logging.error('[update_meta_file error]: {}'.format(str(e)))
+        logging.error("[update_meta_file error]: {}".format(str(e)))
 
 
 if __name__ == "__main__":

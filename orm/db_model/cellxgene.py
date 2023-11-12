@@ -8,7 +8,7 @@ from sqlalchemy import (
     VARCHAR,
     INTEGER,
     ForeignKey,
-    BOOLEAN
+    BOOLEAN,
 )
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import declarative_base, relationship, backref
@@ -386,7 +386,9 @@ class Analysis(Base):
     analysis_pathway_score_meta = relationship(
         "PathwayScore", back_populates="pathway_score_analysis_meta"
     )
-    analysis_gene_expression_meta = relationship("CellClusterGeneExpression", back_populates="gene_expression_analysis_meta")
+    analysis_gene_expression_meta = relationship(
+        "CellClusterGeneExpression", back_populates="gene_expression_analysis_meta"
+    )
 
     def to_dict(self):
         return {
@@ -400,7 +402,7 @@ class Analysis(Base):
             "reference": self.reference,
             "analysis_protocol": self.analysis_protocol,
             "create_at": self.create_at,
-            "update_at": self.update_at
+            "update_at": self.update_at,
         }
 
 
@@ -519,7 +521,9 @@ class CellClusterGeneExpression(Base):
     gene_expression_gene_meta = relationship(
         "GeneMeta", back_populates="gene_gene_expression_meta"
     )
-    gene_expression_analysis_meta = relationship("Analysis", back_populates="analysis_gene_expression_meta")
+    gene_expression_analysis_meta = relationship(
+        "Analysis", back_populates="analysis_gene_expression_meta"
+    )
     # gene_expression_cell_type_meta = relationship("CellTypeMeta", back_populates="cell_type_gene_expression_meta")
 
 
@@ -602,7 +606,8 @@ class PathwayScore(Base):
     cell_type_name = Column(String(255))
     # 细胞集群标识
     calculated_cell_cluster_alias_id = Column(
-        String(255), ForeignKey("calc_cell_cluster_proportion.calculated_cell_cluster_id")
+        String(255),
+        ForeignKey("calc_cell_cluster_proportion.calculated_cell_cluster_id"),
     )
     # 得分函数
     score_function = Column(String(255))
