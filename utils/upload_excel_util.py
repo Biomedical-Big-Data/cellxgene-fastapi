@@ -387,7 +387,7 @@ def update_except_gene_expression_meta(db: Session, project_id: int, analysis_id
         db=db, insert_donor_meta_list=insert_donor_model_list
     )
     inserted_donor_id_dict = dict(zip(check_donor_id_list, inserted_donor_id_list))
-    check_biosample_id_list = []
+    check_biosample_id_list, check_biosample_name_list = [], []
     biosample_df["species_id"] = biosample_df["species"].apply(
         lambda xx: species_dict[xx.strip()]
     )
@@ -398,6 +398,7 @@ def update_except_gene_expression_meta(db: Session, project_id: int, analysis_id
         biosample_dict = row.to_dict()
         biosample_meta = project_model.BiosampleModel(**biosample_dict)
         check_biosample_id_list.append(biosample_dict["biosample_id"])
+        check_biosample_name_list.append(biosample_dict["biosample_name"])
         # print(biosample_meta)
         insert_biosample_model_list.append(
             cellxgene.BioSampleMeta(
@@ -411,6 +412,9 @@ def update_except_gene_expression_meta(db: Session, project_id: int, analysis_id
     )
     inserted_biosample_id_dict = dict(
         zip(check_biosample_id_list, inserted_biosample_id_list)
+    )
+    inserted_biosample_name_dict = dict(
+        zip(check_biosample_name_list, inserted_biosample_id_list)
     )
     for inserted_biosample_id in inserted_biosample_id_list:
         insert_project_biosample_model_list.append(
@@ -430,8 +434,8 @@ def update_except_gene_expression_meta(db: Session, project_id: int, analysis_id
     crud.create_biosample_analysis_for_transaction(
         db=db, insert_biosample_analysis_list=insert_biosample_analysis_model_list
     )
-    cell_proportion_df["biosample_id"] = cell_proportion_df["biosample_id"].apply(
-        lambda xx: int(inserted_biosample_id_dict.get(xx, 0))
+    cell_proportion_df["biosample_id"] = cell_proportion_df["biosample_name"].apply(
+        lambda xx: int(inserted_biosample_name_dict.get(xx, 0))
     )
     for _, row in cell_proportion_df.iterrows():
         cell_proportion_meta = project_model.CellClusterProportionModel(
