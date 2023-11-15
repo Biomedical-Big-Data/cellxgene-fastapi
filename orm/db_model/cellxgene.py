@@ -315,6 +315,7 @@ class BioSampleMeta(Base):
     biosample_species_meta = relationship(
         "SpeciesMeta", back_populates="species_biosample_meta"
     )
+    biosample_meta_cell_proportion = relationship("CalcCellClusterProportion", back_populates="cell_proportion_biosample_meta")
 
 
 class DonorMeta(Base):
@@ -414,7 +415,7 @@ class CalcCellClusterProportion(Base):
     calculated_cell_cluster_id = Column(INTEGER, primary_key=True)
     calculated_cell_cluster_alias_id = Column(String(255))
     # 生物样品ID
-    biosample_id = Column(INTEGER)
+    biosample_id = Column(INTEGER, ForeignKey("biosample_meta.id"))
     analysis_id = Column(INTEGER, ForeignKey("analysis.id"))
     # 细胞类型ID
     cell_type_id = Column(String(255), ForeignKey("cell_type_meta.cell_type_id"))
@@ -439,6 +440,7 @@ class CalcCellClusterProportion(Base):
     cell_proportion_analysis_meta = relationship(
         "Analysis", back_populates="analysis_cell_proportion_meta"
     )
+    cell_proportion_biosample_meta = relationship("BioSampleMeta", back_populates="biosample_meta_cell_proportion")
 
 
 class CellTypeMeta(Base):

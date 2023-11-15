@@ -92,12 +92,8 @@ def get_project_by_cell_join(db: Session, query_list: List, public_filter_list: 
             cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         )
         .join(
-            cellxgene.ProjectBioSample,
-            cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
-        )
-        .join(
             cellxgene.BioSampleMeta,
-            cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+            cellxgene.CalcCellClusterProportion.biosample_id == cellxgene.BioSampleMeta.id,
         )
         .filter(and_(*public_filter_list))
     )

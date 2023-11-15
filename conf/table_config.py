@@ -176,4 +176,19 @@ cellxgene_table_dict = {
         "create_at": cellxgene.GeneMeta.create_at,
         "update_at": cellxgene.GeneMeta.update_at,
     },
+    "donor_meta": {
+        "id": cellxgene.DonorMeta.id,
+        "donor_name": cellxgene.DonorMeta.donor_name,
+        "sex": cellxgene.DonorMeta.sex,
+        "ethnicity": cellxgene.DonorMeta.ethnicity,
+        "race": cellxgene.DonorMeta.race,
+        "mhc_genotype": cellxgene.DonorMeta.mhc_genotype,
+        "alcohol_history": cellxgene.DonorMeta.alcohol_history,
+        "medications": cellxgene.DonorMeta.medications,
+        "nutritional_state": cellxgene.DonorMeta.nutritional_state,
+        "smoking_history": cellxgene.DonorMeta.smoking_history,
+        "test_results": cellxgene.DonorMeta.test_results,
+        "create_at": cellxgene.DonorMeta.create_at,
+        "update_at": cellxgene.DonorMeta.update_at,
+    }
 }

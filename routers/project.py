@@ -926,7 +926,7 @@ async def get_project_list_by_sample(
     status_code=status.HTTP_200_OK,
 )
 async def download_project_list_by_sample(
-    species_id: int,
+    species_id: Union[int, None] = None,
     organ: Union[str, None] = None,
     external_sample_accesstion: Union[str, None] = None,
     disease: Union[str, None] = None,
@@ -963,34 +963,30 @@ async def download_project_list_by_sample(
             )
         )
     biosample_list = (
-        crud.get_project_by_sample(db=db, public_filter_list=public_filter_list)
+        crud.get_project_by_sample_join(
+            db=db,
+            query_list=[
+                cellxgene.BioSampleMeta,
+                cellxgene.Analysis,
+                cellxgene.ProjectMeta,
+            ],
+            public_filter_list=public_filter_list,
+        )
         .distinct()
         .all()
     )
     data_list = []
-    for biosample_meta in biosample_list:
-        biosample_project_biosample_meta_list = (
-            biosample_meta.biosample_project_biosample_meta
-        )
-        for biosample_project_biosample_meta in biosample_project_biosample_meta_list:
-            project_meta = (
-                biosample_project_biosample_meta.project_biosample_project_meta
-            )
-            data_list.append(
-                [
-                    project_meta.title,
-                    biosample_meta.disease,
-                    biosample_meta.sequencing_instrument_manufacturer_model,
-                    biosample_meta.biosample_species_meta.species,
-                    biosample_meta.organ,
-                    biosample_meta.biosample_donor_meta.sex,
-                ]
-            )
+    for biosample_meta_list in biosample_list:
+        biosample_meta = dict_util.row2dict(biosample_meta_list[0])
+        analysis_meta = dict_util.row2dict(biosample_meta_list[1])
+        project_meta = dict_util.row2dict(biosample_meta_list[2])
+        donor_meta = dict_util.row2dict(biosample_meta_list[0].biosample_donor_meta) if biosample_meta_list[0].biosample_donor_meta else {}
+        data_list.append([project_meta.values(), analysis_meta.values(), biosample_meta.values(), donor_meta.values()])
     data_df = pd.DataFrame(
         data=data_list,
-        columns=["Project", "Disease", "Platform", "Species", "Organ", "Sex"],
     )
     data_df = data_df.fillna("")
+    print(data_df)
     buffer = BytesIO()
     workbook = xlsxwriter.Workbook(buffer)
     worksheet = workbook.add_worksheet()
@@ -1138,13 +1134,7 @@ async def get_project_list_by_cell(
         crud.get_project_by_cell_join(
             db=db,
             query_list=[func.count(1)],
-            public_filter_list=[
-                cellxgene.CellTypeMeta.species_id == species_id,
-                cellxgene.ProjectMeta.is_publish
-                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
-                cellxgene.ProjectMeta.is_private
-                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
-            ],
+            public_filter_list=public_filter_list,
         )
         .distinct()
         .first()
