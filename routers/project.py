@@ -934,6 +934,7 @@ async def download_project_list_by_sample(
     db: Session = Depends(get_db),
     # current_user_email_address=Depends(get_current_user),
 ):
+    page_size = 5000
     public_filter_list = [
         cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
         cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
@@ -973,20 +974,29 @@ async def download_project_list_by_sample(
             public_filter_list=public_filter_list,
         )
         .distinct()
+        .limit(page_size)
         .all()
     )
     data_list = []
     for biosample_meta_list in biosample_list:
-        biosample_meta = dict_util.row2dict(biosample_meta_list[0])
-        analysis_meta = dict_util.row2dict(biosample_meta_list[1])
+        project_dict = {}
         project_meta = dict_util.row2dict(biosample_meta_list[2])
+        for key, value in project_meta.items():
+            project_dict["project_" + key] = value
+        analysis_meta = dict_util.row2dict(biosample_meta_list[1])
+        for key, value in analysis_meta.items():
+            project_dict["analysis_" + key] = value
+        biosample_meta = dict_util.row2dict(biosample_meta_list[0])
+        for key, value in biosample_meta.items():
+            project_dict["biosample_" + key] = value
         donor_meta = dict_util.row2dict(biosample_meta_list[0].biosample_donor_meta) if biosample_meta_list[0].biosample_donor_meta else {}
-        data_list.append([project_meta.values(), analysis_meta.values(), biosample_meta.values(), donor_meta.values()])
+        for key, value in donor_meta.items():
+            project_dict["donor_" + key] = value if value else ""
+        data_list.append(project_dict)
     data_df = pd.DataFrame(
         data=data_list,
     )
     data_df = data_df.fillna("")
-    print(data_df)
     buffer = BytesIO()
     workbook = xlsxwriter.Workbook(buffer)
     worksheet = workbook.add_worksheet()
@@ -1155,13 +1165,13 @@ async def get_project_list_by_cell(
 )
 async def download_project_list_by_cell(
     species_id: int,
-    cell_id: Union[int, None] = None,
+    ct_id: Union[str, None] = None,
+    cl_id: Union[str, None] = None,
     cell_standard: Union[str, None] = None,
-    genes_positive: Union[str, None] = None,
-    genes_negative: Union[str, None] = None,
     db: Session = Depends(get_db),
     # current_user_email_address=Depends(get_current_user),
 ):
+    page_size = 5000
     public_filter_list = [
         cellxgene.CellTypeMeta.cell_type_id
         == cellxgene.CalcCellClusterProportion.cell_type_id,
@@ -1172,80 +1182,58 @@ async def download_project_list_by_cell(
         == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
-    if cell_id is not None:
-        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
+    if ct_id is not None:
+        ct_id_list = ct_id.split(",")
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id.in_(ct_id_list))
+    if cl_id is not None:
+        cl_id_list = cl_id.split(",")
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_ontology_id.in_(cl_id_list))
     if cell_standard is not None:
         cell_standard_filter_list = [
             cellxgene.CellTaxonomy.ct_id == cellxgene.CellTypeMeta.cell_taxonomy_id,
             cellxgene.CellTaxonomy.cell_standard.like("%{}%".format(cell_standard)),
         ]
         public_filter_list.append(and_(*cell_standard_filter_list))
-    if genes_positive is not None:
-        genes_positive_list = genes_positive.split(",")
-        positive_filter_list = []
-        for positive in genes_positive_list:
-            positive_filter_list.append(
-                cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
-            )
-        public_filter_list.append(or_(*positive_filter_list))
-    if genes_negative is not None:
-        genes_negative_list = genes_negative.split(",")
-        negative_filter_list = []
-        for negative in genes_negative_list:
-            negative_filter_list.append(
-                cellxgene.CellTypeMeta.marker_gene_symbol.notlike(
-                    "%{}%".format(negative)
-                )
-            )
-        # filter_list.append(and_(*negative_filter_list))
-        public_filter_list.append(and_(*negative_filter_list))
     cell_proportion_list = (
-        crud.get_project_by_cell(
+        crud.get_project_by_cell_join(
             db=db,
-            query_list=[cellxgene.CalcCellClusterProportion],
+            query_list=[
+                cellxgene.CalcCellClusterProportion,
+                cellxgene.Analysis,
+                cellxgene.ProjectMeta,
+                cellxgene.BioSampleMeta,
+            ],
             public_filter_list=public_filter_list,
         )
         .distinct()
+        .limit(page_size)
         .all()
     )
     data_list = []
-    for cell_proportion_meta in cell_proportion_list:
-        project_meta = (
-            cell_proportion_meta.cell_proportion_analysis_meta.analysis_project_meta
+    for cell_proportion_meta_list in cell_proportion_list:
+        project_dict = {}
+        project_meta = dict_util.row2dict(cell_proportion_meta_list[2])
+        for key, value in project_meta.items():
+            project_dict["project_" + key] = value
+        analysis_meta = dict_util.row2dict(cell_proportion_meta_list[1])
+        for key, value in analysis_meta.items():
+            project_dict["analysis_" + key] = value
+        biosample_meta = dict_util.row2dict(cell_proportion_meta_list[3])
+        for key, value in biosample_meta.items():
+            project_dict["biosample_" + key] = value
+        cell_proportion_meta = dict_util.row2dict(cell_proportion_meta_list[0])
+        for key, value in cell_proportion_meta.items():
+            project_dict["cell_proportion_" + key] = value
+        donor_meta = (
+            dict_util.row2dict(cell_proportion_meta_list[3].biosample_donor_meta)
+            if cell_proportion_meta_list[3].biosample_donor_meta
+            else {}
         )
-        biosample_meta = cell_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[
-            0
-        ].biosample_analysis_biosample_meta
-        donor_meta = cell_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[
-            0
-        ].biosample_analysis_biosample_meta.biosample_donor_meta
-        species_meta = cell_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[
-            0
-        ].biosample_analysis_biosample_meta.biosample_species_meta
-        data_list.append(
-            [
-                project_meta.title,
-                biosample_meta.disease,
-                biosample_meta.sequencing_instrument_manufacturer_model,
-                cell_proportion_meta.cell_proportion,
-                cell_proportion_meta.cell_number,
-                species_meta.species,
-                biosample_meta.organ,
-                donor_meta.sex,
-            ]
-        )
+        for key, value in donor_meta.items():
+            project_dict["donor_" + key] = value if value else ""
+        data_list.append(project_dict)
     data_df = pd.DataFrame(
         data=data_list,
-        columns=[
-            "Project",
-            "Disease",
-            "Platform",
-            "Proportion of cel",
-            "cell number",
-            "Species",
-            "Organ",
-            "Sex",
-        ],
     )
     data_df = data_df.fillna("")
     buffer = BytesIO()
@@ -1427,16 +1415,18 @@ async def get_project_list_by_gene(
 )
 async def download_project_list_by_gene(
     species_id: int,
-    gene_symbol: Union[str, None] = None,
+    gene_symbol: str,
     db: Session = Depends(get_db),
-    # current_user_email_address=Depends(get_current_user),
-) -> StreamingResponse:
+):
     page_size = 5000
     public_filter_list = [
+        cellxgene.GeneMeta.species_id == species_id,
         cellxgene.GeneMeta.gene_ensemble_id
         == cellxgene.CellClusterGeneExpression.gene_ensemble_id,
         cellxgene.CellClusterGeneExpression.analysis_id == cellxgene.Analysis.id,
         cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
+        cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
         cellxgene.ProjectMeta.is_publish
         == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
@@ -1445,12 +1435,15 @@ async def download_project_list_by_gene(
         public_filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         )
-    if species_id is not None:
-        public_filter_list.append(cellxgene.GeneMeta.species_id == species_id)
-    gene_meta_list = (
-        crud.get_project_by_gene(
+    gene_list = (
+        crud.get_project_by_gene_join(
             db=db,
-            query_list=[cellxgene.CellClusterGeneExpression],
+            query_list=[
+                cellxgene.CellClusterGeneExpression,
+                cellxgene.Analysis,
+                cellxgene.ProjectMeta,
+                cellxgene.BioSampleMeta,
+            ],
             public_filter_list=public_filter_list,
         )
         .distinct()
@@ -1458,41 +1451,30 @@ async def download_project_list_by_gene(
         .all()
     )
     data_list = []
-    for gene_meta in gene_meta_list:
-        project_meta = (
-            gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_project_meta
+    for gene_meta_list in gene_list:
+        project_dict = {}
+        project_meta = dict_util.row2dict(gene_meta_list[2])
+        for key, value in project_meta.items():
+            project_dict["project_" + key] = value
+        analysis_meta = dict_util.row2dict(gene_meta_list[1])
+        for key, value in analysis_meta.items():
+            project_dict["analysis_" + key] = value
+        biosample_meta = dict_util.row2dict(gene_meta_list[3])
+        for key, value in biosample_meta.items():
+            project_dict["biosample_" + key] = value
+        gene_expression_meta = dict_util.row2dict(gene_meta_list[0])
+        for key, value in gene_expression_meta.items():
+            project_dict["cell_proportion_" + key] = value
+        donor_meta = (
+            dict_util.row2dict(gene_meta_list[3].biosample_donor_meta)
+            if gene_meta_list[3].biosample_donor_meta
+            else {}
         )
-        biosample_meta = gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[
-            0
-        ].biosample_analysis_biosample_meta
-        donor_meta = gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[
-            0
-        ].biosample_analysis_biosample_meta.biosample_donor_meta
-        species_meta = gene_meta.gene_expression_proportion_meta.cell_proportion_analysis_meta.analysis_biosample_analysis_meta[
-            0
-        ].biosample_analysis_biosample_meta.biosample_species_meta
-        data_list.append(
-            [
-                project_meta.title,
-                biosample_meta.disease,
-                biosample_meta.sequencing_instrument_manufacturer_model,
-                gene_meta.cell_proportion_expression_the_gene,
-                species_meta.species,
-                biosample_meta.organ,
-                donor_meta.sex,
-            ]
-        )
+        for key, value in donor_meta.items():
+            project_dict["donor_" + key] = value if value else ""
+        data_list.append(project_dict)
     data_df = pd.DataFrame(
         data=data_list,
-        columns=[
-            "Project",
-            "Disease",
-            "Platform",
-            "Percentage of Cells in cellcluster that express GeneX",
-            "Species",
-            "Organ",
-            "Sex",
-        ],
     )
     data_df = data_df.fillna("")
     buffer = BytesIO()
