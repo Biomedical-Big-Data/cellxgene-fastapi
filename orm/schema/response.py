@@ -119,3 +119,11 @@ class ResponseProjectDetailModel(BaseModel):
         dict,
     ]
     message: str
+
+
+class ResponseAdminProjectDetailModel(BaseModel):
+    status: str
+    data: Union[
+        project_relation_model.AdminProjectRelation,
+    ]
+    message: str
