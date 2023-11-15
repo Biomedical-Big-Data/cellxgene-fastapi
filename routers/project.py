@@ -212,7 +212,7 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     statical_list = [
         {"statical": "project", "count": project_count},
         {"statical": "sample", "count": sample_count},
-        {"statical": "cell_type", "count": cell_type_count},
+        {"statical": "cell", "count": cell_type_count},
         {"statical": "cell_number", "count": cell_number_count},
     ]
     res_dict = {
