@@ -1913,7 +1913,10 @@ async def get_csv_data(
     res_list = []
     if file_type == "umap":
         file_data_df = pd.read_csv(file_path)
-        res_list = file_data_df.columns.tolist()
+        column_list = file_data_df.columns.tolist()
+        for i in column_list:
+            if "." not in i:
+                res_list.append(i)
         # print(file_data_df.columns.tolist())
     return ResponseMessage(status="0000", data=res_list, message="success")
 

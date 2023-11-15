@@ -61,16 +61,16 @@ if __name__ == "__main__":
         level=logging.INFO,  # 设置记录级别
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",  # 设置日志格式
     )
-    # from mqtt_consumer.consumer import Consumer
-    #
-    # consumer = Consumer()
-    #
-    # @app.on_event("startup")
-    # async def startup_event():
-    #     await consumer.initialize()
-    #
-    # @app.on_event("shutdown")
-    # async def shutdown_event():
-    #     await consumer.shutdown()
+    from mqtt_consumer.consumer import Consumer
+
+    consumer = Consumer()
+
+    @app.on_event("startup")
+    async def startup_event():
+        await consumer.initialize()
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        await consumer.shutdown()
 
     uvicorn.run(app, host="0.0.0.0", port=5050)
