@@ -1723,13 +1723,13 @@ async def get_cell_taxonomy_tree(
     filter_list = [
         cellxgene.CellTaxonomy.specific_cell_ontology_id
         == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_standard.like("%{}%".format(cell_standard)),
+        cellxgene.CellTaxonomy.cell_standard.op("regexp")("[ -\\/]{}[ -\\/]".format(cell_standard)),
     ]
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
         db=db, filters=filter_list
     )
     res = []
-    cell_number_dict = cell_number_util.get_cell_taxonomy_tree_cell_number(db=db)
+    cell_number_dict, exist_cl_id_list = cell_number_util.get_cell_taxonomy_tree_cell_number(db=db)
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
         res.append(
             {
@@ -1737,6 +1737,7 @@ async def get_cell_taxonomy_tree(
                 "cl_pid": cell_taxonomy_relation_model[2],
                 "name": cell_taxonomy_relation_model[1],
                 "cell_number": cell_number_dict.get(cell_taxonomy_relation_model[0], 0),
+                "is_exist": True if cell_taxonomy_relation_model[0] in exist_cl_id_list else False
             }
         )
     return ResponseMessage(status="0000", data=res, message="ok")

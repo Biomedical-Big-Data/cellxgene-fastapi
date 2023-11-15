@@ -43,7 +43,7 @@ def get_cell_taxonomy_tree_cell_number(db: Session):
     for cell_type_meta in cell_type_meta_list:
         cell_type_meta_dict[
             cell_type_meta.cell_type_id
-        ] = cell_type_meta.cell_ontology_id
+        ] = cell_type_meta.cell_ontology_id if cell_type_meta.cell_ontology_id else 0
     # print(cell_type_meta_dict)
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
         db=db, filters=[]
@@ -59,16 +59,19 @@ def get_cell_taxonomy_tree_cell_number(db: Session):
             }
         )
     # print(cell_proportion_list)
+    exist_cl_id_list = []
     for cell_proportion_meta in cell_proportion_list:
         cl_id = cell_type_meta_dict.get(cell_proportion_meta[0])
-        cell_number = cell_proportion_meta[1]
-        # print("cl_id", cl_id, cell_number)
-        get_parent_cell_number(
-            cell_taxonomy_relation_list, cl_id, cell_number, cell_proportion_dict
-        )
+        if cl_id:
+            exist_cl_id_list.append(cl_id)
+            cell_number = cell_proportion_meta[1]
+            # print("cl_id", cl_id, cell_number)
+            get_parent_cell_number(
+                cell_taxonomy_relation_list, cl_id, cell_number, cell_proportion_dict
+            )
         # print('------', cell_proportion_dict)
     # print(cell_proportion_dict, cell_proportion_dict.get("CL:0000000"))
-    return cell_proportion_dict
+    return cell_proportion_dict, exist_cl_id_list
     # for i in range(0, len(cell_taxonomy_relation_list)):
     #     # print(cell_taxonomy_relation_list[i]["cl_id"], cell_proportion_dict.get(cell_taxonomy_relation_list[i]["cl_id"], 0))
     #     cell_taxonomy_relation_list[i]["cell_number"] = cell_proportion_dict.get(cell_taxonomy_relation_list[i]["cl_id"], 0)
