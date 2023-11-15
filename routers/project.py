@@ -1019,8 +1019,8 @@ async def get_project_list_by_cell(
     species_id: int,
     order_by: Union[str, None] = None,
     asc: Union[bool, None] = None,
-    ct_id: Union[list, None] = None,
-    cl_id: Union[list, None] = None,
+    ct_id: Union[str, None] = None,
+    cl_id: Union[str, None] = None,
     cell_standard: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
@@ -1047,13 +1047,13 @@ async def get_project_list_by_cell(
         == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
-    print(type(ct_id), ct_id)
     if ct_id is not None:
-        print(type(ct_id), ct_id)
+        ct_id_list = ct_id.split(",")
         # filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
-        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id.in_(ct_id))
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id.in_(ct_id_list))
     if cl_id is not None:
-        public_filter_list.append(cellxgene.CellTypeMeta.cell_ontology_id.in_(cl_id))
+        cl_id_list = ct_id.split(",")
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_ontology_id.in_(cl_id_list))
     if cell_standard is not None:
         cell_standard_filter_list = [
             cellxgene.CellTaxonomy.ct_id == cellxgene.CellTypeMeta.cell_taxonomy_id,

@@ -244,11 +244,11 @@ def upload_file(db: Session, project_id: int, analysis_id: int, excel_id: str):
 
 
 def upload_file_v2(
-    db: Session,
-    project_id: int,
-    analysis_id: int,
-    excel_id: str,
-    send_mail_address: str,
+        db: Session,
+        project_id: int,
+        analysis_id: int,
+        excel_id: str,
+        send_mail_address: str,
 ):
     start_time = time.time()
     try:
@@ -332,6 +332,36 @@ def update_except_gene_expression_meta(db: Session, project_id: int, analysis_id
     write_count = 10000
     check_donor_id_list = []
     del update_project_dict["project_id"]
+    crud.delete_donor_for_transaction(
+        db=db,
+        filters=[cellxgene.ProjectBioSample.project_id == project_id,
+                 cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+                 cellxgene.BioSampleMeta.donor_id == cellxgene.DonorMeta.id])
+    crud.delete_gene_expression_for_transaction(
+        db=db,
+        filters=[cellxgene.CellClusterGeneExpression.analysis_id == analysis_id]
+    )
+    crud.delete_pathway_score_for_transaction(
+        db=db, filters=[cellxgene.PathwayScore.analysis_id == analysis_id]
+    )
+    crud.delete_cell_proportion_for_transaction(
+        db=db,
+        filters=[cellxgene.CalcCellClusterProportion.analysis_id == analysis_id]
+    )
+    crud.delete_biosample_for_transaction(
+        db=db, filters=[cellxgene.ProjectBioSample.project_id == project_id,
+                        cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id]
+    )
+    crud.delete_project_biosample_for_transaction(
+        db=db,
+        filters=[cellxgene.ProjectBioSample.project_id == project_id]
+    )
+    crud.delete_biosample_analysis_for_transaction(
+        db=db,
+        filters=[
+            cellxgene.BioSampleAnalysis.analysis_id == analysis_id,
+        ],
+    )
     crud.update_project_for_transaction(
         db=db,
         filters=[cellxgene.ProjectMeta.id == project_id],
