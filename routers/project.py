@@ -1052,7 +1052,7 @@ async def get_project_list_by_cell(
         # filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
         public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id.in_(ct_id_list))
     if cl_id is not None:
-        cl_id_list = ct_id.split(",")
+        cl_id_list = cl_id.split(",")
         public_filter_list.append(cellxgene.CellTypeMeta.cell_ontology_id.in_(cl_id_list))
     if cell_standard is not None:
         cell_standard_filter_list = [
