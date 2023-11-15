@@ -1853,7 +1853,7 @@ async def get_cell_taxonomy_info(
     taxonomy_model_list = crud.get_taxonomy(
         db=db, filters=[cellxgene.CellTaxonomy.specific_cell_ontology_id == cl_id]
     ).all()
-    print(taxonomy_model_list)
+    # print(taxonomy_model_list)
     return ResponseMessage(status="0000", data=taxonomy_model_list, message="ok")
 
 
