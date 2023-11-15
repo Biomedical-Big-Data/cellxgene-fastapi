@@ -158,6 +158,11 @@ def create_analysis(db: Session, insert_analysis_model: cellxgene.Analysis):
     return insert_analysis_model.id, insert_analysis_model.project_id
 
 
+def update_analysis(db: Session, filters: List, update_dict: Dict):
+    db.query(cellxgene.Analysis).filter(and_(*filters)).update(update_dict)
+    db.commit()
+
+
 def create_biosample(db: Session, insert_biosample_model: cellxgene.BioSampleMeta):
     db.add(insert_biosample_model)
     db.flush()
@@ -193,6 +198,29 @@ def create_cell_proprotion_for_transaction(
 
 def get_cell_proportion(db: Session, query_list: List, filters: List):
     return db.query(*query_list).filter(and_(*filters))
+
+
+def get_cell_proportion_join_cell_type_meta(
+    db: Session, query_list: List, filters: List
+):
+    return (
+        db.query(*query_list)
+        .select_from(cellxgene.CalcCellClusterProportion)
+        .join(
+            cellxgene.CellTypeMeta,
+            cellxgene.CalcCellClusterProportion.cell_type_id
+            == cellxgene.CellTypeMeta.cell_type_id,
+        )
+        .join(
+            cellxgene.Analysis,
+            cellxgene.CalcCellClusterProportion.analysis_id == cellxgene.Analysis.id,
+        )
+        .join(
+            cellxgene.ProjectMeta,
+            cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        )
+        .filter(and_(*filters))
+    )
 
 
 def delete_cell_proportion_for_transaction(db: Session, filters: List):
@@ -345,21 +373,28 @@ def get_species_list(db: Session, query_list: List, filters: List | None):
     return db.query(*query_list).filter(and_(*filters))
 
 
-def create_species(db: Session, insert_species_model_list: List[cellxgene.SpeciesMeta]):
+def create_species_for_transaction(db: Session, insert_species_model_list: List[cellxgene.SpeciesMeta]):
     db.add_all(insert_species_model_list)
     db.commit()
+
+
+def delete_species_meta_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.SpeciesMeta).filter(and_(*filters)).delete()
 
 
 def get_gene_meta(db: Session, filters: List | None):
     return db.query(cellxgene.GeneMeta).filter(and_(*filters))
 
 
-def create_gene(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
+def create_gene_for_transaction(db: Session, insert_gene_model_list: List[cellxgene.GeneMeta]):
     db.add_all(insert_gene_model_list)
-    db.commit()
 
 
-def get_cell_meta(db: Session, query_list: List, filters: List | None):
+def delete_gene_meta_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.GeneMeta).filter(and_(*filters)).delete()
+
+
+def get_cell_type_meta(db: Session, query_list: List, filters: List | None):
     return db.query(*query_list).filter(and_(*filters))
 
 
@@ -368,6 +403,16 @@ def create_cell_type_meta(
 ):
     db.add_all(insert_cell_type_model_list)
     db.commit()
+
+
+def create_cell_type_meta_for_transaction(
+    db: Session, insert_cell_type_model_list: List[cellxgene.CellTypeMeta]
+):
+    db.add_all(insert_cell_type_model_list)
+
+
+def delete_cell_type_meta_for_transaction(db: Session, filters: List):
+    db.query(cellxgene.CellTypeMeta).filter(and_(*filters)).delete()
 
 
 def get_donor_meta(db: Session, filters: List | None):
@@ -488,6 +533,28 @@ def get_cell_taxonomy_relation_tree(db: Session, filters: List):
         ).where(cellxgene.CellTaxonomyRelation.cl_id == cte_alias.c.parent_id)
     )
     return db.query(cte).distinct().all()
+
+
+def create_project_update_history(
+    db: Session, insert_project_update_history_model: cellxgene.ProjectUpdateHistory
+):
+    db.add(insert_project_update_history_model)
+    db.commit()
+
+
+def get_project_update_history(db: Session, query_list: List, filters: List):
+    return db.query(*query_list).filter(and_(*filters))
+
+
+def create_meta_update_history(
+    db: Session, insert_meta_update_history_model: cellxgene.MetaUpdateHistory
+):
+    db.add(insert_meta_update_history_model)
+    db.commit()
+
+
+def get_meta_update_history(db: Session, query_list: List, filters: List):
+    return db.query(*query_list).filter(and_(*filters))
 
 
 if __name__ == "__main__":

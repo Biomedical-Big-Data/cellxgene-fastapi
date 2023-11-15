@@ -150,6 +150,7 @@ class BioSampleMeta(Base):
 
     # ID
     id = Column(INTEGER, primary_key=True)
+    biosample_name = Column(String(255))
     # 外部继承
     external_sample_accesstion = Column(TEXT)
     # 生物样本类型
@@ -363,6 +364,7 @@ class Analysis(Base):
     cell_marker_id = Column(String(255))
     pathway_id = Column(String(255))
     other_file_ids = Column(String(255))
+    excel_id = Column(String(255))
     reference = Column(String(255))
     analysis_protocol = Column(String(255))
     create_at = Column(
@@ -771,6 +773,42 @@ class TransferHistory(Base):
     project_id = Column(INTEGER)
     old_owner = Column(INTEGER)
     new_owner = Column(INTEGER)
+    create_at = Column(
+        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
+    update_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    )
+
+
+class ProjectUpdateHistory(Base):
+    __tablename__ = "project_update_history"
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    project_id = Column(INTEGER)
+    analysis_id = Column(INTEGER)
+    file_id = Column(String(255))
+    file_name = Column(String(255))
+    create_at = Column(
+        DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
+    )
+    update_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    )
+
+
+class MetaUpdateHistory(Base):
+    __tablename__ = "meta_update_history"
+
+    id = Column(INTEGER, primary_key=True, autoincrement=True)
+    meta_type = Column(String(255))
+    file_id = Column(String(255))
+    file_name = Column(String(255))
+    upload_user_id = Column(INTEGER)
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )

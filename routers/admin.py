@@ -274,7 +274,7 @@ async def admin_update_project(
         print(e)
         return ResponseMessage(status="0201", data={"error": str(e)}, message="更新失败")
     else:
-        return ResponseMessage(status="0000", data={}, message="更新成功")
+        return ResponseMessage(status="0000", data={}, message="更新成功, 项目文件更新结果请等待邮件回复")
 
 
 @router.get(
@@ -318,6 +318,29 @@ async def update_project(
         return ResponseMessage(status="0201", data={}, message="项目状态更新失败")
 
 
+@router.post(
+    "/cell_type_meta/create",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK
+)
+async def create_cell_type_meta(
+    create_cell_type_model: project_model.CreateCellTypeModel = Body(),
+    db: Session = Depends(get_db),
+    # current_admin_email_address=Depends(get_current_admin),
+):
+    cell_type_id = create_cell_type_model.cell_type_id
+    species_id = create_cell_type_model.species_id
+    exist_cell_type_meta = crud.get_cell_type_meta(db=db, query_list=[cellxgene.CellTypeMeta], filters=[cellxgene.CellTypeMeta.cell_type_id == cell_type_id,
+                                                                                                        cellxgene.CellTypeMeta.species_id == species_id]).first()
+    if not exist_cell_type_meta:
+        crud.create_cell_type_meta(db=db, insert_cell_type_model_list=[cellxgene.CellTypeMeta(**create_cell_type_model.model_dump(
+                        mode="json"
+                    ),)])
+        return ResponseMessage(status="0000", data={}, message="cell_type 创建成功")
+    else:
+        return ResponseMessage(status="0201", data={}, message="cell_type已存在")
+
+
 @router.get(
     "/cell/list",
     response_model=ResponseProjectListModel,
@@ -337,14 +360,14 @@ async def get_cell_list(
             cellxgene.CellTypeMeta.cell_type_name.like("%{}%".format(cell_type_name))
         )
     cell_type_list = (
-        crud.get_cell_meta(
+        crud.get_cell_type_meta(
             db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list
         )
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_cell_meta(
+    total = crud.get_cell_type_meta(
         db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list
     ).count()
     res_dict = {
@@ -506,34 +529,43 @@ async def upload_project_meta_file(
     current_admin_email_address=Depends(get_current_admin),
 ):
     try:
+        current_user_info = crud.get_user(
+            db=db, filters=[cellxgene.User.email_address == current_admin_email_address]
+        ).first()
         project_content = await meta_file.read()
         if file_type == "cell_type":
             background_tasks.add_task(
                 file_util.update_cell_type_meta_file,
                 db,
+                meta_file,
                 project_content,
                 current_admin_email_address,
+                current_user_info.id
             )
         elif file_type == "gene":
             background_tasks.add_task(
                 file_util.update_gene_meta_file,
                 db,
+                meta_file,
                 project_content,
                 current_admin_email_address,
+                current_user_info.id
             )
-        if file_type == "donor":
-            background_tasks.add_task(
-                file_util.update_donor_meta_file,
-                db,
-                project_content,
-                current_admin_email_address,
-            )
+        # if file_type == "donor":
+        #     background_tasks.add_task(
+        #         file_util.update_donor_meta_file,
+        #         db,
+        #         project_content,
+        #         current_admin_email_address,
+        #     )
         if file_type == "species":
             background_tasks.add_task(
                 file_util.update_species_meta_file,
                 db,
+                meta_file,
                 project_content,
                 current_admin_email_address,
+                current_user_info.id
             )
     except Exception as e:
         logging.error("[upload project meta error]: {}".format(str(e)))

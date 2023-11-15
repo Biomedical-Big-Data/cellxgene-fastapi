@@ -62,7 +62,7 @@ class ProjectModel(BaseModel):
 
 class BiosampleModel(BaseModel):
     id: int | str | None = None
-    # biosample_name: str | None
+    biosample_name: str | None
     external_sample_accesstion: str | None
     biosample_type: str | None
     species_id: int | None = None
@@ -150,6 +150,7 @@ class AnalysisModel(BaseModel):
     cell_marker_id: str | None
     pathway_id: str | None
     other_file_ids: str | None
+    excel_id: str | None
     reference: str | None
     analysis_protocol: str | None
     create_at: datetime
@@ -274,6 +275,26 @@ class FileLibraryModel(BaseModel):
         org_mode = True
 
 
+class ProjectUpdateHistoryModel(BaseModel):
+    id: int
+    project_id: int
+    analysis_id: int
+    file_id: str
+    file_name: str
+    create_at: datetime
+    update_at: datetime
+
+
+class MetaUpdateHistoryModel(BaseModel):
+    id: int
+    meta_type: str
+    file_id: str
+    file_name: str
+    upload_user_id: int
+    create_at: datetime
+    update_at: datetime
+
+
 class ProjectBiosampleModel(BaseModel):
     id: int
     project_id: int
@@ -366,6 +387,18 @@ class TransferHistoryModel(BaseModel):
 
     class Config:
         org_mode = True
+
+
+class CreateCellTypeModel(BaseModel):
+    cell_type_id: str
+    species_id: int
+    marker_gene_symbol: str | None
+    cell_taxonomy_id: str | None
+    cell_taxonomy_url: str | None
+    cell_ontology_id: str | None
+    cell_type_name: str | None
+    cell_type_description: str | None
+    cell_type_ontology_label: str | None
 
 
 if __name__ == "__main__":

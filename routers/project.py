@@ -26,7 +26,7 @@ from io import BytesIO
 from orm import crud
 from sqlalchemy.orm import Session
 from orm.db_model import cellxgene
-from conf import config
+from conf import config, table_config
 from typing import List, Union, Annotated
 import pandas as pd
 from sqlalchemy import and_, or_, distinct, func
@@ -45,7 +45,7 @@ from fastapi.responses import (
     StreamingResponse,
 )
 from uuid import uuid4
-from utils import file_util, auth_util, dict_util
+from utils import file_util, auth_util, dict_util, cell_number_util
 from mqtt_consumer.consumer import SERVER_STATUS_DICT
 from orm.database import cellxgene_engine
 
@@ -181,10 +181,9 @@ async def get_view_homepage(db: Session = Depends(get_db)):
                 == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
                 cellxgene.ProjectMeta.is_private
                 == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
-                cellxgene.ProjectMeta.id
-                == cellxgene.Analysis.project_id,
+                cellxgene.ProjectMeta.id == cellxgene.Analysis.project_id,
                 cellxgene.CalcCellClusterProportion.analysis_id
-                == cellxgene.Analysis.id
+                == cellxgene.Analysis.id,
             ],
         )
         .distinct()
@@ -193,17 +192,15 @@ async def get_view_homepage(db: Session = Depends(get_db)):
     cell_number_list = (
         crud.get_project_by_cell_join(
             db=db,
-            query_list=[
-                cellxgene.CalcCellClusterProportion],
+            query_list=[cellxgene.CalcCellClusterProportion],
             public_filter_list=[
                 cellxgene.ProjectMeta.is_publish
                 == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
                 cellxgene.ProjectMeta.is_private
                 == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
-                cellxgene.ProjectMeta.id
-                == cellxgene.Analysis.project_id,
+                cellxgene.ProjectMeta.id == cellxgene.Analysis.project_id,
                 cellxgene.CalcCellClusterProportion.analysis_id
-                == cellxgene.Analysis.id
+                == cellxgene.Analysis.id,
             ],
         )
         .distinct()
@@ -839,6 +836,10 @@ async def get_project_list_by_sample(
             cellxgene.BioSampleMeta.biosample_type == biosample_type
         )
     if order_by is not None:
+        orderby_list = order_by.split(".")
+        orderby_orm = table_config.cellxgene_table_dict.get(orderby_list[0]).get(
+            orderby_list[1]
+        )
         if asc:
             biosample_list = (
                 crud.get_project_by_sample_join(
@@ -851,7 +852,7 @@ async def get_project_list_by_sample(
                     public_filter_list=public_filter_list,
                 )
                 .distinct()
-                .order_by(order_by.asc())
+                .order_by(orderby_orm.asc())
                 .offset(search_page)
                 .limit(page_size)
                 .all()
@@ -868,7 +869,7 @@ async def get_project_list_by_sample(
                     public_filter_list=public_filter_list,
                 )
                 .distinct()
-                .order_by(order_by.desc())
+                .order_by(orderby_orm.desc())
                 .offset(search_page)
                 .limit(page_size)
                 .all()
@@ -1016,10 +1017,11 @@ async def download_project_list_by_sample(
 )
 async def get_project_list_by_cell(
     species_id: int,
-    ct_id: Union[int, None] = None,
+    order_by: Union[str, None] = None,
+    asc: Union[bool, None] = None,
+    ct_id: Union[list, None] = None,
+    cl_id: Union[list, None] = None,
     cell_standard: Union[str, None] = None,
-    genes_positive: Union[str, None] = None,
-    genes_negative: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
@@ -1045,51 +1047,77 @@ async def get_project_list_by_cell(
         == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
+    print(type(ct_id), ct_id)
     if ct_id is not None:
+        print(type(ct_id), ct_id)
         # filter_list.append(cellxgene.CellTypeMeta.cell_type_id == cell_id)
         public_filter_list.append(cellxgene.CellTypeMeta.cell_type_id.in_(ct_id))
+    if cl_id is not None:
+        public_filter_list.append(cellxgene.CellTypeMeta.cell_ontology_id.in_(cl_id))
     if cell_standard is not None:
         cell_standard_filter_list = [
             cellxgene.CellTaxonomy.ct_id == cellxgene.CellTypeMeta.cell_taxonomy_id,
             cellxgene.CellTaxonomy.cell_standard.like("%{}%".format(cell_standard)),
         ]
         public_filter_list.append(and_(*cell_standard_filter_list))
-    if genes_positive is not None:
-        genes_positive_list = genes_positive.replace(";", ",").split(",")
-        positive_filter_list = []
-        for positive in genes_positive_list:
-            positive_filter_list.append(
-                cellxgene.CellTypeMeta.marker_gene_symbol.like("%{}%".format(positive))
-            )
-        # filter_list.append(or_(*positive_filter_list))
-        public_filter_list.append(or_(*positive_filter_list))
-    if genes_negative is not None:
-        genes_negative_list = genes_negative.replace(";", ",").split(",")
-        negative_filter_list = []
-        for negative in genes_negative_list:
-            negative_filter_list.append(
-                cellxgene.CellTypeMeta.marker_gene_symbol.notlike(
-                    "%{}%".format(negative)
-                )
-            )
-        # filter_list.append(and_(*negative_filter_list))
-        public_filter_list.append(and_(*negative_filter_list))
-    cell_proportion_list = (
-        crud.get_project_by_cell_join(
-            db=db,
-            query_list=[
-                cellxgene.CalcCellClusterProportion,
-                cellxgene.Analysis,
-                cellxgene.ProjectMeta,
-                cellxgene.BioSampleMeta,
-            ],
-            public_filter_list=public_filter_list,
+    if order_by is not None:
+        orderby_list = order_by.split(".")
+        orderby_orm = table_config.cellxgene_table_dict.get(orderby_list[0]).get(
+            orderby_list[1]
         )
-        .distinct()
-        .offset(search_page)
-        .limit(page_size)
-        .all()
-    )
+        if asc:
+            cell_proportion_list = (
+                crud.get_project_by_cell_join(
+                    db=db,
+                    query_list=[
+                        cellxgene.CalcCellClusterProportion,
+                        cellxgene.Analysis,
+                        cellxgene.ProjectMeta,
+                        cellxgene.BioSampleMeta,
+                    ],
+                    public_filter_list=public_filter_list,
+                )
+                .distinct()
+                .order_by(orderby_orm.asc())
+                .offset(search_page)
+                .limit(page_size)
+                .all()
+            )
+        else:
+            cell_proportion_list = (
+                crud.get_project_by_cell_join(
+                    db=db,
+                    query_list=[
+                        cellxgene.CalcCellClusterProportion,
+                        cellxgene.Analysis,
+                        cellxgene.ProjectMeta,
+                        cellxgene.BioSampleMeta,
+                    ],
+                    public_filter_list=public_filter_list,
+                )
+                .distinct()
+                .order_by(orderby_orm.desc())
+                .offset(search_page)
+                .limit(page_size)
+                .all()
+            )
+    else:
+        cell_proportion_list = (
+            crud.get_project_by_cell_join(
+                db=db,
+                query_list=[
+                    cellxgene.CalcCellClusterProportion,
+                    cellxgene.Analysis,
+                    cellxgene.ProjectMeta,
+                    cellxgene.BioSampleMeta,
+                ],
+                public_filter_list=public_filter_list,
+            )
+            .distinct()
+            .offset(search_page)
+            .limit(page_size)
+            .all()
+        )
     for cell_proportion_meta_list in cell_proportion_list:
         project_dict = {}
         cell_proportion_meta = dict_util.row2dict(cell_proportion_meta_list[0])
@@ -1256,7 +1284,9 @@ async def download_project_list_by_cell(
 )
 async def get_project_list_by_gene(
     species_id: int,
-    gene_symbol: Union[str, None] = None,
+    gene_symbol: str,
+    order_by: Union[str, None] = None,
+    asc: Union[bool, None] = None,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
@@ -1293,24 +1323,68 @@ async def get_project_list_by_gene(
         public_filter_list.append(
             cellxgene.GeneMeta.gene_symbol.like("%{}%".format(gene_symbol))
         )
-    gene_meta_list = (
-        crud.get_project_by_gene_join(
-            db=db,
-            query_list=[
-                cellxgene.CellClusterGeneExpression,
-                cellxgene.Analysis,
-                cellxgene.ProjectMeta,
-                cellxgene.BioSampleMeta,
-            ],
-            # filters=filter_list,
-            public_filter_list=public_filter_list,
+    if order_by is not None:
+        orderby_list = order_by.split(".")
+        orderby_orm = table_config.cellxgene_table_dict.get(orderby_list[0]).get(
+            orderby_list[1]
         )
-        .distinct()
-        # .order_by(cellxgene.BioSampleMeta.id.asc())
-        .offset(search_page)
-        .limit(page_size)
-        .all()
-    )
+        if asc:
+            gene_meta_list = (
+                crud.get_project_by_gene_join(
+                    db=db,
+                    query_list=[
+                        cellxgene.CellClusterGeneExpression,
+                        cellxgene.Analysis,
+                        cellxgene.ProjectMeta,
+                        cellxgene.BioSampleMeta,
+                    ],
+                    # filters=filter_list,
+                    public_filter_list=public_filter_list,
+                )
+                .distinct()
+                .order_by(orderby_orm.asc())
+                .offset(search_page)
+                .limit(page_size)
+                .all()
+            )
+        else:
+            gene_meta_list = (
+                crud.get_project_by_gene_join(
+                    db=db,
+                    query_list=[
+                        cellxgene.CellClusterGeneExpression,
+                        cellxgene.Analysis,
+                        cellxgene.ProjectMeta,
+                        cellxgene.BioSampleMeta,
+                    ],
+                    # filters=filter_list,
+                    public_filter_list=public_filter_list,
+                )
+                .distinct()
+                .order_by(orderby_orm.desc())
+                .offset(search_page)
+                .limit(page_size)
+                .all()
+            )
+    else:
+        gene_meta_list = (
+            crud.get_project_by_gene_join(
+                db=db,
+                query_list=[
+                    cellxgene.CellClusterGeneExpression,
+                    cellxgene.Analysis,
+                    cellxgene.ProjectMeta,
+                    cellxgene.BioSampleMeta,
+                ],
+                # filters=filter_list,
+                public_filter_list=public_filter_list,
+            )
+            .distinct()
+            # .order_by(cellxgene.BioSampleMeta.id.asc())
+            .offset(search_page)
+            .limit(page_size)
+            .all()
+        )
     cell_type_id_list = []
     for gene_meta in gene_meta_list:
         project_dict = {}
@@ -1333,7 +1407,7 @@ async def get_project_list_by_gene(
         cellxgene.CellTypeMeta.species_id == species_id,
         cellxgene.CellTypeMeta.cell_type_id.in_(cell_type_id_list),
     ]
-    cell_type_meta_list = crud.get_cell_meta(
+    cell_type_meta_list = crud.get_cell_type_meta(
         db=db, query_list=[cellxgene.CellTypeMeta], filters=cell_type_filter_list
     )
     total = (
@@ -1341,13 +1415,7 @@ async def get_project_list_by_gene(
             db=db,
             query_list=[func.count(1)],
             # filters=filter_list,
-            public_filter_list=[
-                cellxgene.GeneMeta.species_id == species_id,
-                cellxgene.ProjectMeta.is_publish
-                == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
-                cellxgene.ProjectMeta.is_private
-                == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
-            ],
+            public_filter_list=public_filter_list,
         )
         .distinct()
         .first()
@@ -1540,7 +1608,9 @@ async def view_cell_number_graph(
     # current_user_email_address=Depends(get_current_user),
 ):
     cell_proportion_meta_list = crud.get_cell_proportion(
-        db=db, query_list=[cellxgene.CalcCellClusterProportion], filters=[cellxgene.CalcCellClusterProportion.analysis_id == analysis_id]
+        db=db,
+        query_list=[cellxgene.CalcCellClusterProportion],
+        filters=[cellxgene.CalcCellClusterProportion.analysis_id == analysis_id],
     )
     return ResponseMessage(status="0000", data=cell_proportion_meta_list, message="ok")
 
@@ -1638,6 +1708,36 @@ async def get_species_list(db: Session = Depends(get_db)) -> ResponseMessage:
 
 
 @router.get(
+    "/cell_type/list",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_cell_type_list(
+    species_id: int,
+    cell_type_id: str,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db)
+) -> ResponseMessage:
+    search_page = (page - 1) * page_size
+    cell_type_list = crud.get_cell_type_meta(
+        db=db, query_list=[cellxgene.CellTypeMeta], filters=[cellxgene.CellTypeMeta.cell_type_id.like("%{}%".format(cell_type_id)),
+                                                             cellxgene.CellTypeMeta.species_id == species_id]
+    ).offset(search_page).limit(page_size).all()
+    total = crud.get_cell_type_meta(
+        db=db, query_list=[cellxgene.CellTypeMeta], filters=[cellxgene.CellTypeMeta.cell_type_id.like("%{}%".format(cell_type_id)),
+                                                             cellxgene.CellTypeMeta.species_id == species_id]
+    ).count()
+    res_dict = {
+        "cell_type_list": cell_type_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
     "/view/tree/cell_taxonomy",
     response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
@@ -1657,51 +1757,87 @@ async def get_cell_taxonomy_tree(
         db=db, filters=filter_list
     )
     res = []
+    cell_number_dict = cell_number_util.get_cell_taxonomy_tree_cell_number(db=db)
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
         res.append(
             {
                 "cl_id": cell_taxonomy_relation_model[0],
                 "cl_pid": cell_taxonomy_relation_model[2],
                 "name": cell_taxonomy_relation_model[1],
+                "cell_number": cell_number_dict.get(cell_taxonomy_relation_model[0], 0),
             }
         )
     return ResponseMessage(status="0000", data=res, message="ok")
 
 
-@router.get("/view/table/cell_taxonomy",
-    response_model = ResponseMessage,
-    status_code = status.HTTP_200_OK,
+@router.get(
+    "/view/table/cell_taxonomy",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
 )
 async def get_cell_taxonomy_table(
     species_id: int,
     genes_positive: str,
     genes_negative: str,
-    db: Session = Depends(get_db)
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
 ):
+    search_page = (page - 1) * page_size
     res_list = []
     genes_positive_re_match_str = genes_positive.replace(",", "|")
     genes_positive_list = genes_positive.split(",")
     genes_negative_re_match_str = genes_negative.replace(",", "|")
-    filter_list = [cellxgene.CellTypeMeta.species_id == species_id,
-                   cellxgene.CellTypeMeta.marker_gene_symbol.op('regexp')(genes_positive_re_match_str),
-                   cellxgene.CellTypeMeta.marker_gene_symbol.op('not regexp')(genes_negative_re_match_str),
-                   ]
-    cell_type_meta_list = crud.get_cell_meta(db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list).all()
-    print(cell_type_meta_list)
+    filter_list = [cellxgene.CellTypeMeta.species_id == species_id]
+    if genes_positive_re_match_str:
+        filter_list.append(
+            cellxgene.CellTypeMeta.marker_gene_symbol.op("regexp")(
+                genes_positive_re_match_str
+            )
+        )
+    if genes_negative_re_match_str:
+        filter_list.append(
+            cellxgene.CellTypeMeta.marker_gene_symbol.op("not regexp")(
+                genes_negative_re_match_str
+            )
+        )
+
+    cell_type_meta_list = crud.get_cell_type_meta(
+        db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list
+    ).all()
+    # print(cell_type_meta_list)
     for cell_type_meta in cell_type_meta_list:
-        marker_gene_symbol_list = cell_type_meta.marker_gene_symbol.split(',')
-        intersection_list = list(set(marker_gene_symbol_list).intersection(set(genes_positive_list)))
+        marker_gene_symbol_list = cell_type_meta.marker_gene_symbol.split(",")
+        intersection_list = list(
+            set(marker_gene_symbol_list).intersection(set(genes_positive_list))
+        )
         cell_type_name = cell_type_meta.cell_type_name
         cell_type_id = cell_type_meta.cell_type_id
         score = len(intersection_list) / len(marker_gene_symbol_list)
-        res_list.append({
-            "cell_type_id": cell_type_id,
-            "cell_type_name": cell_type_name,
-            "marker_gene_symbol": cell_type_meta.marker_gene_symbol,
-            "intersection_list": intersection_list,
-            "score": score
-        })
-    return ResponseMessage(status="0000", data=res_list, message="ok")
+        res_list.append(
+            {
+                "cell_type_id": cell_type_id,
+                "cell_type_name": cell_type_name,
+                "marker_gene_symbol": cell_type_meta.marker_gene_symbol,
+                "intersection_list": intersection_list,
+                "score": score,
+            }
+        )
+    res_list.sort(key=_get_score, reverse=True)
+    return ResponseMessage(
+        status="0000",
+        data={
+            "list": res_list[search_page * page_size : page * page_size],
+            "total": len(res_list),
+            "page": page,
+            "page_size": page_size,
+        },
+        message="ok",
+    )
+
+
+def _get_score(cell_type_dict):
+    return cell_type_dict.get("score")
 
 
 @router.get(
@@ -1762,6 +1898,24 @@ async def get_csv_data(
             )
         except:
             return ResponseMessage(status="0201", data={}, message="文件不存在")
+
+
+@router.get("/view/file/{file_type}/{file_id}/column", status_code=status.HTTP_200_OK)
+async def get_csv_data(
+    file_type: str,
+    file_id: str | None = None,
+    group_by: str | None = None,
+    # current_user_email_address=Depends(get_current_user),
+):
+    if file_id is None:
+        return ResponseMessage(status="0201", data={}, message="未上传文件")
+    file_path = config.H5AD_FILE_PATH + "/" + file_id
+    res_list = []
+    if file_type == "umap":
+        file_data_df = pd.read_csv(file_path)
+        res_list = file_data_df.columns.tolist()
+        # print(file_data_df.columns.tolist())
+    return ResponseMessage(status="0000", data=res_list, message="success")
 
 
 # @router.get("/download/file/meta", status_code=status.HTTP_200_OK)
