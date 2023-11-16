@@ -46,7 +46,7 @@ def get_cell_taxonomy_tree_cell_number(db: Session):
         ] = cell_type_meta.cell_ontology_id if cell_type_meta.cell_ontology_id else 0
     # print(cell_type_meta_dict)
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
-        db=db, filters=[]
+        db=db, filters=[], public_filter_list=[]
     )
     cell_taxonomy_relation_list = []
     cell_proportion_dict = {}

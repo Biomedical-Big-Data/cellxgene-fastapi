@@ -28,7 +28,7 @@ class ProjectUserRelation(ProjectUserModel):
 
 
 class AnalysisForProjectRelation(AnalysisModel):
-    analysis_pathway_score_meta: List[PathwayScoreModel]
+    # analysis_pathway_score_meta: List[PathwayScoreModel]
 
     class Config:
         org_mode = True

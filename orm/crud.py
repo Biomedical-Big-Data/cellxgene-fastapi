@@ -508,14 +508,16 @@ def create_transfer_history(db: Session, insert_model: cellxgene.TransferHistory
     db.commit()
 
 
-def get_cell_taxonomy_relation_tree(db: Session, filters: List):
+def get_cell_taxonomy_relation_tree(db: Session, filters: List, public_filter_list: List):
     cte = (
         db.query(
             cellxgene.CellTaxonomyRelation.cl_id.label("child_id"),
             cellxgene.CellTaxonomyRelation.name.label("name"),
             cellxgene.CellTaxonomyRelation.cl_pid.label("parent_id"),
         )
-        .filter(and_(*filters))
+        .filter(
+            or_((and_(*filters)), (and_(*public_filter_list)))
+        )
         .cte(recursive=True)
     )
     cte_alias = aliased(cte, name="e")
