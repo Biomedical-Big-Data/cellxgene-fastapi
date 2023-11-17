@@ -1724,12 +1724,12 @@ async def get_cell_taxonomy_tree(
     filter_list = [
         cellxgene.CellTaxonomy.specific_cell_ontology_id
         == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_standard.op("regexp")("[ -\\/]{}[ -\\/]".format(cell_standard)),
+        cellxgene.CellTaxonomy.cell_standard.op("regexp")("[ -\\/]?{}[ -\\/]?".format(cell_standard)),
     ]
     public_filter_list = [
         cellxgene.CellTaxonomy.specific_cell_ontology_id
         == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_standard.op("regexp")("[ -\\/]{}[ -\\/]".format(or_cell_standard)),
+        cellxgene.CellTaxonomy.cell_standard.op("regexp")("[ -\\/]?{}[ -\\/]?".format(or_cell_standard)),
     ]
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
         db=db, filters=filter_list, public_filter_list=public_filter_list
