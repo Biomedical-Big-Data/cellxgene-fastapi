@@ -63,6 +63,12 @@ def get_project_by_sample_join(db: Session, query_list: List, public_filter_list
             cellxgene.Analysis,
             cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         )
+        .join(
+            cellxgene.DonorMeta,
+            cellxgene.BioSampleMeta.donor_id == cellxgene.DonorMeta.id,
+        )
+        .join(cellxgene.SpeciesMeta,
+              cellxgene.BioSampleMeta.species_id == cellxgene.SpeciesMeta.id)
         .filter(and_(*public_filter_list))
     )
 
@@ -95,6 +101,12 @@ def get_project_by_cell_join(db: Session, query_list: List, public_filter_list: 
             cellxgene.BioSampleMeta,
             cellxgene.CalcCellClusterProportion.biosample_id == cellxgene.BioSampleMeta.id,
         )
+        .join(
+            cellxgene.DonorMeta,
+            cellxgene.BioSampleMeta.donor_id == cellxgene.DonorMeta.id,
+        )
+        .join(cellxgene.SpeciesMeta,
+              cellxgene.BioSampleMeta.species_id == cellxgene.SpeciesMeta.id)
         .filter(and_(*public_filter_list))
     )
 
@@ -128,6 +140,8 @@ def get_project_by_gene_join(db: Session, query_list: List, public_filter_list: 
             and_(cellxgene.CellTypeMeta.cell_type_id == cellxgene.CellClusterGeneExpression.cell_type_id,
                  cellxgene.CellTypeMeta.species_id == species_id)
         )
+        .join(cellxgene.SpeciesMeta,
+              cellxgene.CellTypeMeta.species_id == cellxgene.SpeciesMeta.id)
         .filter(and_(*public_filter_list))
     )
 

@@ -848,6 +848,8 @@ async def get_project_list_by_sample(
                         cellxgene.BioSampleMeta,
                         cellxgene.Analysis,
                         cellxgene.ProjectMeta,
+                        cellxgene.DonorMeta,
+                        cellxgene.SpeciesMeta
                     ],
                     public_filter_list=public_filter_list,
                 )
@@ -865,6 +867,8 @@ async def get_project_list_by_sample(
                         cellxgene.BioSampleMeta,
                         cellxgene.Analysis,
                         cellxgene.ProjectMeta,
+                        cellxgene.DonorMeta,
+                        cellxgene.SpeciesMeta
                     ],
                     public_filter_list=public_filter_list,
                 )
@@ -882,6 +886,8 @@ async def get_project_list_by_sample(
                     cellxgene.BioSampleMeta,
                     cellxgene.Analysis,
                     cellxgene.ProjectMeta,
+                    cellxgene.DonorMeta,
+                    cellxgene.SpeciesMeta
                 ],
                 public_filter_list=public_filter_list,
             )
@@ -895,19 +901,13 @@ async def get_project_list_by_sample(
         biosample_meta = dict_util.row2dict(biosample_meta_list[0])
         analysis_meta = dict_util.row2dict(biosample_meta_list[1])
         project_meta = dict_util.row2dict(biosample_meta_list[2])
+        donor_meta = dict_util.row2dict(biosample_meta_list[3])
+        species_meta = dict_util.row2dict(biosample_meta_list[4])
         project_dict["analysis_meta"] = analysis_meta
         project_dict["project_meta"] = project_meta
         project_dict["biosample_meta"] = biosample_meta
-        project_dict["donor_meta"] = (
-            dict_util.row2dict(biosample_meta_list[0].biosample_donor_meta)
-            if biosample_meta_list[0].biosample_donor_meta
-            else {}
-        )
-        project_dict["species_meta"] = (
-            dict_util.row2dict(biosample_meta_list[0].biosample_species_meta)
-            if biosample_meta_list[0].biosample_species_meta
-            else {}
-        )
+        project_dict["donor_meta"] = donor_meta
+        project_dict["species_meta"] = species_meta
         project_list.append(project_dict)
     total = (
         crud.get_project_by_sample_join(
@@ -975,6 +975,8 @@ async def download_project_list_by_sample(
                 cellxgene.BioSampleMeta,
                 cellxgene.Analysis,
                 cellxgene.ProjectMeta,
+                cellxgene.DonorMeta,
+                cellxgene.SpeciesMeta
             ],
             public_filter_list=public_filter_list,
         )
@@ -994,9 +996,12 @@ async def download_project_list_by_sample(
         biosample_meta = dict_util.row2dict(biosample_meta_list[0])
         for key, value in biosample_meta.items():
             project_dict["biosample_" + key] = value
-        donor_meta = dict_util.row2dict(biosample_meta_list[0].biosample_donor_meta) if biosample_meta_list[0].biosample_donor_meta else {}
+        donor_meta = dict_util.row2dict(biosample_meta_list[3])
         for key, value in donor_meta.items():
             project_dict["donor_" + key] = value if value else ""
+        species_meta = dict_util.row2dict(biosample_meta_list[4])
+        for key, value in species_meta.items():
+            project_dict["species_" + key] = value if value else ""
         data_list.append(project_dict)
     data_df = pd.DataFrame(
         data=data_list,
@@ -1085,7 +1090,9 @@ async def get_project_list_by_cell(
                         cellxgene.Analysis,
                         cellxgene.ProjectMeta,
                         cellxgene.BioSampleMeta,
-                        cellxgene.CellTypeMeta
+                        cellxgene.CellTypeMeta,
+                        cellxgene.DonorMeta,
+                        cellxgene.SpeciesMeta
                     ],
                     public_filter_list=public_filter_list,
                 )
@@ -1104,7 +1111,9 @@ async def get_project_list_by_cell(
                         cellxgene.Analysis,
                         cellxgene.ProjectMeta,
                         cellxgene.BioSampleMeta,
-                        cellxgene.CellTypeMeta
+                        cellxgene.CellTypeMeta,
+                        cellxgene.DonorMeta,
+                        cellxgene.SpeciesMeta
                     ],
                     public_filter_list=public_filter_list,
                 )
@@ -1123,7 +1132,9 @@ async def get_project_list_by_cell(
                     cellxgene.Analysis,
                     cellxgene.ProjectMeta,
                     cellxgene.BioSampleMeta,
-                    cellxgene.CellTypeMeta
+                    cellxgene.CellTypeMeta,
+                    cellxgene.DonorMeta,
+                    cellxgene.SpeciesMeta
                 ],
                 public_filter_list=public_filter_list,
             )
@@ -1139,21 +1150,15 @@ async def get_project_list_by_cell(
         project_meta = dict_util.row2dict(cell_proportion_meta_list[2])
         biosample_meta = dict_util.row2dict(cell_proportion_meta_list[3])
         cell_type_meta = dict_util.row2dict(cell_proportion_meta_list[4])
+        donor_meta = dict_util.row2dict(cell_proportion_meta_list[5])
+        species_meta = dict_util.row2dict(cell_proportion_meta_list[6])
         project_dict["cell_proportion_meta"] = cell_proportion_meta
         project_dict["analysis_meta"] = analysis_meta
         project_dict["project_meta"] = project_meta
         project_dict["biosample_meta"] = biosample_meta
         project_dict["cell_type_meta"] = cell_type_meta
-        project_dict["donor_meta"] = (
-            dict_util.row2dict(cell_proportion_meta_list[3].biosample_donor_meta)
-            if cell_proportion_meta_list[3].biosample_donor_meta
-            else {}
-        )
-        project_dict["species_meta"] = (
-            dict_util.row2dict(cell_proportion_meta_list[3].biosample_species_meta)
-            if cell_proportion_meta_list[3].biosample_species_meta
-            else {}
-        )
+        project_dict["donor_meta"] = donor_meta
+        project_dict["species_meta"] = species_meta
         project_list.append(project_dict)
     total = (
         crud.get_project_by_cell_join(
@@ -1217,7 +1222,9 @@ async def download_project_list_by_cell(
                 cellxgene.Analysis,
                 cellxgene.ProjectMeta,
                 cellxgene.BioSampleMeta,
-                cellxgene.CellTypeMeta
+                cellxgene.CellTypeMeta,
+                cellxgene.DonorMeta,
+                cellxgene.SpeciesMeta
             ],
             public_filter_list=public_filter_list,
         )
@@ -1243,13 +1250,12 @@ async def download_project_list_by_cell(
         cell_type_meta = dict_util.row2dict(cell_proportion_meta_list[4])
         for key, value in cell_type_meta.items():
             project_dict["cell_type_" + key] = value
-        donor_meta = (
-            dict_util.row2dict(cell_proportion_meta_list[3].biosample_donor_meta)
-            if cell_proportion_meta_list[3].biosample_donor_meta
-            else {}
-        )
+        donor_meta = dict_util.row2dict(cell_proportion_meta_list[5])
         for key, value in donor_meta.items():
             project_dict["donor_" + key] = value if value else ""
+        species_meta = dict_util.row2dict(cell_proportion_meta_list[6])
+        for key, value in species_meta.items():
+            project_dict["species_" + key] = value if value else ""
         data_list.append(project_dict)
     data_df = pd.DataFrame(
         data=data_list,
@@ -1332,6 +1338,7 @@ async def get_project_list_by_gene(
                         cellxgene.Analysis,
                         cellxgene.ProjectMeta,
                         cellxgene.CellTypeMeta,
+                        cellxgene.SpeciesMeta
                     ],
                     # filters=filter_list,
                     public_filter_list=public_filter_list,
@@ -1352,6 +1359,7 @@ async def get_project_list_by_gene(
                         cellxgene.Analysis,
                         cellxgene.ProjectMeta,
                         cellxgene.CellTypeMeta,
+                        cellxgene.SpeciesMeta
                     ],
                     # filters=filter_list,
                     public_filter_list=public_filter_list,
@@ -1372,6 +1380,7 @@ async def get_project_list_by_gene(
                     cellxgene.Analysis,
                     cellxgene.ProjectMeta,
                     cellxgene.CellTypeMeta,
+                    cellxgene.SpeciesMeta
                 ],
                 # filters=filter_list,
                 public_filter_list=public_filter_list,
@@ -1389,15 +1398,12 @@ async def get_project_list_by_gene(
         analysis_meta = dict_util.row2dict(gene_meta[1])
         project_meta = dict_util.row2dict(gene_meta[2])
         cell_type_meta = dict_util.row2dict(gene_meta[3])
+        species_meta = dict_util.row2dict(gene_meta[4])
         project_dict["gene_expression_meta"] = gene_expression_meta
         project_dict["analysis_meta"] = analysis_meta
         project_dict["project_meta"] = project_meta
         project_dict["cell_type_meta"] = cell_type_meta
-        project_dict["species_meta"] = (
-            dict_util.row2dict(gene_meta[3].cell_type_species_meta)
-            if gene_meta[3].cell_type_species_meta
-            else {}
-        )
+        project_dict["species_meta"] = species_meta
         project_list.append(project_dict)
     total = (
         crud.get_project_by_gene_join(
@@ -1451,6 +1457,7 @@ async def download_project_list_by_gene(
                 cellxgene.Analysis,
                 cellxgene.ProjectMeta,
                 cellxgene.CellTypeMeta,
+                cellxgene.SpeciesMeta
             ],
             public_filter_list=public_filter_list,
             species_id=species_id
@@ -1474,11 +1481,7 @@ async def download_project_list_by_gene(
         gene_expression_meta = dict_util.row2dict(gene_meta_list[0])
         for key, value in gene_expression_meta.items():
             project_dict["cell_proportion_" + key] = value
-        species_meta = (
-            dict_util.row2dict(gene_meta_list[3].cell_type_species_meta)
-            if gene_meta_list[3].cell_type_species_meta
-            else {}
-        )
+        species_meta = dict_util.row2dict(gene_meta_list[4])
         for key, value in species_meta.items():
             project_dict["species_" + key] = value if value else ""
         data_list.append(project_dict)
