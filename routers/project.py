@@ -1758,6 +1758,7 @@ async def get_cell_taxonomy_table(
     species_id: int,
     genes_positive: str,
     genes_negative: str,
+    asc: bool,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
@@ -1802,7 +1803,10 @@ async def get_cell_taxonomy_table(
                 "score": score,
             }
         )
-    res_list.sort(key=_get_score, reverse=True)
+    if asc:
+        res_list.sort(key=_get_score)
+    else:
+        res_list.sort(key=_get_score, reverse=True)
     return ResponseMessage(
         status="0000",
         data={
