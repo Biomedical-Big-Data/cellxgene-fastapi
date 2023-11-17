@@ -18,7 +18,6 @@ from orm.schema.response import (
     ResponseUserModel,
     ResponseProjectDetailModel,
     ResponseProjectListModel,
-    ResponseAdminProjectDetailModel,
 )
 from orm import crud
 from sqlalchemy.orm import Session
@@ -151,7 +150,7 @@ async def edit_user_info(
 
 @router.get(
     "/project/list",
-    response_model=ResponseAdminProjectDetailModel,
+    response_model=ResponseProjectDetailModel,
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list(
@@ -280,7 +279,7 @@ async def admin_update_project(
 
 @router.get(
     "/project/{project_id}",
-    response_model=ResponseAdminProjectDetailModel,
+    response_model=ResponseProjectDetailModel,
     status_code=status.HTTP_200_OK,
 )
 async def get_project_list(
