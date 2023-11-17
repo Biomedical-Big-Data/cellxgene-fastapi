@@ -106,7 +106,7 @@ def get_project_by_gene(db: Session, query_list: List, public_filter_list: List)
     # )
 
 
-def get_project_by_gene_join(db: Session, query_list: List, public_filter_list: List):
+def get_project_by_gene_join(db: Session, query_list: List, public_filter_list: List, species_id: int):
     return (
         db.query(*query_list)
         .select_from(cellxgene.GeneMeta)
@@ -124,12 +124,9 @@ def get_project_by_gene_join(db: Session, query_list: List, public_filter_list: 
             cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
         )
         .join(
-            cellxgene.ProjectBioSample,
-            cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
-        )
-        .join(
-            cellxgene.BioSampleMeta,
-            cellxgene.ProjectBioSample.biosample_id == cellxgene.BioSampleMeta.id,
+            cellxgene.CellTypeMeta,
+            and_(cellxgene.CellTypeMeta.cell_type_id == cellxgene.CellClusterGeneExpression.cell_type_id,
+                 cellxgene.CellTypeMeta.species_id == species_id)
         )
         .filter(and_(*public_filter_list))
     )

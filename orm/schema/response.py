@@ -61,7 +61,6 @@ class ProjectListModel(BaseModel):
 
 class ProjectListForSearch(BaseModel):
     project_list: list
-    cell_type_list: Union[List[project_model.CellTypeModel], None] = None
     total: int
     page: int
     page_size: int
@@ -117,13 +116,5 @@ class ResponseProjectDetailModel(BaseModel):
         List[project_model.CellTaxonomyModel],
         str,
         dict,
-    ]
-    message: str
-
-
-class ResponseAdminProjectDetailModel(BaseModel):
-    status: str
-    data: Union[
-        project_relation_model.AdminProjectRelation,
     ]
     message: str

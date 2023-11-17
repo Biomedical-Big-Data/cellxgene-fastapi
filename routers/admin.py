@@ -220,6 +220,7 @@ async def admin_update_project(
     filter_list = [cellxgene.ProjectMeta.id == project_id]
     try:
         project_info = crud.get_project(db=db, filters=filter_list).first()
+        analysis_info = crud.get_analysis(db=db, filters=[cellxgene.Analysis.id == analysis_id]).first()
         if not project_info:
             return ResponseMessage(status="0201", data={}, message="您无权更新此项目")
         update_project_dict = {
@@ -261,7 +262,7 @@ async def admin_update_project(
             update_analysis_filters=[cellxgene.Analysis.id == update_analysis_id],
             update_analysis_dict=update_analysis_dict,
         )
-        if excel_id is not None:
+        if excel_id is not None and excel_id != analysis_info.excel_id:
             background_tasks.add_task(
                 upload_excel_util.upload_file_v2,
                 db,
