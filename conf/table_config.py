@@ -29,6 +29,7 @@ cellxgene_table_dict = {
     },
     "biosample_meta": {
         "id": cellxgene.BioSampleMeta.id,
+        "biosample_name": cellxgene.BioSampleMeta.biosample_name,
         "external_sample_accesstion": cellxgene.BioSampleMeta.external_sample_accesstion,
         "biosample_type": cellxgene.BioSampleMeta.biosample_type,
         "species_id": cellxgene.BioSampleMeta.species_id,
@@ -190,5 +191,10 @@ cellxgene_table_dict = {
         "test_results": cellxgene.DonorMeta.test_results,
         "create_at": cellxgene.DonorMeta.create_at,
         "update_at": cellxgene.DonorMeta.update_at,
+    },
+    "species_meta": {
+        "id": cellxgene.SpeciesMeta.id,
+        "species": cellxgene.SpeciesMeta.species,
+        "species_ontology_label": cellxgene.SpeciesMeta.species_ontology_label
     }
 }

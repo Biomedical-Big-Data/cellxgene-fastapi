@@ -1475,7 +1475,7 @@ async def download_project_list_by_gene(
         for key, value in gene_expression_meta.items():
             project_dict["cell_proportion_" + key] = value
         species_meta = (
-            dict_util.row2dict(gene_meta_list[3].biosample_donor_meta)
+            dict_util.row2dict(gene_meta_list[3].cell_type_species_meta)
             if gene_meta_list[3].cell_type_species_meta
             else {}
         )
