@@ -1758,7 +1758,7 @@ async def get_cell_taxonomy_table(
     species_id: int,
     genes_positive: str,
     genes_negative: str,
-    asc: bool,
+    asc: Union[bool, None] = None,
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
