@@ -1804,7 +1804,7 @@ async def get_cell_taxonomy_table(
     page_size: int = 20,
     db: Session = Depends(get_db),
 ):
-    search_page = (page - 1) * page_size
+    search_page = page - 1
     res_list = []
     genes_positive_re_match_str = genes_positive.replace(",", "|")
     genes_positive_list = genes_positive.split(",")
@@ -1851,7 +1851,7 @@ async def get_cell_taxonomy_table(
     return ResponseMessage(
         status="0000",
         data={
-            "list": res_list[search_page * page_size : page * page_size],
+            "list": res_list[search_page * page_size:page * page_size],
             "total": len(res_list),
             "page": page,
             "page_size": page_size,
