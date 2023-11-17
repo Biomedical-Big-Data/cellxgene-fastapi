@@ -156,6 +156,7 @@ async def edit_user_info(
 async def get_project_list(
     is_publish: Union[int, None] = None,
     is_private: Union[int, None] = None,
+    title: Union[str, None] = None,
     create_at: Union[str, None] = None,
     page: int = 1,
     page_size: int = 20,
@@ -169,6 +170,8 @@ async def get_project_list(
         filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
     if is_private is not None:
         filter_list.append(cellxgene.ProjectMeta.is_private == is_private)
+    if title is not None:
+        filter_list.append(cellxgene.ProjectMeta.title.like("%{}%".format(title)))
     if asc:
         project_info_model_list = (
             crud.get_project(db=db, filters=filter_list)
@@ -203,35 +206,25 @@ async def get_project_list(
 async def admin_update_project(
     background_tasks: BackgroundTasks,
     project_id: int,
-    analysis_id: int = Body(),
-    title: str = Body(),
-    description: str | None = Body(),
-    h5ad_id: str | None = Body(),
-    cell_marker_id: str | None = Body(),
-    umap_id: str | None = Body(),
-    excel_id: str | None = Body(),
-    tags: str = Body(),
-    members: list = Body(),
-    is_publish: int = Body(),
-    is_private: int = Body(),
+    admin_update_model: project_model.AdminUpdateProjectModel,
     db: Session = Depends(get_db),
     current_admin_email_address=Depends(get_current_admin),
 ):
     filter_list = [cellxgene.ProjectMeta.id == project_id]
     try:
         project_info = crud.get_project(db=db, filters=filter_list).first()
-        analysis_info = crud.get_analysis(db=db, filters=[cellxgene.Analysis.id == analysis_id]).first()
+        analysis_info = crud.get_analysis(db=db, filters=[cellxgene.Analysis.id == admin_update_model.analysis_id]).first()
         if not project_info:
             return ResponseMessage(status="0201", data={}, message="您无权更新此项目")
         update_project_dict = {
-            "title": title,
-            "description": description,
-            "tags": tags,
-            "is_publish": is_publish if is_publish else project_info.is_publish,
-            "is_private": is_private,
+            "title": admin_update_model.title,
+            "description": admin_update_model.description,
+            "tags": admin_update_model.tags,
+            "is_publish": admin_update_model.is_publish if admin_update_model.is_publish else project_info.is_publish,
+            "is_private": admin_update_model.is_private,
         }
         member_info_list = crud.get_user(
-            db=db, filters=[cellxgene.User.email_address.in_(members)]
+            db=db, filters=[cellxgene.User.email_address.in_(admin_update_model.members)]
         ).all()
         insert_project_user_model_list = []
         for member_info in member_info_list:
@@ -241,14 +234,14 @@ async def admin_update_project(
         update_analysis_id = project_info.project_analysis_meta[0].id
         # h5ad_id = str(uuid4()).replace("-", "")
         update_analysis_dict = {
-            "h5ad_id": h5ad_id
-            if h5ad_id
+            "h5ad_id": admin_update_model.h5ad_id
+            if admin_update_model.h5ad_id
             else project_info.project_analysis_meta[0].h5ad_id,
-            "cell_marker_id": cell_marker_id
-            if cell_marker_id
+            "cell_marker_id": admin_update_model.cell_marker_id
+            if admin_update_model.cell_marker_id
             else project_info.project_analysis_meta[0].cell_marker_id,
-            "umap_id": umap_id
-            if umap_id
+            "umap_id": admin_update_model.umap_id
+            if admin_update_model.umap_id
             else project_info.project_analysis_meta[0].umap_id,
         }
         crud.admin_project_update_transaction(
@@ -262,13 +255,13 @@ async def admin_update_project(
             update_analysis_filters=[cellxgene.Analysis.id == update_analysis_id],
             update_analysis_dict=update_analysis_dict,
         )
-        if excel_id is not None and excel_id != analysis_info.excel_id:
+        if admin_update_model.excel_id is not None and admin_update_model.excel_id != analysis_info.excel_id:
             background_tasks.add_task(
                 upload_excel_util.upload_file_v2,
                 db,
                 project_id,
-                analysis_id,
-                excel_id,
+                admin_update_model.analysis_id,
+                admin_update_model.excel_id,
                 current_admin_email_address,
             )
     except Exception as e:
@@ -276,6 +269,73 @@ async def admin_update_project(
         return ResponseMessage(status="0201", data={"error": str(e)}, message="更新失败")
     else:
         return ResponseMessage(status="0000", data={}, message="更新成功, 项目文件更新结果请等待邮件回复")
+
+
+@router.post(
+    "/project/{project_id}/transfer",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
+async def transfer_project(
+    project_id: int,
+    transfer_to: project_model.TransferProjectModel = Body(),
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    transfer_to_user_info = crud.get_user(
+        db=db,
+        filters=[cellxgene.User.email_address == transfer_to.transfer_to_email_address],
+    ).first()
+    if not transfer_to_user_info:
+        return ResponseMessage(status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确")
+    project_info = crud.get_project(
+        db=db, filters=[cellxgene.ProjectMeta.id == project_id]
+    ).first()
+    if not project_info:
+        return ResponseMessage(status="0201", data={}, message="项目不存在")
+    if project_info.is_private:
+        try:
+            insert_transfer_model = cellxgene.TransferHistory(
+                project_id=project_id,
+                old_owner=project_info.owner,
+                new_owner=transfer_to_user_info.id,
+            )
+            crud.create_transfer_history(db=db, insert_model=insert_transfer_model)
+            crud.update_project(
+                db=db,
+                filters=[cellxgene.ProjectMeta.id == project_id],
+                update_dict={"owner": transfer_to_user_info.id},
+            )
+            crud.update_file(
+                db=db,
+                filters=[cellxgene.Analysis.project_id == project_id],
+                file_filters=[
+                    cellxgene.Analysis.h5ad_id == cellxgene.FileLibrary.file_id,
+                    cellxgene.Analysis.umap_id == cellxgene.FileLibrary.file_id,
+                    cellxgene.Analysis.cell_marker_id == cellxgene.FileLibrary.file_id,
+                    cellxgene.Analysis.pathway_id == cellxgene.FileLibrary.file_id,
+                    cellxgene.Analysis.other_file_ids == cellxgene.FileLibrary.file_id
+
+                ],
+                update_dict={"upload_user_id": transfer_to_user_info.id},
+            )
+            exist_user_id = [
+                project_user.user_id
+                for project_user in project_info.project_project_user_meta
+            ]
+            if transfer_to_user_info.id not in exist_user_id:
+                crud.create_project_user(
+                    db=db,
+                    insert_project_user_model=cellxgene.ProjectUser(
+                        project_id=project_id, user_id=transfer_to_user_info.id
+                    ),
+                )
+            return ResponseMessage(status="0000", data={}, message="项目转移成功")
+        except Exception as e:
+            print(e)
+            return ResponseMessage(status="0201", data={}, message="项目转移失败")
+    else:
+        return ResponseMessage(status="0201", data={}, message="当前状态不可转移项目")
 
 
 @router.get(

@@ -85,3 +85,8 @@ class ProjectStatus:
 
     PROJECT_STATUS_PRIVATE = 1
     PROJECT_STATUS_PUBLIC = 0
+
+
+class FileStatus:
+    Normal = 1
+    DELETE = 0

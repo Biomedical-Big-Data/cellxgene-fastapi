@@ -590,11 +590,13 @@ async def transfer_project(
                     cellxgene.Analysis.h5ad_id == cellxgene.FileLibrary.file_id,
                     cellxgene.Analysis.umap_id == cellxgene.FileLibrary.file_id,
                     cellxgene.Analysis.cell_marker_id == cellxgene.FileLibrary.file_id,
+                    cellxgene.Analysis.pathway_id == cellxgene.FileLibrary.file_id,
+                    cellxgene.Analysis.other_file_ids == cellxgene.FileLibrary.file_id
                 ],
                 update_dict={"upload_user_id": transfer_to_user_info.id},
             )
             exist_user_id = [
-                project_user.id
+                project_user.user_id
                 for project_user in project_info.project_project_user_meta
             ]
             if transfer_to_user_info.id not in exist_user_id:
@@ -1657,6 +1659,7 @@ async def get_user_h5ad_file_list(
     filter_list = [
         cellxgene.User.email_address == current_user_email_address,
         cellxgene.FileLibrary.upload_user_id == cellxgene.User.id,
+        cellxgene.FileLibrary.file_status == config.FileStatus.Normal
     ]
     if file_name:
         filter_list.append(
@@ -1677,6 +1680,32 @@ async def get_user_h5ad_file_list(
         "page_size": page_size,
     }
     return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.delete(
+    '/file/{file_id}',
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK
+)
+async def delete_file(
+    file_id: str,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    print(file_id)
+    filter_list = [
+        cellxgene.User.email_address == current_user_email_address,
+        cellxgene.FileLibrary.upload_user_id == cellxgene.User.id,
+        cellxgene.FileLibrary.file_id == file_id
+    ]
+    file_info = (
+        crud.get_file_info(db=db, filters=filter_list)
+        .first()
+    )
+    if not file_info:
+        return ResponseMessage(status="0201", data={}, message="无权删除此文件")
+    crud.update_file(db=db, filters=[cellxgene.FileLibrary.file_id == file_id], file_filters=[], update_dict={"file_status": config.FileStatus.DELETE})
+    return ResponseMessage(status="0000", data={}, message="ok")
 
 
 @router.get(
@@ -1736,12 +1765,12 @@ async def get_cell_taxonomy_tree(
     filter_list = [
         cellxgene.CellTaxonomy.specific_cell_ontology_id
         == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_standard.op("regexp")("[ -\\/]?{}[ -\\/]?".format(cell_standard)),
+        cellxgene.CellTaxonomy.cell_standard.op("regexp")("\\b{}\\b".format(cell_standard)),
     ]
     public_filter_list = [
         cellxgene.CellTaxonomy.specific_cell_ontology_id
         == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_standard.op("regexp")("[ -\\/]?{}[ -\\/]?".format(or_cell_standard)),
+        cellxgene.CellTaxonomy.cell_standard.op("regexp")("\\b{}\\b".format(or_cell_standard)),
     ]
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
         db=db, filters=filter_list, public_filter_list=public_filter_list

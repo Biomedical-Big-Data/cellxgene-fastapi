@@ -473,6 +473,7 @@ def update_file(db: Session, filters: List, file_filters: List, update_dict: Dic
     db.query(cellxgene.FileLibrary).filter(
         and_((and_(*filters)), (or_(*file_filters)))
     ).update(update_dict)
+    db.commit()
 
 
 def create_file_for_transaction(db: Session, insert_file_model: cellxgene.FileLibrary):

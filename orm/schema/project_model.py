@@ -268,6 +268,8 @@ class FileLibraryModel(BaseModel):
     file_id: str
     file_name: str
     upload_user_id: int
+    file_size: str | None
+    file_status: int
     create_at: datetime
     update_at: datetime
 
@@ -399,6 +401,20 @@ class CreateCellTypeModel(BaseModel):
     cell_type_name: str | None
     cell_type_description: str | None
     cell_type_ontology_label: str | None
+
+
+class AdminUpdateProjectModel(BaseModel):
+    analysis_id: int
+    title: str
+    description: str | None = None,
+    h5ad_id: str | None = None,
+    cell_marker_id: str | None = None,
+    umap_id: str | None = None,
+    excel_id: str | None = None,
+    tags: str
+    members: list
+    is_publish: int
+    is_private: int
 
 
 if __name__ == "__main__":

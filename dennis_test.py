@@ -187,7 +187,7 @@ def create_cell_type_meta(db: Session):
     file_path = "/Users/dennis/Documents/cell_type.csv"
     file_data_df = pd.read_csv(file_path)
     file_data_df = file_data_df.replace(np.nan, None)
-    print(file_data_df)
+    # print(file_data_df)
     species_meta_list = crud.get_species_list(
         db=db, query_list=[cellxgene.SpeciesMeta], filters=[]
     )
@@ -199,7 +199,9 @@ def create_cell_type_meta(db: Session):
     for _, row in file_data_df.iterrows():
         cell_type_id = row["ct_id"]
         species_id = species_dict.get(row["species"])
-        marker_gene_symbol = row["marker_gene_symbol"]
+        marker_gene_symbol_list = row["marker_gene_symbol"].split(',')
+        marker_gene_symbol_list = list(set(marker_gene_symbol_list))
+        marker_gene_symbol = ','.join(marker_gene_symbol_list)
         cell_taxonomy_id = row["ct_id"]
         cell_taxonomy_url = (
             "https://ngdc.cncb.ac.cn/celltaxonomy/celltype/" + row["ct_id"]
@@ -217,6 +219,7 @@ def create_cell_type_meta(db: Session):
                 cell_type_name=cell_type_name,
             )
         )
+    print(len(insert_list))
     crud.create_cell_type_meta(db=db, insert_cell_type_model_list=insert_list)
 
 
@@ -318,9 +321,9 @@ def get_file_name(db: Session, excel_id: str):
 
 if __name__ == "__main__":
     pass
-    get_file_name(db=next(get_db()), excel_id='84bb8e668bfb4323819ca89abc0b0137.xlsx')
+    # get_file_name(db=next(get_db()), excel_id='84bb8e668bfb4323819ca89abc0b0137.xlsx')
     # cell_taxonomy_tree(next(get_db()))
-    # create_cell_type_meta(next(get_db()))
+    create_cell_type_meta(next(get_db()))
     # get_relation()
     # import_relation_json()
     # excel_test()

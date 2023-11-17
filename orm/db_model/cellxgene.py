@@ -757,6 +757,8 @@ class FileLibrary(Base):
 
     file_id = Column(String(255), primary_key=True)
     file_name = Column(String(255))
+    file_size = Column(String(255))
+    file_status = Column(TINYINT)
     upload_user_id = Column(INTEGER)
     create_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")

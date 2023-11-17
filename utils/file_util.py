@@ -20,6 +20,7 @@ async def save_file(
 ):
     contents = await file.read()
     filename = file.filename
+    filesize = len(contents)
     file_name_list = filename.split(".")
     file_name_suffix = file_name_list[len(file_name_list) - 1 :][0]
     file_id = str(uuid4()).replace("-", "") + "." + file_name_suffix
@@ -27,7 +28,7 @@ async def save_file(
     with open(f"{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
         f.write(contents)
         insert_h5ad_model = cellxgene.FileLibrary(
-            file_id=file_id, file_name=filename, upload_user_id=insert_user_id
+            file_id=file_id, file_name=filename, upload_user_id=insert_user_id, file_size=filesize, file_status=config.FileStatus.Normal
         )
         if insert:
             crud.create_file(db=db, insert_file_model=insert_h5ad_model)
@@ -71,15 +72,14 @@ def copy_file(db: Session, file_ids: str, upload_user_id: int):
         file_name_list = file_id.split(".")
         file_name_suffix = file_name_list[len(file_name_list) - 1 :][0]
         new_file_id = str(uuid4()).replace("-", "") + "." + file_name_suffix
-        file_name = (
+        file_info = (
             crud.get_file_info(
                 db=db, filters=[cellxgene.FileLibrary.file_id == file_id]
             )
             .first()
-            .file_name
         )
         insert_h5ad_model = cellxgene.FileLibrary(
-            file_id=new_file_id, file_name=file_name, upload_user_id=upload_user_id
+            file_id=new_file_id, file_name=file_info.file_name, upload_user_id=upload_user_id, file_size=file_info.file_size, file_status=file_info.file_status
         )
         crud.create_file(db=db, insert_file_model=insert_h5ad_model)
         new_file_path = config.H5AD_FILE_PATH + "/" + new_file_id
