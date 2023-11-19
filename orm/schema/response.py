@@ -19,6 +19,13 @@ class CellTypeListModel(BaseModel):
     page_size: int
 
 
+class BiosampleListModel(BaseModel):
+    biosample_list: List[project_model.BiosampleModel]
+    total: int
+    page: int
+    page_size: int
+
+
 class GeneListModel(BaseModel):
     gene_list: List[project_model.GeneModel]
     total: int
@@ -72,6 +79,7 @@ class ResponseProjectListModel(BaseModel):
         ProjectListForSearch,
         ProjectListModel,
         CellTypeListModel,
+        BiosampleListModel,
         GeneListModel,
         DonorListModel,
         SpeciesListModel,

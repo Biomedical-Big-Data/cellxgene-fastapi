@@ -1085,7 +1085,7 @@ async def get_project_list_by_cell(
         )
         if asc:
             cell_proportion_list = (
-                crud.get_project_by_cell_join(
+                crud.get_project_by_cell_join_for_search(
                     db=db,
                     query_list=[
                         cellxgene.CalcCellClusterProportion,
@@ -1097,6 +1097,7 @@ async def get_project_list_by_cell(
                         cellxgene.SpeciesMeta
                     ],
                     public_filter_list=public_filter_list,
+                    species_id=species_id
                 )
                 .distinct()
                 .order_by(orderby_orm.asc())
@@ -1106,7 +1107,7 @@ async def get_project_list_by_cell(
             )
         else:
             cell_proportion_list = (
-                crud.get_project_by_cell_join(
+                crud.get_project_by_cell_join_for_search(
                     db=db,
                     query_list=[
                         cellxgene.CalcCellClusterProportion,
@@ -1118,6 +1119,7 @@ async def get_project_list_by_cell(
                         cellxgene.SpeciesMeta
                     ],
                     public_filter_list=public_filter_list,
+                    species_id=species_id
                 )
                 .distinct()
                 .order_by(orderby_orm.desc())
@@ -1127,7 +1129,7 @@ async def get_project_list_by_cell(
             )
     else:
         cell_proportion_list = (
-            crud.get_project_by_cell_join(
+            crud.get_project_by_cell_join_for_search(
                 db=db,
                 query_list=[
                     cellxgene.CalcCellClusterProportion,
@@ -1139,6 +1141,7 @@ async def get_project_list_by_cell(
                     cellxgene.SpeciesMeta
                 ],
                 public_filter_list=public_filter_list,
+                species_id=species_id
             )
             .distinct()
             .offset(search_page)
@@ -1163,10 +1166,11 @@ async def get_project_list_by_cell(
         project_dict["species_meta"] = species_meta
         project_list.append(project_dict)
     total = (
-        crud.get_project_by_cell_join(
+        crud.get_project_by_cell_join_for_search(
             db=db,
             query_list=[func.count(1)],
             public_filter_list=public_filter_list,
+            species_id=species_id
         )
         .distinct()
         .first()
@@ -1217,7 +1221,7 @@ async def download_project_list_by_cell(
         ]
         public_filter_list.append(and_(*cell_standard_filter_list))
     cell_proportion_list = (
-        crud.get_project_by_cell_join(
+        crud.get_project_by_cell_join_for_search(
             db=db,
             query_list=[
                 cellxgene.CalcCellClusterProportion,
@@ -1229,6 +1233,7 @@ async def download_project_list_by_cell(
                 cellxgene.SpeciesMeta
             ],
             public_filter_list=public_filter_list,
+            species_id=species_id
         )
         .distinct()
         .limit(page_size)
@@ -1721,6 +1726,62 @@ async def get_species_list(db: Session = Depends(get_db)) -> ResponseMessage:
 
 
 @router.get(
+    "/sample/list",
+    response_model=ResponseProjectListModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_biosample_list(
+    organ: Union[str, None] = None,
+    disease: Union[str, None] = None,
+    development_stage: Union[str, None] = None,
+    page: int = 1,
+    page_size: int = 10,
+    db: Session = Depends(get_db)
+) -> ResponseMessage:
+    search_page = (page - 1) * page_size
+
+    public_filter_list = [
+        cellxgene.BioSampleMeta.id == cellxgene.ProjectBioSample.biosample_id,
+        cellxgene.ProjectBioSample.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.is_publish
+        == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
+        cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
+    ]
+    if organ is not None:
+        # filter_list.append(cellxgene.BioSampleMeta.organ == organ)
+        public_filter_list.append(cellxgene.BioSampleMeta.organ.like(
+                "%{}%".format(organ)
+            ))
+    if disease is not None:
+        # filter_list.append(cellxgene.BioSampleMeta.disease.like("%{}%".format(disease)))
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.disease.like("%{}%".format(disease))
+        )
+    if development_stage is not None:
+        # filter_list.append(
+        #     cellxgene.BioSampleMeta.development_stage.like(
+        #         "%{}%".format(development_stage)
+        #     )
+        # )
+        public_filter_list.append(
+            cellxgene.BioSampleMeta.development_stage.like(
+                "%{}%".format(development_stage)
+            )
+        )
+    biosample_meta_list = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=public_filter_list).offset(search_page).limit(page_size).all()
+    print(biosample_meta_list)
+    total = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=public_filter_list).count()
+    print(total)
+    res_dict = {
+        "biosample_list": biosample_meta_list,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+    return ResponseMessage(status="0000", data=res_dict, message="ok")
+
+
+@router.get(
     "/cell_type/list",
     response_model=ResponseProjectListModel,
     status_code=status.HTTP_200_OK,
@@ -1827,6 +1888,14 @@ async def get_cell_taxonomy_table(
         db=db, query_list=[cellxgene.CellTypeMeta], filters=filter_list
     ).all()
     # print(cell_type_meta_list)
+    cell_type_id_list = [cell_type_meta.cell_type_id for cell_type_meta in cell_type_meta_list]
+    cell_proportion_meta_list = crud.get_cell_proportion_join_project_meta(
+        db=db,
+        query_list=[cellxgene.CalcCellClusterProportion.cell_type_id],
+        filters=[cellxgene.CalcCellClusterProportion.cell_type_id.in_(cell_type_id_list)],
+        species_id=species_id
+    ).all()
+    exist_cell_type_id_list = [cell_proportion_meta.cell_type_id for cell_proportion_meta in cell_proportion_meta_list]
     for cell_type_meta in cell_type_meta_list:
         marker_gene_symbol_list = cell_type_meta.marker_gene_symbol.split(",")
         intersection_list = list(
@@ -1842,6 +1911,7 @@ async def get_cell_taxonomy_table(
                 "marker_gene_symbol": cell_type_meta.marker_gene_symbol,
                 "intersection_list": intersection_list,
                 "score": score,
+                "is_exist": True if cell_type_id in exist_cell_type_id_list else False
             }
         )
     if asc:
