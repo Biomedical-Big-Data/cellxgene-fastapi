@@ -1727,7 +1727,7 @@ async def get_species_list(db: Session = Depends(get_db)) -> ResponseMessage:
 
 @router.get(
     "/sample/list",
-    response_model=ResponseProjectListModel,
+    response_model=ResponseMessage,
     status_code=status.HTTP_200_OK,
 )
 async def get_biosample_list(
@@ -1747,33 +1747,31 @@ async def get_biosample_list(
         == config.ProjectStatus.PROJECT_STATUS_IS_PUBLISH,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PUBLIC,
     ]
+    query_list = [cellxgene.BioSampleMeta]
     if organ is not None:
         # filter_list.append(cellxgene.BioSampleMeta.organ == organ)
         public_filter_list.append(cellxgene.BioSampleMeta.organ.like(
                 "%{}%".format(organ)
             ))
+        query_list = [cellxgene.BioSampleMeta.organ]
     if disease is not None:
         # filter_list.append(cellxgene.BioSampleMeta.disease.like("%{}%".format(disease)))
         public_filter_list.append(
             cellxgene.BioSampleMeta.disease.like("%{}%".format(disease))
         )
+        query_list = [cellxgene.BioSampleMeta.disease]
     if development_stage is not None:
-        # filter_list.append(
-        #     cellxgene.BioSampleMeta.development_stage.like(
-        #         "%{}%".format(development_stage)
-        #     )
-        # )
         public_filter_list.append(
             cellxgene.BioSampleMeta.development_stage.like(
                 "%{}%".format(development_stage)
             )
         )
-    biosample_meta_list = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=public_filter_list).offset(search_page).limit(page_size).all()
-    print(biosample_meta_list)
-    total = crud.get_biosample(db=db, query_list=[cellxgene.BioSampleMeta], filters=public_filter_list).count()
-    print(total)
+        query_list = [cellxgene.BioSampleMeta.development_stage]
+    biosample_meta_list = crud.get_biosample(db=db, query_list=query_list, filters=public_filter_list).distinct().offset(search_page).limit(page_size).all()
+    res_list = [biosample_meta[0] for biosample_meta in biosample_meta_list]
+    total = crud.get_biosample(db=db, query_list=query_list, filters=public_filter_list).distinct().count()
     res_dict = {
-        "biosample_list": biosample_meta_list,
+        "biosample_list": res_list,
         "total": total,
         "page": page,
         "page_size": page_size,
