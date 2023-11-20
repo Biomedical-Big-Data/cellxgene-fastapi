@@ -1873,6 +1873,7 @@ async def get_cell_taxonomy_table(
     species_id: int,
     genes_positive: str,
     genes_negative: str,
+    order_by: Union[str, None] = None,
     asc: Union[bool, None] = None,
     page: int = 1,
     page_size: int = 20,
@@ -1882,6 +1883,7 @@ async def get_cell_taxonomy_table(
     res_list = []
     genes_positive_re_match_str = genes_positive.replace(",", "|")
     genes_positive_list = genes_positive.split(",")
+    genes_positive_list = [x for x in genes_positive_list if x != '']
     genes_negative_re_match_str = genes_negative.replace(",", "|")
     filter_list = [cellxgene.CellTypeMeta.species_id == species_id]
     if genes_positive_re_match_str:
@@ -1930,10 +1932,27 @@ async def get_cell_taxonomy_table(
                 "cell_number": cell_proportion_dict.get(cell_type_id, 0)
             }
         )
-    if asc:
-        res_list.sort(key=_get_score)
-    else:
-        res_list.sort(key=_get_score, reverse=True)
+    if order_by == "score":
+        if asc:
+            res_list.sort(key=_get_score)
+        else:
+            res_list.sort(key=_get_score, reverse=True)
+    if order_by == "cell_type_id":
+        if asc:
+            res_list.sort(key=_get_cell_type_id)
+        else:
+            res_list.sort(key=_get_cell_type_id, reverse=True)
+    if order_by == "cell_type_name":
+        if asc:
+            res_list.sort(key=_get_cell_type_name)
+        else:
+            res_list.sort(key=_get_cell_type_name, reverse=True)
+    if order_by == "cell_number":
+        if asc:
+            res_list.sort(key=_get_cell_number)
+        else:
+            res_list.sort(key=_get_cell_number, reverse=True)
+
     return ResponseMessage(
         status="0000",
         data={
@@ -1948,6 +1967,18 @@ async def get_cell_taxonomy_table(
 
 def _get_score(cell_type_dict):
     return cell_type_dict.get("score")
+
+
+def _get_cell_type_id(cell_type_dict):
+    return cell_type_dict.get("cell_type_id")
+
+
+def _get_cell_type_name(cell_type_dict):
+    return cell_type_dict.get("cell_type_name")
+
+
+def _get_cell_number(cell_type_dict):
+    return cell_type_dict.get("cell_number")
 
 
 @router.get(
