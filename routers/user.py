@@ -18,7 +18,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 router = APIRouter(
     prefix="/user",
     tags=["user"],
-    responses={404: {"description": "Not found"}},
+    responses={200: {"description": {"status": "0000", "data": {}, "message": "failed"}}},
 )
 
 

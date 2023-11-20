@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime
 import shutil
@@ -54,7 +55,7 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 router = APIRouter(
     prefix="/project",
     tags=["project"],
-    responses={404: {"description": "Not found"}},
+    responses={200: {"description": {"status": "0000", "data": {}, "message": "failed"}}},
 )
 
 
@@ -1816,26 +1817,39 @@ async def get_cell_type_list(
 )
 async def get_cell_taxonomy_tree(
     # cell_marker: str,
-    cell_standard: str,
+    cell_standard: Union[str, None] = None,
+    cell_type_id: Union[str, None] = None,
     db: Session = Depends(get_db),
     # current_user_email_address = Depends(get_current_user),
 ):
-    or_cell_standard = cell_standard.replace("-", " ")
-    filter_list = [
-        cellxgene.CellTaxonomy.specific_cell_ontology_id
-        == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_standard.op("regexp")("\\b{}\\b".format(cell_standard)),
-    ]
-    public_filter_list = [
-        cellxgene.CellTaxonomy.specific_cell_ontology_id
-        == cellxgene.CellTaxonomyRelation.cl_id,
-        cellxgene.CellTaxonomy.cell_standard.op("regexp")("\\b{}\\b".format(or_cell_standard)),
-    ]
+    filter_list, public_filter_list = [], []
+    if cell_standard:
+        or_cell_standard = cell_standard.replace("-", " ")
+        filter_list = [
+            cellxgene.CellTaxonomy.specific_cell_ontology_id
+            == cellxgene.CellTaxonomyRelation.cl_id,
+            cellxgene.CellTaxonomy.cell_standard.op("regexp")("\\b{}\\b".format(cell_standard)),
+        ]
+        public_filter_list = [
+            cellxgene.CellTaxonomy.specific_cell_ontology_id
+            == cellxgene.CellTaxonomyRelation.cl_id,
+            cellxgene.CellTaxonomy.cell_standard.op("regexp")("\\b{}\\b".format(or_cell_standard)),
+        ]
+    if cell_type_id:
+        cell_type_meta = crud.get_cell_type_meta(db=db, query_list=[cellxgene.CellTypeMeta], filters=[cellxgene.CellTypeMeta.cell_type_id == cell_type_id]).first()
+        if cell_type_meta:
+            cl_id = cell_type_meta.cell_ontology_id
+            filter_list = [cellxgene.CellTaxonomy.specific_cell_ontology_id
+                            == cellxgene.CellTaxonomyRelation.cl_id,
+                           cellxgene.CellTaxonomy.specific_cell_ontology_id == cl_id]
+            public_filter_list = [cellxgene.CellTaxonomy.specific_cell_ontology_id
+                                    == cellxgene.CellTaxonomyRelation.cl_id,
+                                  cellxgene.CellTaxonomy.specific_cell_ontology_id == cl_id]
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
         db=db, filters=filter_list, public_filter_list=public_filter_list
     )
     res = []
-    cell_number_dict, exist_cl_id_list = cell_number_util.get_cell_taxonomy_tree_cell_number(db=db)
+    cell_number_dict, exist_cl_id_list, cl_id_dict = cell_number_util.get_cell_taxonomy_tree_cell_number(db=db)
     for cell_taxonomy_relation_model in cell_taxonomy_relation_model_list:
         res.append(
             {
@@ -1843,7 +1857,8 @@ async def get_cell_taxonomy_tree(
                 "cl_pid": cell_taxonomy_relation_model[2],
                 "name": cell_taxonomy_relation_model[1],
                 "cell_number": cell_number_dict.get(cell_taxonomy_relation_model[0], 0),
-                "is_exist": True if cell_taxonomy_relation_model[0] in exist_cl_id_list else False
+                "is_exist": True if cell_taxonomy_relation_model[0] in exist_cl_id_list else False,
+                "cell_type_id": cl_id_dict.get(cell_taxonomy_relation_model[0], "")
             }
         )
     return ResponseMessage(status="0000", data=res, message="ok")
@@ -1889,11 +1904,13 @@ async def get_cell_taxonomy_table(
     cell_type_id_list = [cell_type_meta.cell_type_id for cell_type_meta in cell_type_meta_list]
     cell_proportion_meta_list = crud.get_cell_proportion_join_project_meta(
         db=db,
-        query_list=[cellxgene.CalcCellClusterProportion.cell_type_id],
+        query_list=[cellxgene.CalcCellClusterProportion.cell_type_id, func.sum(cellxgene.CalcCellClusterProportion.cell_number)],
         filters=[cellxgene.CalcCellClusterProportion.cell_type_id.in_(cell_type_id_list)],
         species_id=species_id
-    ).all()
-    exist_cell_type_id_list = [cell_proportion_meta.cell_type_id for cell_proportion_meta in cell_proportion_meta_list]
+    ).group_by(cellxgene.CalcCellClusterProportion.cell_type_id).all()
+    cell_proportion_dict = {}
+    for cell_proportion_meta in cell_proportion_meta_list:
+        cell_proportion_dict[cell_proportion_meta[0]] = cell_proportion_meta[1]
     for cell_type_meta in cell_type_meta_list:
         marker_gene_symbol_list = cell_type_meta.marker_gene_symbol.split(",")
         intersection_list = list(
@@ -1909,7 +1926,8 @@ async def get_cell_taxonomy_table(
                 "marker_gene_symbol": cell_type_meta.marker_gene_symbol,
                 "intersection_list": intersection_list,
                 "score": score,
-                "is_exist": True if cell_type_id in exist_cell_type_id_list else False
+                "is_exist": True if cell_type_id in cell_proportion_dict.keys() else False,
+                "cell_number": cell_proportion_dict.get(cell_type_id, 0)
             }
         )
     if asc:
@@ -1963,6 +1981,9 @@ async def get_csv_data(
         if file_type == "umap":
             file_data_df = pd.read_csv(file_path)
             fig = px.scatter(file_data_df, x="UMAP_1", y="UMAP_2", color=group_by)
+            fig.update_layout(
+                autosize=True,
+            )
             # fig.show()
 
             # Save the picture to a byte buffer
@@ -1991,7 +2012,8 @@ async def get_csv_data(
                 )
             except:
                 return ResponseMessage(status="0201", data={}, message="文件不存在")
-    except:
+    except Exception as e:
+        logging.error('[view file error]:{}'.format(str(e)))
         return ResponseMessage(status="0201", data={}, message="failed")
 
 

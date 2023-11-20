@@ -33,7 +33,7 @@ from uuid import uuid4
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
-    responses={404: {"description": "Not found"}},
+    responses={200: {"description": {"status": "0000", "data": {}, "message": "failed"}}},
 )
 
 
@@ -377,6 +377,27 @@ async def update_project(
         return ResponseMessage(status="0000", data={}, message="项目状态更新成功")
     except:
         return ResponseMessage(status="0201", data={}, message="项目状态更新失败")
+
+
+@router.post(
+    "/project/{project_id}/offline",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK,
+)
+async def update_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+):
+    try:
+        crud.update_project(
+            db=db,
+            filters=[cellxgene.ProjectMeta.id == project_id],
+            update_dict={"is_publish": config.ProjectStatus.PROJECT_STATUS_DRAFT},
+        )
+        return ResponseMessage(status="0000", data={}, message="项目下线成功")
+    except:
+        return ResponseMessage(status="0201", data={}, message="项目下线失败")
 
 
 @router.post(

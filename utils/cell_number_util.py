@@ -39,11 +39,13 @@ def get_cell_taxonomy_tree_cell_number(db: Session):
         .distinct()
         .all()
     )
-    cell_type_meta_dict = {}
+    cell_type_meta_dict, cl_id_dict = {}, {}
     for cell_type_meta in cell_type_meta_list:
         cell_type_meta_dict[
             cell_type_meta.cell_type_id
         ] = cell_type_meta.cell_ontology_id if cell_type_meta.cell_ontology_id else 0
+        if cell_type_meta.cell_ontology_id:
+            cl_id_dict[cell_type_meta.cell_ontology_id] = cell_type_meta.cell_type_id
     # print(cell_type_meta_dict)
     cell_taxonomy_relation_model_list = crud.get_cell_taxonomy_relation_tree(
         db=db, filters=[], public_filter_list=[]
@@ -71,7 +73,7 @@ def get_cell_taxonomy_tree_cell_number(db: Session):
             )
         # print('------', cell_proportion_dict)
     # print(cell_proportion_dict, cell_proportion_dict.get("CL:0000000"))
-    return cell_proportion_dict, exist_cl_id_list
+    return cell_proportion_dict, exist_cl_id_list, cl_id_dict
     # for i in range(0, len(cell_taxonomy_relation_list)):
     #     # print(cell_taxonomy_relation_list[i]["cl_id"], cell_proportion_dict.get(cell_taxonomy_relation_list[i]["cl_id"], 0))
     #     cell_taxonomy_relation_list[i]["cell_number"] = cell_proportion_dict.get(cell_taxonomy_relation_list[i]["cl_id"], 0)
