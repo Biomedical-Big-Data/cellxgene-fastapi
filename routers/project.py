@@ -2011,10 +2011,7 @@ async def get_csv_data(
         file_path = config.H5AD_FILE_PATH + "/" + file_id
         if file_type == "umap":
             file_data_df = pd.read_csv(file_path)
-            fig = px.scatter(file_data_df, x="UMAP_1", y="UMAP_2", color=group_by)
-            fig.update_layout(
-                autosize=True,
-            )
+            fig = px.scatter(file_data_df, x="UMAP_1", y="UMAP_2", color=group_by, width=1280, height=960)
             # fig.show()
 
             # Save the picture to a byte buffer
