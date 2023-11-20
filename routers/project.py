@@ -1956,40 +1956,43 @@ async def get_csv_data(
     group_by: str | None = None,
     # current_user_email_address=Depends(get_current_user),
 ):
-    if file_id is None:
-        return ResponseMessage(status="0201", data={}, message="未上传文件")
-    file_path = config.H5AD_FILE_PATH + "/" + file_id
-    if file_type == "umap":
-        file_data_df = pd.read_csv(file_path)
-        fig = px.scatter(file_data_df, x="UMAP_1", y="UMAP_2", color=group_by)
-        # fig.show()
+    try:
+        if file_id is None:
+            return ResponseMessage(status="0201", data={}, message="未上传文件")
+        file_path = config.H5AD_FILE_PATH + "/" + file_id
+        if file_type == "umap":
+            file_data_df = pd.read_csv(file_path)
+            fig = px.scatter(file_data_df, x="UMAP_1", y="UMAP_2", color=group_by)
+            # fig.show()
 
-        # Save the picture to a byte buffer
-        img_byte_arr = fig.to_image(format="png")
+            # Save the picture to a byte buffer
+            img_byte_arr = fig.to_image(format="png")
 
-        # Return the picture as a response
-        try:
-            return Response(content=img_byte_arr, media_type="image/png")
-        except:
-            return ResponseMessage(status="0201", data={}, message="文件不存在")
-    elif file_type == "cell_marker":
-        try:
-            return FileResponse(
-                file_path,
-                media_type="application/octet-stream",
-                filename=file_id,
-            )
-        except:
-            return ResponseMessage(status="0201", data={}, message="文件不存在")
-    elif file_type == "pathway_score":
-        try:
-            return FileResponse(
-                file_path,
-                media_type="application/octet-stream",
-                filename=file_id,
-            )
-        except:
-            return ResponseMessage(status="0201", data={}, message="文件不存在")
+            # Return the picture as a response
+            try:
+                return Response(content=img_byte_arr, media_type="image/png")
+            except:
+                return ResponseMessage(status="0201", data={}, message="文件不存在")
+        elif file_type == "cell_marker":
+            try:
+                return FileResponse(
+                    file_path,
+                    media_type="application/octet-stream",
+                    filename=file_id,
+                )
+            except:
+                return ResponseMessage(status="0201", data={}, message="文件不存在")
+        elif file_type == "pathway_score":
+            try:
+                return FileResponse(
+                    file_path,
+                    media_type="application/octet-stream",
+                    filename=file_id,
+                )
+            except:
+                return ResponseMessage(status="0201", data={}, message="文件不存在")
+    except:
+        return ResponseMessage(status="0201", data={}, message="failed")
 
 
 @router.get("/view/file/{file_type}/{file_id}/column", status_code=status.HTTP_200_OK)
@@ -1999,18 +2002,21 @@ async def get_csv_data(
     group_by: str | None = None,
     # current_user_email_address=Depends(get_current_user),
 ):
-    if file_id is None:
-        return ResponseMessage(status="0201", data={}, message="未上传文件")
-    file_path = config.H5AD_FILE_PATH + "/" + file_id
-    res_list = []
-    if file_type == "umap":
-        file_data_df = pd.read_csv(file_path)
-        column_list = file_data_df.columns.tolist()
-        for i in column_list:
-            if "." not in i:
-                res_list.append(i)
-        # print(file_data_df.columns.tolist())
-    return ResponseMessage(status="0000", data=res_list, message="success")
+    try:
+        if file_id is None:
+            return ResponseMessage(status="0201", data={}, message="未上传文件")
+        file_path = config.H5AD_FILE_PATH + "/" + file_id
+        res_list = []
+        if file_type == "umap":
+            file_data_df = pd.read_csv(file_path)
+            column_list = file_data_df.columns.tolist()
+            for i in column_list:
+                if "." not in i:
+                    res_list.append(i)
+            # print(file_data_df.columns.tolist())
+        return ResponseMessage(status="0000", data=res_list, message="success")
+    except:
+        return ResponseMessage(status="0201", data={}, message="failed")
 
 
 # @router.get("/download/file/meta", status_code=status.HTTP_200_OK)
