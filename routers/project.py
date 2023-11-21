@@ -2174,7 +2174,7 @@ async def project_view_h5ad(
         return RedirectResponse(
             config.CELLXGENE_GATEWAY_URL
             + "/view/"
-            + "{}".format(analysis_info.h5ad_id)
+            + "{}/".format(analysis_info.h5ad_id)
             # + "?"
             # + str(request_param.query_params)
         )
