@@ -720,7 +720,7 @@ async def get_organ_list(
     page: int = 1,
     page_size: int = 20,
     db: Session = Depends(get_db),
-    current_user_email_address=Depends(get_current_user),
+    # current_user_email_address=Depends(get_current_user),
 ):
     search_page = (page - 1) * page_size
     filter_list = []
