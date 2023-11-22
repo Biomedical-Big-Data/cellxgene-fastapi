@@ -68,7 +68,7 @@ async def get_view_homepage(db: Session = Depends(get_db)):
                 cellxgene.SpeciesMeta.id,
                 cellxgene.SpeciesMeta.species,
                 cellxgene.SpeciesMeta.species_ontology_label,
-                func.count(cellxgene.ProjectMeta.id),
+                func.count(distinct(cellxgene.ProjectMeta.id)),
             ],
             filters=[
                 cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
@@ -106,7 +106,7 @@ async def get_view_homepage(db: Session = Depends(get_db)):
             db=db,
             query_list=[
                 cellxgene.BioSampleMeta.organ,
-                func.count(cellxgene.ProjectMeta.id),
+                func.count(distinct(cellxgene.ProjectMeta.id)),
             ],
             filters=[
                 cellxgene.ProjectMeta.id == cellxgene.ProjectBioSample.project_id,
