@@ -39,7 +39,9 @@ def send_mail(mail_template: str, subject: str, to_list: str | None) -> bool:
 def verify_mail_template(user_name: str, verify_url: str) -> str:
     mail_template = """
                     Hi %s,
-                    验证链接：%s
+                    Please confirm your registration by clicking here：%s，
+                    
+                    Ignore if you get this email by mistake. 
         """ % (
         user_name,
         verify_url,

@@ -57,7 +57,7 @@ async def register(
         user_name=user.user_name, verify_url=verify_url
     )
     send_mail_result = mail_util.send_mail(
-        mail_template=mail_template, subject="账户验证邮件", to_list=user.email_address
+        mail_template=mail_template, subject="Confirm your account activation", to_list=user.email_address
     )
     if send_mail_result:
         return ResponseMessage(status="0000", data={}, message="注册成功，请到邮箱点击验证链接")

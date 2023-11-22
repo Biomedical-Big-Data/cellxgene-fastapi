@@ -1883,7 +1883,7 @@ async def get_cell_taxonomy_table(
     res_list = []
     genes_positive_re_match_str = genes_positive.replace(",", "|")
     genes_positive_list = genes_positive.split(",")
-    genes_positive_list = [x for x in genes_positive_list if x != '']
+    genes_positive_list = [x.upper() for x in genes_positive_list if x != '']
     genes_negative_re_match_str = genes_negative.replace(",", "|")
     filter_list = [cellxgene.CellTypeMeta.species_id == species_id]
     if genes_positive_re_match_str:
