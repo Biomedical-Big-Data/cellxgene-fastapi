@@ -108,7 +108,7 @@ async def get_user_info(
             status="0000", data=search_user_info_model, message="success"
         )
     else:
-        return ResponseMessage(status="0201", data={}, message="用户不存在")
+        return ResponseMessage(status="0201", data={}, message="User does not exist")
 
 
 @router.post(
@@ -123,13 +123,13 @@ async def edit_user_info(
     current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     if not user_info:
-        return ResponseMessage(status="0201", data={}, message="无更新内容")
+        return ResponseMessage(status="0201", data={}, message="No updated content")
     if user_info.email_address:
         check_user_model = crud.get_user(
             db, [cellxgene.User.email_address == user_info.email_address]
         ).first()
         if check_user_model:
-            return ResponseMessage(status="0201", data={}, message="此邮箱已有账号")
+            return ResponseMessage(status="0201", data={}, message="This email already has an account")
     update_user_dict = {}
     for key, value in user_info.to_dict().items():
         if value:
@@ -145,7 +145,7 @@ async def edit_user_info(
         [cellxgene.User.id == user_id],
         update_user_dict,
     )
-    return ResponseMessage(status="0000", data={}, message="用户信息更新成功")
+    return ResponseMessage(status="0000", data={}, message="The user information is updated successful")
 
 
 @router.get(
@@ -215,7 +215,7 @@ async def admin_update_project(
         project_info = crud.get_project(db=db, filters=filter_list).first()
         analysis_info = crud.get_analysis(db=db, filters=[cellxgene.Analysis.id == admin_update_model.analysis_id]).first()
         if not project_info:
-            return ResponseMessage(status="0201", data={}, message="您无权更新此项目")
+            return ResponseMessage(status="0201", data={}, message="Project does not exist")
         update_project_dict = {
             "title": admin_update_model.title,
             "description": admin_update_model.description,
@@ -266,9 +266,9 @@ async def admin_update_project(
             )
     except Exception as e:
         print(e)
-        return ResponseMessage(status="0201", data={"error": str(e)}, message="更新失败")
+        return ResponseMessage(status="0201", data={"error": str(e)}, message="Update failed")
     else:
-        return ResponseMessage(status="0000", data={}, message="更新成功, 项目文件更新结果请等待邮件回复")
+        return ResponseMessage(status="0000", data={}, message="Update success, project file update results please wait for email reply")
 
 
 @router.post(
@@ -287,12 +287,12 @@ async def transfer_project(
         filters=[cellxgene.User.email_address == transfer_to.transfer_to_email_address],
     ).first()
     if not transfer_to_user_info:
-        return ResponseMessage(status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确")
+        return ResponseMessage(status="0201", data={}, message="The account of the transfer object does not exist. Please confirm whether the email address is correct")
     project_info = crud.get_project(
         db=db, filters=[cellxgene.ProjectMeta.id == project_id]
     ).first()
     if not project_info:
-        return ResponseMessage(status="0201", data={}, message="项目不存在")
+        return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info.is_private:
         try:
             insert_transfer_model = cellxgene.TransferHistory(
@@ -330,12 +330,12 @@ async def transfer_project(
                         project_id=project_id, user_id=transfer_to_user_info.id
                     ),
                 )
-            return ResponseMessage(status="0000", data={}, message="项目转移成功")
+            return ResponseMessage(status="0000", data={}, message="Project transfer success")
         except Exception as e:
             print(e)
-            return ResponseMessage(status="0201", data={}, message="项目转移失败")
+            return ResponseMessage(status="0201", data={}, message="Project transfer failed")
     else:
-        return ResponseMessage(status="0201", data={}, message="当前状态不可转移项目")
+        return ResponseMessage(status="0201", data={}, message="The current state cannot transfer the item")
 
 
 @router.get(
@@ -353,7 +353,7 @@ async def get_project_list(
     ]
     project_info_model = crud.get_project(db=db, filters=filter_list).first()
     if not project_info_model:
-        return ResponseMessage(status="0201", data={}, message="无此项目")
+        return ResponseMessage(status="0201", data={}, message="Project does not exist")
     return ResponseMessage(status="0000", data=project_info_model, message="ok")
 
 
@@ -374,9 +374,9 @@ async def update_project(
             filters=[cellxgene.ProjectMeta.id == project_id],
             update_dict={"is_publish": update_project_model.is_publish},
         )
-        return ResponseMessage(status="0000", data={}, message="项目状态更新成功")
+        return ResponseMessage(status="0000", data={}, message="The project status update succeeded")
     except:
-        return ResponseMessage(status="0201", data={}, message="项目状态更新失败")
+        return ResponseMessage(status="0201", data={}, message="Project status update failed")
 
 
 @router.post(
@@ -395,9 +395,9 @@ async def update_project(
             filters=[cellxgene.ProjectMeta.id == project_id],
             update_dict={"is_publish": config.ProjectStatus.PROJECT_STATUS_DRAFT},
         )
-        return ResponseMessage(status="0000", data={}, message="项目下线成功")
+        return ResponseMessage(status="0000", data={}, message="Project offline successful")
     except:
-        return ResponseMessage(status="0201", data={}, message="项目下线失败")
+        return ResponseMessage(status="0201", data={}, message="Project offline failed")
 
 
 @router.post(
@@ -418,9 +418,9 @@ async def create_cell_type_meta(
         crud.create_cell_type_meta(db=db, insert_cell_type_model_list=[cellxgene.CellTypeMeta(**create_cell_type_model.model_dump(
                         mode="json"
                     ),)])
-        return ResponseMessage(status="0000", data={}, message="cell_type 创建成功")
+        return ResponseMessage(status="0000", data={}, message="Cell_type create success")
     else:
-        return ResponseMessage(status="0201", data={}, message="cell_type已存在")
+        return ResponseMessage(status="0201", data={}, message="Cell_type is already exist")
 
 
 @router.get(
@@ -652,4 +652,4 @@ async def upload_project_meta_file(
     except Exception as e:
         logging.error("[upload project meta error]: {}".format(str(e)))
     else:
-        return ResponseMessage(status="0000", data={}, message="上传文件成功，更新数据结果请等待邮件接收")
+        return ResponseMessage(status="0000", data={}, message="The file is uploaded successfully. Please wait for the email to receive the data update result")

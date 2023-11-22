@@ -305,11 +305,11 @@ async def get_project_info(
                     status="0000", data=private_project_info_model, message="ok"
                 )
             else:
-                return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
+                return ResponseMessage(status="0201", data={}, message="permission denied")
         else:
-            return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
+            return ResponseMessage(status="0201", data={}, message="permission denied")
     else:
-        return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
+        return ResponseMessage(status="0201", data={}, message="permission denied")
 
 
 @router.get(
@@ -330,7 +330,7 @@ async def get_analysis_detail(
     ]
     analysis_info_model = crud.get_analysis(db=db, filters=filter_list).first()
     if not analysis_info_model:
-        return ResponseMessage(status="0201", data={}, message="无权限查看此项目")
+        return ResponseMessage(status="0201", data={}, message="permission denied")
     return ResponseMessage(status="0000", data=analysis_info_model, message="ok")
 
 
@@ -357,7 +357,7 @@ async def create_project(
             other_file_id_list = create_project_model.other_file_ids.split(",")
             if len(other_file_id_list) > config.ProjectStatus.MAX_OTHER_FILE_NUM:
                 return ResponseMessage(
-                    status="0201", data={}, message="项目创建失败，最多上传五份其他文件"
+                    status="0201", data={}, message="Project creation failed. Upload up to five other files"
                 )
     if create_project_model.is_private and create_project_model.is_publish:
         publish_status = config.ProjectStatus.PROJECT_STATUS_PUBLIC
@@ -416,11 +416,11 @@ async def create_project(
         return ResponseMessage(
             status="0000",
             data={"analysis_id": analysis_id, "project_id": project_id},
-            message="项目创建成功",
+            message="Project creation success",
         )
     except Exception as e:
         print(e)
-        return ResponseMessage(status="0201", data={}, message="项目创建失败")
+        return ResponseMessage(status="0201", data={}, message="Project creation failed")
 
 
 @router.post("/update", response_model=ResponseMessage, status_code=status.HTTP_200_OK)
@@ -437,7 +437,7 @@ async def update_project(
     project_info = crud.get_project(db=db, filters=filter_list).first()
     update_project_model.members.append(current_user_email_address)
     if not project_info:
-        return ResponseMessage(status="0201", data={}, message="您无权更新此项目")
+        return ResponseMessage(status="0201", data={}, message="permission denied")
     if (not project_info.is_publish) or project_info.is_private:
         publish_status = config.ProjectStatus.PROJECT_STATUS_DRAFT
         if update_project_model.is_private and update_project_model.is_publish:
@@ -510,8 +510,8 @@ async def update_project(
             update_analysis_dict=update_analysis_dict,
         )
     else:
-        ResponseMessage(status="0000", data={}, message="更新状态异常")
-    return ResponseMessage(status="0000", data={}, message="项目更新成功")
+        ResponseMessage(status="0000", data={}, message="Update status exception")
+    return ResponseMessage(status="0000", data={}, message="Project update success")
 
 
 @router.post(
@@ -531,7 +531,7 @@ async def offline_project(
     ]
     project_info = crud.get_project(db=db, filters=filter_list).first()
     if not project_info:
-        return ResponseMessage(status="0201", data={}, message="您无权下线此项目")
+        return ResponseMessage(status="0201", data={}, message="permission denied")
     if project_info.is_private:
         is_publish = config.ProjectStatus.PROJECT_STATUS_DRAFT
         try:
@@ -540,11 +540,11 @@ async def offline_project(
                 filters=[cellxgene.ProjectMeta.id == project_id],
                 update_dict={"is_publish": is_publish},
             )
-            return ResponseMessage(status="0000", data={}, message="项目下线成功")
+            return ResponseMessage(status="0000", data={}, message="Project offline successful")
         except:
-            return ResponseMessage(status="0201", data={}, message="项目下线失败")
+            return ResponseMessage(status="0201", data={}, message="Project offline failed")
     else:
-        return ResponseMessage(status="0201", data={}, message="您无权下线此项目")
+        return ResponseMessage(status="0201", data={}, message="permission denied")
 
 
 @router.post(
@@ -563,14 +563,14 @@ async def transfer_project(
         filters=[cellxgene.User.email_address == transfer_to.transfer_to_email_address],
     ).first()
     if not transfer_to_user_info:
-        return ResponseMessage(status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确")
+        return ResponseMessage(status="0201", data={}, message="The account of the transfer object does not exist. Please confirm whether the email address is correct")
     project_info = crud.get_project(
         db=db, filters=[cellxgene.ProjectMeta.id == project_id]
     ).first()
     if not project_info:
-        return ResponseMessage(status="0201", data={}, message="项目不存在")
+        return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info.project_user_meta.email_address != current_user_email_address:
-        return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法转移此项目")
+        return ResponseMessage(status="0201", data={}, message="You are not the owner of the project and cannot transfer this project")
     if project_info.is_private:
         try:
             insert_transfer_model = cellxgene.TransferHistory(
@@ -607,12 +607,12 @@ async def transfer_project(
                         project_id=project_id, user_id=transfer_to_user_info.id
                     ),
                 )
-            return ResponseMessage(status="0000", data={}, message="项目转移成功")
+            return ResponseMessage(status="0000", data={}, message="Project transfer success")
         except Exception as e:
             print(e)
-            return ResponseMessage(status="0201", data={}, message="项目转移失败")
+            return ResponseMessage(status="0201", data={}, message="Project transfer failed")
     else:
-        return ResponseMessage(status="0201", data={}, message="当前状态不可转移项目")
+        return ResponseMessage(status="0201", data={}, message="The current state cannot transfer the item")
 
 
 @router.post(
@@ -631,14 +631,14 @@ def copy_project_id(
         filters=[cellxgene.User.email_address == copy_to.copy_to_email_address],
     ).first()
     if not copy_to_user_info:
-        return ResponseMessage(status="0201", data={}, message="转移对象的账号不存在，请确认邮箱是否正确")
+        return ResponseMessage(status="0201", data={}, message="The account of the transfer object does not exist. Please confirm whether the email address is correct")
     project_info = crud.get_project(
         db=db, filters=[cellxgene.ProjectMeta.id == project_id]
     ).first()
     if not project_info:
-        return ResponseMessage(status="0201", data={}, message="项目不存在")
+        return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info.project_user_meta.email_address != current_user_email_address:
-        return ResponseMessage(status="0201", data={}, message="您不是项目的拥有者，无法复制此项目")
+        return ResponseMessage(status="0201", data={}, message="You are not the owner of the project and cannot copy it")
     if project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE:
         insert_project_dict = project_info.to_dict()
         del insert_project_dict["id"]
@@ -703,13 +703,13 @@ def copy_project_id(
             return ResponseMessage(
                 status="0000",
                 data={"analysis_id": analysis_id, "project_id": project_id},
-                message="项目创建成功",
+                message="Project creation success",
             )
         except Exception as e:
             print(e)
-            return ResponseMessage(status="0201", data={}, message="项目创建失败")
+            return ResponseMessage(status="0201", data={}, message="Project creation failed")
     else:
-        return ResponseMessage(status="0201", data={}, message="当前状态无法复制项目")
+        return ResponseMessage(status="0201", data={}, message="The project cannot be copied in the current state")
 
 
 @router.get(
@@ -1644,9 +1644,9 @@ async def upload_file(
     try:
         await file_util.save_file(db=db, file=file, insert_user_id=current_user_info.id)
     except:
-        return ResponseMessage(status="0201", data={}, message="文件上传失败")
+        return ResponseMessage(status="0201", data={}, message="File upload failed")
     else:
-        return ResponseMessage(status="0000", data={}, message="文件上传成功")
+        return ResponseMessage(status="0000", data={}, message="File upload success")
 
 
 @router.get(
@@ -1709,7 +1709,7 @@ async def delete_file(
         .first()
     )
     if not file_info:
-        return ResponseMessage(status="0201", data={}, message="无权删除此文件")
+        return ResponseMessage(status="0201", data={}, message="permission denied")
     crud.update_file(db=db, filters=[cellxgene.FileLibrary.file_id == file_id], file_filters=[], update_dict={"file_status": config.FileStatus.DELETE})
     return ResponseMessage(status="0000", data={}, message="ok")
 
@@ -2021,7 +2021,7 @@ async def get_csv_data(
             try:
                 return Response(content=img_byte_arr, media_type="image/png")
             except:
-                return ResponseMessage(status="0201", data={}, message="文件不存在")
+                return ResponseMessage(status="0201", data={}, message="File does not exist")
         elif file_type == "cell_marker":
             try:
                 return FileResponse(
@@ -2030,7 +2030,7 @@ async def get_csv_data(
                     filename=file_id,
                 )
             except:
-                return ResponseMessage(status="0201", data={}, message="文件不存在")
+                return ResponseMessage(status="0201", data={}, message="File does not exist")
         elif file_type == "pathway_score":
             try:
                 return FileResponse(
@@ -2039,7 +2039,7 @@ async def get_csv_data(
                     filename=file_id,
                 )
             except:
-                return ResponseMessage(status="0201", data={}, message="文件不存在")
+                return ResponseMessage(status="0201", data={}, message="File does not exist")
     except Exception as e:
         logging.error('[view file error]:{}'.format(str(e)))
         return ResponseMessage(status="0201", data={}, message="failed")
@@ -2054,7 +2054,7 @@ async def get_csv_data(
 ):
     try:
         if file_id is None:
-            return ResponseMessage(status="0201", data={}, message="未上传文件")
+            return ResponseMessage(status="0201", data={}, message="Unuploaded file")
         file_path = config.H5AD_FILE_PATH + "/" + file_id
         res_list = []
         if file_type == "umap":
@@ -2139,7 +2139,7 @@ async def get_download_h5ad_file_token(
         return ResponseMessage(
             status="0201",
             data={},
-            message="该file id无对应文件",
+            message="No corresponding file",
         )
     download_file_token = auth_util.create_download_file_token(file_id, expire_time=120)
     return ResponseMessage(
@@ -2179,4 +2179,4 @@ async def project_view_h5ad(
             # + str(request_param.query_params)
         )
     else:
-        return ResponseMessage(status="0201", data={}, message="无法查看此项目")
+        return ResponseMessage(status="0201", data={}, message="permission denied")

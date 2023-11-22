@@ -52,7 +52,9 @@ def verify_mail_template(user_name: str, verify_url: str) -> str:
 def reset_password_mail_template(user_name: str, reset_password_url: str) -> str:
     mail_template = """
                     Hi %s,
-                    重置密码链接：%s
+                    Click here to reset your password：%s
+                    
+                    Ignore if you get this email by mistake. 
         """ % (
         user_name,
         reset_password_url,
