@@ -274,7 +274,7 @@ def upload_file_v2(
             )
             logging.error("[update_meta_file error]: {}".format(str(e)))
         else:
-            file_name = crud.get_file_info(db=db, filters=[cellxgene.FileLibrary.file_id == excel_id]).first().file_name
+            file_name = crud.get_file_info(db=db, query_list=[cellxgene.FileLibrary], filters=[cellxgene.FileLibrary.file_id == excel_id]).first().file_name
             crud.create_project_update_history(
                 db=db,
                 insert_project_update_history_model=cellxgene.ProjectUpdateHistory(

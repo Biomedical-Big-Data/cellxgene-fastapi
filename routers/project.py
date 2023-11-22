@@ -1641,6 +1641,17 @@ async def upload_file(
     current_user_info = crud.get_user(
         db=db, filters=[cellxgene.User.email_address == current_user_email_address]
     ).first()
+    if current_user_info.role == config.UserRole.USER_ROLE_FORMAL:
+        file_size_meta = crud.get_file_info(db=db, query_list=[func.sum(cellxgene.FileLibrary.file_size)], filters=[cellxgene.FileLibrary.upload_user_id == current_user_info.id,
+                                                                                                 cellxgene.FileLibrary.file_status == config.FileStatus.NORMAL]).first()
+        if not file_size_meta[0]:
+            whole_file_size = 0
+        else:
+            whole_file_size = file_size_meta[0]
+        contents = await file.read()
+        filesize = len(contents)
+        if whole_file_size + filesize >= config.FileLimit.MAXFILESIZE:
+            return ResponseMessage(status="0201", data={}, message="Common users can upload a maximum of 10GB files")
     try:
         await file_util.save_file(db=db, file=file, insert_user_id=current_user_info.id)
     except:
@@ -1665,20 +1676,20 @@ async def get_user_h5ad_file_list(
     filter_list = [
         cellxgene.User.email_address == current_user_email_address,
         cellxgene.FileLibrary.upload_user_id == cellxgene.User.id,
-        cellxgene.FileLibrary.file_status == config.FileStatus.Normal
+        cellxgene.FileLibrary.file_status == config.FileStatus.NORMAL
     ]
     if file_name:
         filter_list.append(
             cellxgene.FileLibrary.file_name.like("%{}%".format(file_name))
         )
     h5ad_file_list = (
-        crud.get_file_info(db=db, filters=filter_list)
+        crud.get_file_info(db=db, query_list=[cellxgene.FileLibrary], filters=filter_list)
         .order_by(cellxgene.FileLibrary.create_at.desc())
         .offset(search_page)
         .limit(page_size)
         .all()
     )
-    total = crud.get_file_info(db=db, filters=filter_list).count()
+    total = crud.get_file_info(db=db, query_list=[cellxgene.FileLibrary], filters=filter_list).count()
     res_dict = {
         "h5ad_list": h5ad_file_list,
         "total": total,
@@ -1705,7 +1716,7 @@ async def delete_file(
         cellxgene.FileLibrary.file_id == file_id
     ]
     file_info = (
-        crud.get_file_info(db=db, filters=filter_list)
+        crud.get_file_info(db=db, query_list=[cellxgene.FileLibrary], filters=filter_list)
         .first()
     )
     if not file_info:
@@ -2133,7 +2144,7 @@ async def get_download_h5ad_file_token(
     current_user_email_address=Depends(get_current_user),
 ):
     file_meta = crud.get_file_info(
-        db=db, filters=[cellxgene.FileLibrary.file_id == file_id]
+        db=db, query_list=[cellxgene.FileLibrary], filters=[cellxgene.FileLibrary.file_id == file_id]
     ).first()
     if not file_meta:
         return ResponseMessage(

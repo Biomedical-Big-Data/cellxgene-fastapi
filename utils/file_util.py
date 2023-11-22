@@ -28,7 +28,7 @@ async def save_file(
     with open(f"{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
         f.write(contents)
         insert_h5ad_model = cellxgene.FileLibrary(
-            file_id=file_id, file_name=filename, upload_user_id=insert_user_id, file_size=filesize, file_status=config.FileStatus.Normal
+            file_id=file_id, file_name=filename, upload_user_id=insert_user_id, file_size=filesize, file_status=config.FileStatus.NORMAL
         )
         if insert:
             crud.create_file(db=db, insert_file_model=insert_h5ad_model)
@@ -74,7 +74,7 @@ def copy_file(db: Session, file_ids: str, upload_user_id: int):
         new_file_id = str(uuid4()).replace("-", "") + "." + file_name_suffix
         file_info = (
             crud.get_file_info(
-                db=db, filters=[cellxgene.FileLibrary.file_id == file_id]
+                db=db, query_list=[cellxgene.FileLibrary], filters=[cellxgene.FileLibrary.file_id == file_id]
             )
             .first()
         )

@@ -315,7 +315,7 @@ def get_parent_id(relation_list, cl_id, cell_number, parent_dict):
 
 
 def get_file_name(db: Session, excel_id: str):
-    file_name = crud.get_file_info(db=db, filters=[cellxgene.FileLibrary.file_id == excel_id]).first().file_name
+    file_name = crud.get_file_info(db=db, query_list=[cellxgene.FileLibrary], filters=[cellxgene.FileLibrary.file_id == excel_id]).first().file_name
     print(file_name)
 
 

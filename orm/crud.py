@@ -516,8 +516,8 @@ def create_file_for_transaction(db: Session, insert_file_model: cellxgene.FileLi
     db.add(insert_file_model)
 
 
-def get_file_info(db: Session, filters: List | None):
-    return db.query(cellxgene.FileLibrary).filter(and_(*filters))
+def get_file_info(db: Session, query_list: List, filters: List | None):
+    return db.query(*query_list).filter(and_(*filters))
 
 
 def update_upload_file(
@@ -611,7 +611,7 @@ if __name__ == "__main__":
         cellxgene.FileLibrary.upload_user_id == 25,
         cellxgene.FileLibrary.file_id == "918e8def0a074ec2ad8270261003ce45.h5ad",
     ]
-    file_model = get_file_info(db=next(get_db()), filters=filter_list)
+    file_model = get_file_info(db=next(get_db()), query_list=[cellxgene.FileLibrary], filters=filter_list)
     print(file_model)
     # create_project_biosample(db=next(get_db()))
     # update_project_biosample(db=next(get_db()))

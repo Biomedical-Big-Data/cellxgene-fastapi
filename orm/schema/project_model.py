@@ -268,7 +268,7 @@ class FileLibraryModel(BaseModel):
     file_id: str
     file_name: str
     upload_user_id: int
-    file_size: str | None
+    file_size: int | None
     file_status: int
     create_at: datetime
     update_at: datetime

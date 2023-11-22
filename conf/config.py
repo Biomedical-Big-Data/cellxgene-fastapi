@@ -74,6 +74,7 @@ class UserStateConfig:
 class UserRole:
     USER_ROLE_FORMAL = 0
     USER_ROLE_ADMIN = 1
+    USER_ROLE_SUPER_USER = 2
 
 
 class ProjectStatus:
@@ -88,5 +89,10 @@ class ProjectStatus:
 
 
 class FileStatus:
-    Normal = 1
+    NORMAL = 1
     DELETE = 0
+    
+
+class FileLimit:
+    # MAXFILESIZE = 10
+    MAXFILESIZE = 10 * 1024 * 1024 * 1024
