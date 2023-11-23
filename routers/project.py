@@ -1641,17 +1641,17 @@ async def upload_file(
     current_user_info = crud.get_user(
         db=db, filters=[cellxgene.User.email_address == current_user_email_address]
     ).first()
-    if current_user_info.role == config.UserRole.USER_ROLE_FORMAL:
-        file_size_meta = crud.get_file_info(db=db, query_list=[func.sum(cellxgene.FileLibrary.file_size)], filters=[cellxgene.FileLibrary.upload_user_id == current_user_info.id,
-                                                                                                 cellxgene.FileLibrary.file_status == config.FileStatus.NORMAL]).first()
-        if not file_size_meta[0]:
-            whole_file_size = 0
-        else:
-            whole_file_size = file_size_meta[0]
-        contents = await file.read()
-        filesize = len(contents)
-        if whole_file_size + filesize >= config.FileLimit.MAXFILESIZE:
-            return ResponseMessage(status="0201", data={}, message="Common users can upload a maximum of 10GB files")
+    # if current_user_info.role == config.UserRole.USER_ROLE_FORMAL:
+    #     file_size_meta = crud.get_file_info(db=db, query_list=[func.sum(cellxgene.FileLibrary.file_size)], filters=[cellxgene.FileLibrary.upload_user_id == current_user_info.id,
+    #                                                                                              cellxgene.FileLibrary.file_status == config.FileStatus.NORMAL]).first()
+    #     if not file_size_meta[0]:
+    #         whole_file_size = 0
+    #     else:
+    #         whole_file_size = file_size_meta[0]
+    #     contents = await file.read()
+    #     filesize = len(contents)
+    #     if whole_file_size + filesize >= config.FileLimit.MAXFILESIZE:
+    #         return ResponseMessage(status="0201", data={}, message="Common users can only upload a maximum of 10GB files")
     try:
         await file_util.save_file(db=db, file=file, insert_user_id=current_user_info.id)
     except:
