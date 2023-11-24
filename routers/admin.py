@@ -391,7 +391,7 @@ async def update_project(
 
 
 @router.delete(
-    "/{project_id}",
+    "/project/{project_id}",
     response_model=ResponseProjectDetailModel,
     status_code=status.HTTP_200_OK,
 )

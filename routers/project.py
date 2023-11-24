@@ -411,6 +411,14 @@ async def create_project(
         return ResponseMessage(
                     status="0201", data={}, message="Common user has a maximum of three projects"
                 )
+    if create_project_model.h5ad_id is not None:
+        check_file_name_util.check_file_name(file_type="h5ad", file_id=create_project_model.h5ad_id)
+    if create_project_model.umap_id is not None:
+        check_file_name_util.check_file_name(file_type="umap", file_id=create_project_model.umap_id)
+    if create_project_model.cell_marker_id is not None:
+        check_file_name_util.check_file_name(file_type="cell_marker", file_id=create_project_model.cell_marker_id)
+    if create_project_model.pathway_id is not None:
+        check_file_name_util.check_file_name(file_type="pathway", file_id=create_project_model.pathway_id)
     publish_status = config.ProjectStatus.PROJECT_STATUS_DRAFT
     create_project_model.members.append(current_user_email_address)
     member_info_list = []
@@ -1809,7 +1817,7 @@ async def delete_file(
     analysis_info = crud.get_analysis(db=db, filters=analysis_filter_list).first()
     if not analysis_info:
         file_util.remove_file(file_id)
-        crud.update_file(db=db, filters=[cellxgene.FileLibrary.file_id == file_id], file_filters=[], update_dict={"file_status": config.FileStatus.DELETE})
+        crud.delete_file(db=db, filters=[cellxgene.FileLibrary.file_id == file_id])
         return ResponseMessage(status="0000", data={}, message="ok")
     else:
         return ResponseMessage(status="0201", data={}, message="The file is associated with an item and cannot be deleted")

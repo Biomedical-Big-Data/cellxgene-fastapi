@@ -512,6 +512,11 @@ def update_file(db: Session, filters: List, file_filters: List, update_dict: Dic
     db.commit()
 
 
+def delete_file(db: Session, filters: List):
+    db.query(cellxgene.FileLibrary).filter(and_(*filters)).delete()
+    db.commit()
+
+
 def create_file_for_transaction(db: Session, insert_file_model: cellxgene.FileLibrary):
     db.add(insert_file_model)
 
