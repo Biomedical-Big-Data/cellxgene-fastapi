@@ -133,7 +133,7 @@ async def edit_user_info(
             return ResponseMessage(status="0201", data={}, message="This email already has an account")
     update_user_dict = {}
     for key, value in user_info.to_dict().items():
-        if value:
+        if value is not None:
             update_user_dict[key] = value
     if user_info.user_password:
         salt, jwt_user_password = auth_util.create_md5_password(
