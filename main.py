@@ -83,4 +83,4 @@ if __name__ == "__main__":
     async def shutdown_event():
         await consumer.shutdown()
 
-    uvicorn.run(app, host="0.0.0.0", port=5050)
+    uvicorn.run(app, host="0.0.0.0", port=5051)
