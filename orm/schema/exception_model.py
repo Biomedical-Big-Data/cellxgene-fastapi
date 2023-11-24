@@ -26,3 +26,11 @@ USER_NOT_VERIFY_EXCEPTION = HTTPException(
     detail="Account not activated, please check your email to confirm your activation",
     headers={"WWW-Authenticate": "Bearer"},
 )
+
+
+class BusinessException(Exception):
+    def __init__(
+            self,
+            message: str,
+    ):
+        self.message = message

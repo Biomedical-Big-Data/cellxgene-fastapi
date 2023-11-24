@@ -9,6 +9,7 @@ from routers import user, project, admin
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from orm.schema.exception_model import BusinessException
 
 app = FastAPI()
 app.add_middleware(
@@ -39,6 +40,15 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
     return JSONResponse(
         error_message.to_dict(), status_code=status.HTTP_401_UNAUTHORIZED
     )
+
+
+@app.exception_handler(BusinessException)
+async def http_business_exception_handler(request: Request, exc: BusinessException) -> JSONResponse:
+    error_message = ResponseMessage(status="0201", data={}, message=exc.message)
+    return JSONResponse(
+        content=error_message.to_dict(), status_code=status.HTTP_200_OK
+    )
+
 
 
 @app.get("/")

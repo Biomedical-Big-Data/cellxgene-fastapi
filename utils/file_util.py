@@ -1,7 +1,10 @@
 import logging
 import shutil
 import os
+import traceback
+
 import pandas as pd
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from conf import config
 from uuid import uuid4
@@ -9,32 +12,49 @@ from orm.db_model import cellxgene
 from fastapi import UploadFile
 from orm import crud
 from io import BytesIO
-
+from orm.schema.exception_model import BusinessException
 from utils import mail_util
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 
 async def save_file(
-    db: Session, file: UploadFile, insert_user_id: int, insert: bool = True
+    db: Session, file: UploadFile, insert_user_model: cellxgene.User, insert: bool = True
 ):
     contents = await file.read()
     filename = file.filename
     filesize = len(contents)
+    if insert_user_model.role == config.UserRole.USER_ROLE_FORMAL:
+        file_size_meta = crud.get_file_info(db=db,
+                                            query_list=[func.sum(cellxgene.FileLibrary.file_size)],
+                                            filters=[cellxgene.FileLibrary.upload_user_id == insert_user_model.id,
+                                                     cellxgene.FileLibrary.file_status == config.FileStatus.NORMAL]
+                                            ).first()
+        if not file_size_meta[0]:
+            whole_file_size = 0
+        else:
+            whole_file_size = file_size_meta[0]
+        if whole_file_size + filesize >= config.FileLimit.MAXFILESIZE:
+            raise BusinessException(message="Common users can only upload a maximum of 10GB files")
     file_name_list = filename.split(".")
     file_name_suffix = file_name_list[len(file_name_list) - 1 :][0]
     file_id = str(uuid4()).replace("-", "") + "." + file_name_suffix
     # print(f"{PROJECT_ROOT}/{config.H5AD_FILE_PATH}/{file_id}")
-    with open(f"{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
-        f.write(contents)
-        insert_h5ad_model = cellxgene.FileLibrary(
-            file_id=file_id, file_name=filename, upload_user_id=insert_user_id, file_size=filesize, file_status=config.FileStatus.NORMAL
-        )
-        if insert:
-            crud.create_file(db=db, insert_file_model=insert_h5ad_model)
-        else:
-            crud.create_file_for_transaction(db=db, insert_file_model=insert_h5ad_model)
-    return file_id
+    try:
+        with open(f"{config.H5AD_FILE_PATH}/{file_id}", "wb") as f:
+            f.write(contents)
+            insert_h5ad_model = cellxgene.FileLibrary(
+                file_id=file_id, file_name=filename, upload_user_id=insert_user_model.id, file_size=filesize, file_status=config.FileStatus.NORMAL
+            )
+            if insert:
+                crud.create_file(db=db, insert_file_model=insert_h5ad_model)
+            else:
+                crud.create_file_for_transaction(db=db, insert_file_model=insert_h5ad_model)
+    except Exception as e:
+        logging.error(traceback.format_exc())
+        raise BusinessException(message="upload file failed")
+    else:
+        return file_id
 
 
 async def save_meta_file(
