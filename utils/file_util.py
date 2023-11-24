@@ -34,7 +34,7 @@ async def save_file(
             whole_file_size = 0
         else:
             whole_file_size = file_size_meta[0]
-        if whole_file_size + filesize >= config.FileLimit.MAXFILESIZE:
+        if whole_file_size + filesize >= config.NormalUserLimit.MAXFILESIZE:
             raise BusinessException(message="Common users can only upload a maximum of 10GB files")
     file_name_list = filename.split(".")
     file_name_suffix = file_name_list[len(file_name_list) - 1 :][0]
@@ -51,7 +51,7 @@ async def save_file(
             else:
                 crud.create_file_for_transaction(db=db, insert_file_model=insert_h5ad_model)
     except Exception as e:
-        logging.error(traceback.format_exc())
+        logging.error("[save file error: {}]".format(str(traceback.format_exc())))
         raise BusinessException(message="upload file failed")
     else:
         return file_id
@@ -296,8 +296,14 @@ def update_species_meta_file(db: Session, meta_file: UploadFile, project_content
         save_meta_file(db=db, file=meta_file, insert_user_id=upload_user_id, meta_type="species")
 
 
+def remove_file(file_id: str):
+    file_path = config.H5AD_FILE_PATH + "/" + file_id
+    os.unlink(file_path)
+
+
 if __name__ == "__main__":
     pass
+    # remove_file("4aa46073190944b2a965c0f0ca53ca6a.mov")
     # from orm.dependencies import get_db
     # file_id = copy_file(db=next(get_db()), file_id='918e8def0a074ec2ad8270261003ce45.h5ad', upload_user_id=25)
     # print(file_id)

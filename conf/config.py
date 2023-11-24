@@ -81,6 +81,7 @@ class ProjectStatus:
     HOMEPAGE_SHOW_PROJECT_LIMIT = 3
     MAX_OTHER_FILE_NUM = 5
 
+    PROJECT_STATUS_DELETE = -1
     PROJECT_STATUS_DRAFT = 0
     PROJECT_STATUS_IS_PUBLISH = 1
 
@@ -93,6 +94,7 @@ class FileStatus:
     DELETE = 0
     
 
-class FileLimit:
+class NormalUserLimit:
+    MAXPROJECTCOUNT = 3
     # MAXFILESIZE = 10
     MAXFILESIZE = 10 * 1024 * 1024 * 1024

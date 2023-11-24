@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from fastapi import (
     APIRouter,
@@ -23,7 +24,7 @@ from orm import crud
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from orm.db_model import cellxgene
-from utils import auth_util, mail_util, file_util, upload_excel_util
+from utils import auth_util, mail_util, file_util, upload_excel_util, check_file_name_util
 from conf import config
 from typing import List, Union
 from orm.dependencies import get_db, get_current_admin
@@ -165,7 +166,7 @@ async def get_project_list(
     current_admin_email_address=Depends(get_current_admin),
 ) -> ResponseMessage:
     search_page = (page - 1) * page_size
-    filter_list = []
+    filter_list = [cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
     if is_publish is not None:
         filter_list.append(cellxgene.ProjectMeta.is_publish == is_publish)
     if is_private is not None:
@@ -212,6 +213,16 @@ async def admin_update_project(
 ):
     filter_list = [cellxgene.ProjectMeta.id == project_id]
     try:
+        if admin_update_model.h5ad_id is not None:
+            check_file_name_util.check_file_name(file_type="h5ad", file_id=admin_update_model.h5ad_id)
+        if admin_update_model.umap_id is not None:
+            check_file_name_util.check_file_name(file_type="umap", file_id=admin_update_model.umap_id)
+        if admin_update_model.cell_marker_id is not None:
+            check_file_name_util.check_file_name(file_type="cell_marker", file_id=admin_update_model.cell_marker_id)
+        if admin_update_model.pathway_id is not None:
+            check_file_name_util.check_file_name(file_type="pathway", file_id=admin_update_model.pathway_id)
+        if admin_update_model.excel_id is not None:
+            check_file_name_util.check_file_name(file_type="excel", file_id=admin_update_model.excel_id)
         project_info = crud.get_project(db=db, filters=filter_list).first()
         analysis_info = crud.get_analysis(db=db, filters=[cellxgene.Analysis.id == admin_update_model.analysis_id]).first()
         if not project_info:
@@ -332,7 +343,7 @@ async def transfer_project(
                 )
             return ResponseMessage(status="0000", data={}, message="Project transfer success")
         except Exception as e:
-            print(e)
+            logging.error("[Admin project transfer error: {}]".format(str(traceback.format_exc())))
             return ResponseMessage(status="0201", data={}, message="Project transfer failed")
     else:
         return ResponseMessage(status="0201", data={}, message="The current state cannot transfer the item")
@@ -377,6 +388,28 @@ async def update_project(
         return ResponseMessage(status="0000", data={}, message="The project status update succeeded")
     except:
         return ResponseMessage(status="0201", data={}, message="Project status update failed")
+
+
+@router.delete(
+    "/{project_id}",
+    response_model=ResponseProjectDetailModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_project_info(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_admin_email_address=Depends(get_current_admin),
+) -> ResponseMessage:
+    filter_list = [
+        cellxgene.ProjectMeta.id == project_id,
+    ]
+    project_info = crud.get_project(db=db, filters=filter_list).first()
+    if not project_info:
+        return ResponseMessage(status="0201", data={}, message="Project does not exist")
+    crud.update_project(db=db,
+                        filters=[cellxgene.ProjectMeta.id == project_id],
+                        update_dict={"is_publish": config.ProjectStatus.PROJECT_STATUS_DELETE})
+    return ResponseMessage(status="0000", data={}, message="项目删除成功")
 
 
 @router.post(

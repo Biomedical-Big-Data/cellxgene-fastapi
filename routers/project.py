@@ -46,7 +46,7 @@ from fastapi.responses import (
     StreamingResponse,
 )
 from uuid import uuid4
-from utils import file_util, auth_util, dict_util, cell_number_util
+from utils import file_util, auth_util, dict_util, cell_number_util, check_file_name_util
 from mqtt_consumer.consumer import SERVER_STATUS_DICT
 from orm.database import cellxgene_engine
 
@@ -245,6 +245,7 @@ async def get_user_project(
         cellxgene.ProjectUser.user_id == cellxgene.User.id,
         cellxgene.User.email_address == current_user_email_address,
         cellxgene.ProjectMeta.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE,
+        cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE
     ]
     if title is not None:
         filter_list.append(cellxgene.ProjectMeta.title.like("%{}%".format(title)))
@@ -271,6 +272,36 @@ async def get_user_project(
 
 
 @router.get(
+    "/me/memory_cost",
+    response_model=ResponseMessage,
+    status_code=status.HTTP_200_OK
+)
+async def get_user_memory_cost(
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+):
+    owner = (
+        crud.get_user(db, [cellxgene.User.email_address == current_user_email_address])
+        .first()
+        .id
+    )
+    file_size_meta = crud.get_file_info(db=db,
+                                        query_list=[func.sum(cellxgene.FileLibrary.file_size)],
+                                        filters=[cellxgene.FileLibrary.upload_user_id == owner,
+                                                 cellxgene.FileLibrary.file_status == config.FileStatus.NORMAL]
+                                        ).first()
+    project_count = crud.get_project(db=db,
+                                     filters=[cellxgene.ProjectMeta.owner == owner,
+                                              cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
+                                     ).count()
+    if not file_size_meta[0]:
+        whole_file_size = 0
+    else:
+        whole_file_size = file_size_meta[0]
+    return ResponseMessage(status="0000", data={"disk_space": whole_file_size, "project_count": project_count}, message="ok")
+
+
+@router.get(
     "/{project_id}",
     response_model=ResponseProjectDetailModel,
     status_code=status.HTTP_200_OK,
@@ -282,8 +313,11 @@ async def get_project_info(
 ) -> ResponseMessage:
     filter_list = [
         cellxgene.ProjectMeta.id == project_id,
+        cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE
     ]
     project_info_model = crud.get_project(db=db, filters=filter_list).first()
+    if not project_info_model:
+        return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info_model.is_publish and not project_info_model.is_private:
         return ResponseMessage(status="0000", data=project_info_model, message="ok")
     elif project_info_model.is_private:
@@ -310,6 +344,30 @@ async def get_project_info(
             return ResponseMessage(status="0201", data={}, message="permission denied")
     else:
         return ResponseMessage(status="0201", data={}, message="permission denied")
+
+
+@router.delete(
+    "/{project_id}",
+    response_model=ResponseProjectDetailModel,
+    status_code=status.HTTP_200_OK,
+)
+async def get_project_info(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user_email_address=Depends(get_current_user),
+) -> ResponseMessage:
+    filter_list = [
+        cellxgene.ProjectMeta.id == project_id,
+        cellxgene.ProjectMeta.owner == cellxgene.User.id,
+        cellxgene.User.email_address == current_user_email_address,
+    ]
+    project_info = crud.get_project(db=db, filters=filter_list).first()
+    if not project_info:
+        return ResponseMessage(status="0201", data={}, message="permission denied")
+    crud.update_project(db=db,
+                        filters=[cellxgene.ProjectMeta.id == project_id],
+                        update_dict={"is_publish": config.ProjectStatus.PROJECT_STATUS_DELETE})
+    return ResponseMessage(status="0000", data={}, message="项目删除成功")
 
 
 @router.get(
@@ -345,6 +403,14 @@ async def create_project(
         .first()
         .id
     )
+    already_exist_project_count = crud.get_project(db=db,
+                                                   filters=[cellxgene.ProjectMeta.owner == owner,
+                                                            cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
+                                                   ).count()
+    if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
+        return ResponseMessage(
+                    status="0201", data={}, message="Common user has a maximum of three projects"
+                )
     publish_status = config.ProjectStatus.PROJECT_STATUS_DRAFT
     create_project_model.members.append(current_user_email_address)
     member_info_list = []
@@ -438,6 +504,14 @@ async def update_project(
     update_project_model.members.append(current_user_email_address)
     if not project_info:
         return ResponseMessage(status="0201", data={}, message="permission denied")
+    if update_project_model.h5ad_id is not None:
+        check_file_name_util.check_file_name(file_type="h5ad", file_id=update_project_model.h5ad_id)
+    if update_project_model.umap_id is not None:
+        check_file_name_util.check_file_name(file_type="umap", file_id=update_project_model.umap_id)
+    if update_project_model.cell_marker_id is not None:
+        check_file_name_util.check_file_name(file_type="cell_marker", file_id=update_project_model.cell_marker_id)
+    if update_project_model.pathway_id is not None:
+        check_file_name_util.check_file_name(file_type="pathway", file_id=update_project_model.pathway_id)
     if (not project_info.is_publish) or project_info.is_private:
         publish_status = config.ProjectStatus.PROJECT_STATUS_DRAFT
         if update_project_model.is_private and update_project_model.is_publish:
@@ -571,6 +645,14 @@ async def transfer_project(
         return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info.project_user_meta.email_address != current_user_email_address:
         return ResponseMessage(status="0201", data={}, message="You are not the owner of the project and cannot transfer this project")
+    already_exist_project_count = crud.get_project(db=db,
+                                                   filters=[cellxgene.ProjectMeta.owner == transfer_to_user_info.id,
+                                                            cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
+                                                   ).count()
+    if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
+        return ResponseMessage(
+            status="0201", data={}, message="Common user has a maximum of three projects"
+        )
     if project_info.is_private:
         try:
             insert_transfer_model = cellxgene.TransferHistory(
@@ -639,6 +721,14 @@ def copy_project_id(
         return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info.project_user_meta.email_address != current_user_email_address:
         return ResponseMessage(status="0201", data={}, message="You are not the owner of the project and cannot copy it")
+    already_exist_project_count = crud.get_project(db=db,
+                                                   filters=[cellxgene.ProjectMeta.owner == copy_to_user_info.id,
+                                                            cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
+                                                   ).count()
+    if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
+        return ResponseMessage(
+            status="0201", data={}, message="Common user has a maximum of three projects"
+        )
     if project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE:
         insert_project_dict = project_info.to_dict()
         del insert_project_dict["id"]
@@ -1695,7 +1785,6 @@ async def delete_file(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ):
-    print(file_id)
     filter_list = [
         cellxgene.User.email_address == current_user_email_address,
         cellxgene.FileLibrary.upload_user_id == cellxgene.User.id,
@@ -1707,8 +1796,23 @@ async def delete_file(
     )
     if not file_info:
         return ResponseMessage(status="0201", data={}, message="permission denied")
-    crud.update_file(db=db, filters=[cellxgene.FileLibrary.file_id == file_id], file_filters=[], update_dict={"file_status": config.FileStatus.DELETE})
-    return ResponseMessage(status="0000", data={}, message="ok")
+    analysis_filter_list = [
+        cellxgene.Analysis.project_id == cellxgene.ProjectMeta.id,
+        cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE,
+        or_(cellxgene.Analysis.umap_id == file_id,
+            cellxgene.Analysis.cell_marker_id == file_id,
+            cellxgene.Analysis.excel_id == file_id,
+            cellxgene.Analysis.pathway_id == file_id,
+            cellxgene.Analysis.h5ad_id == file_id,
+            cellxgene.Analysis.other_file_ids.like("%{}%".format(file_id)))
+    ]
+    analysis_info = crud.get_analysis(db=db, filters=analysis_filter_list).first()
+    if not analysis_info:
+        file_util.remove_file(file_id)
+        crud.update_file(db=db, filters=[cellxgene.FileLibrary.file_id == file_id], file_filters=[], update_dict={"file_status": config.FileStatus.DELETE})
+        return ResponseMessage(status="0000", data={}, message="ok")
+    else:
+        return ResponseMessage(status="0201", data={}, message="The file is associated with an item and cannot be deleted")
 
 
 @router.get(

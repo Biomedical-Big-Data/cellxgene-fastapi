@@ -319,11 +319,22 @@ def get_file_name(db: Session, excel_id: str):
     print(file_name)
 
 
+def file_name_test(h5ad_id):
+    if h5ad_id is not None:
+        name_list = h5ad_id.split(".")
+        if len(name_list) >= 2:
+            if name_list[len(name_list) - 1] != "h5ad":
+                print('wrong file')
+        else:
+            print('wrong file')
+
+
 if __name__ == "__main__":
     pass
+    file_name_test('84bb8e668bfb4323819ca89abc0b0137.h5ad')
     # get_file_name(db=next(get_db()), excel_id='84bb8e668bfb4323819ca89abc0b0137.xlsx')
     # cell_taxonomy_tree(next(get_db()))
-    create_cell_type_meta(next(get_db()))
+    # create_cell_type_meta(next(get_db()))
     # get_relation()
     # import_relation_json()
     # excel_test()
