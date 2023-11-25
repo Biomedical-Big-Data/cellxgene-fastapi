@@ -398,19 +398,19 @@ async def create_project(
     db: Session = Depends(get_db),
     current_user_email_address=Depends(get_current_user),
 ) -> ResponseMessage:
-    owner = (
+    user_info = (
         crud.get_user(db, [cellxgene.User.email_address == current_user_email_address])
         .first()
-        .id
     )
-    already_exist_project_count = crud.get_project(db=db,
-                                                   filters=[cellxgene.ProjectMeta.owner == owner,
-                                                            cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
-                                                   ).count()
-    if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
-        return ResponseMessage(
-                    status="0201", data={}, message="Common user has a maximum of three projects"
-                )
+    if user_info.role == config.UserRole.USER_ROLE_FORMAL:
+        already_exist_project_count = crud.get_project(db=db,
+                                                       filters=[cellxgene.ProjectMeta.owner == user_info.id,
+                                                                cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
+                                                       ).count()
+        if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
+            return ResponseMessage(
+                        status="0201", data={}, message="Common user has a maximum of three projects"
+                    )
     if create_project_model.h5ad_id is not None:
         check_file_name_util.check_file_name(file_type="h5ad", file_id=create_project_model.h5ad_id)
     if create_project_model.umap_id is not None:
@@ -441,7 +441,7 @@ async def create_project(
         is_publish=publish_status,
         is_private=create_project_model.is_private,
         tags=create_project_model.tags,
-        owner=owner,
+        owner=user_info.id,
     )
     for member_info in member_info_list:
         project_user_model = cellxgene.ProjectUser(user_id=member_info.id)
@@ -653,14 +653,15 @@ async def transfer_project(
         return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info.project_user_meta.email_address != current_user_email_address:
         return ResponseMessage(status="0201", data={}, message="You are not the owner of the project and cannot transfer this project")
-    already_exist_project_count = crud.get_project(db=db,
-                                                   filters=[cellxgene.ProjectMeta.owner == transfer_to_user_info.id,
-                                                            cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
-                                                   ).count()
-    if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
-        return ResponseMessage(
-            status="0201", data={}, message="Common user has a maximum of three projects"
-        )
+    if transfer_to_user_info.role == config.UserRole.USER_ROLE_FORMAL:
+        already_exist_project_count = crud.get_project(db=db,
+                                                       filters=[cellxgene.ProjectMeta.owner == transfer_to_user_info.id,
+                                                                cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
+                                                       ).count()
+        if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
+            return ResponseMessage(
+                status="0201", data={}, message="Common user has a maximum of three projects"
+            )
     if project_info.is_private:
         try:
             insert_transfer_model = cellxgene.TransferHistory(
@@ -729,14 +730,15 @@ def copy_project_id(
         return ResponseMessage(status="0201", data={}, message="Project does not exist")
     if project_info.project_user_meta.email_address != current_user_email_address:
         return ResponseMessage(status="0201", data={}, message="You are not the owner of the project and cannot copy it")
-    already_exist_project_count = crud.get_project(db=db,
-                                                   filters=[cellxgene.ProjectMeta.owner == copy_to_user_info.id,
-                                                            cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
-                                                   ).count()
-    if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
-        return ResponseMessage(
-            status="0201", data={}, message="Common user has a maximum of three projects"
-        )
+    if copy_to_user_info.role == config.UserRole.USER_ROLE_FORMAL:
+        already_exist_project_count = crud.get_project(db=db,
+                                                       filters=[cellxgene.ProjectMeta.owner == copy_to_user_info.id,
+                                                                cellxgene.ProjectMeta.is_publish != config.ProjectStatus.PROJECT_STATUS_DELETE]
+                                                       ).count()
+        if already_exist_project_count >= config.NormalUserLimit.MAXPROJECTCOUNT:
+            return ResponseMessage(
+                status="0201", data={}, message="Common user has a maximum of three projects"
+            )
     if project_info.is_private == config.ProjectStatus.PROJECT_STATUS_PRIVATE:
         insert_project_dict = project_info.to_dict()
         del insert_project_dict["id"]
