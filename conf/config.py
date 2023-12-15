@@ -29,6 +29,12 @@ else:
     cp.read(os.path.join(PROJECT_ROOT, "conf_preview.cfg"), encoding="utf8")
 
 
+MYSQL_USER = os.getenv("mysql_user", "")
+MYSQL_PASSWORD = os.getenv("mysql_password", "")
+MYSQL_HOST = os.getenv("mysql_host", "")
+MYSQL_PORT = os.getenv("mysql_port", "")
+
+
 MAIL_CONFIG = parse_cfg_dict(cp.items("mail_config"))
 DATABASE = parse_cfg_dict(cp.items("database"))
 JWT_CONFIG = parse_cfg_dict(cp.items("jwt_config"))
