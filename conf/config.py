@@ -1,7 +1,6 @@
 import os
 import configparser
 
-
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -28,20 +27,12 @@ if branch == "master":
 else:
     cp.read(os.path.join(PROJECT_ROOT, "conf_preview.cfg"), encoding="utf8")
 
-
-MYSQL_USER = os.getenv("mysql_user", "")
-MYSQL_PASSWORD = os.getenv("mysql_password", "")
-MYSQL_HOST = os.getenv("mysql_host", "")
-MYSQL_PORT = os.getenv("mysql_port", "")
-
-
 MAIL_CONFIG = parse_cfg_dict(cp.items("mail_config"))
 DATABASE = parse_cfg_dict(cp.items("database"))
 JWT_CONFIG = parse_cfg_dict(cp.items("jwt_config"))
 VERIFY_CONFIG = parse_cfg_dict(cp.items("verify_config"))
 CELLXGENE_GATEWAY_CONFIG = parse_cfg_dict(cp.items("cellxgene_gateway"))
 MQTT_CONFIG = parse_cfg_dict(cp.items("mqtt_config"))
-
 
 SMTP_SERVER = MAIL_CONFIG.get("smtp_server")
 SMTP_PORT = MAIL_CONFIG.get("smtp_port")
@@ -98,7 +89,7 @@ class ProjectStatus:
 class FileStatus:
     NORMAL = 1
     DELETE = 0
-    
+
 
 class NormalUserLimit:
     MAXPROJECTCOUNT = 3
