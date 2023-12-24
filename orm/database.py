@@ -5,7 +5,7 @@ from urllib.parse import quote_plus as urlquote
 from conf.config import MYSQL_USER, MYSQL_HOST, MYSQL_PORT, MYSQL_PASSWORD
 
 
-USER_DATABASE_URL = f"mysql+pymysql://{urlquote(MYSQL_USER)}:{urlquote(MYSQL_PASSWORD)}@{urlquote(MYSQL_HOST)}:{urlquote(MYSQL_PORT)}/?charset=utf8"
+USER_DATABASE_URL = f"mysql+pymysql://{urlquote(MYSQL_USER)}:{urlquote(MYSQL_PASSWORD)}@{urlquote(MYSQL_HOST)}:{urlquote(MYSQL_PORT)}/cellxgene?charset=utf8"
 
 cellxgene_engine = create_engine(
     USER_DATABASE_URL,
