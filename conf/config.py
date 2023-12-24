@@ -1,7 +1,6 @@
 import os
 import configparser
 
-
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -28,47 +27,33 @@ if branch == "master":
 else:
     cp.read(os.path.join(PROJECT_ROOT, "conf_preview.cfg"), encoding="utf8")
 
-
 MYSQL_USER = os.getenv("mysql_user", "")
 MYSQL_PASSWORD = os.getenv("mysql_password", "")
 MYSQL_HOST = os.getenv("mysql_host", "")
 MYSQL_PORT = os.getenv("mysql_port", "")
 
+SMTP_SERVER = os.getenv("smtp_server", "")
+SMTP_PORT = os.getenv("smtp_port", "")
+SENDER_EMAIL_ACCOUNT = os.getenv("send_mail_account", "")
+AUTHORIZATION_CODE = os.getenv("authorization_code", "")
+TEST_EMAIL_ADDRESS = os.getenv("test_email_address", "")
 
-MAIL_CONFIG = parse_cfg_dict(cp.items("mail_config"))
-DATABASE = parse_cfg_dict(cp.items("database"))
+MQTT_BROKER_URL = os.getenv("mqtt_broker_url", "")
+MQTT_BROKER_PORT = os.getenv("mqtt_broker_port", "")
+MQTT_TOPIC = os.getenv("mqtt_topic", "")
+
+VERIFY_URL = os.getenv("verify_url", "")
+RESET_PASSWORD_URL = os.getenv("reset_password_url", "")
+
+CELLXGENE_GATEWAY_URL = os.getenv("url", "")
+H5AD_FILE_PATH = os.getenv("h5ad_file_path", "")
+META_FILE_PATH = os.getenv("meta_file_path", "")
+
 JWT_CONFIG = parse_cfg_dict(cp.items("jwt_config"))
-VERIFY_CONFIG = parse_cfg_dict(cp.items("verify_config"))
-CELLXGENE_GATEWAY_CONFIG = parse_cfg_dict(cp.items("cellxgene_gateway"))
-MQTT_CONFIG = parse_cfg_dict(cp.items("mqtt_config"))
 
-
-SMTP_SERVER = MAIL_CONFIG.get("smtp_server")
-SMTP_PORT = MAIL_CONFIG.get("smtp_port")
-SENDER_EMAIL_ACCOUNT = MAIL_CONFIG.get("send_mail_account")
-AUTHORIZATION_CODE = MAIL_CONFIG.get("authorization_code")
-SENDER_NAME = MAIL_CONFIG.get("sender_name")
-TEST_EMAIL_ADDRESS = MAIL_CONFIG.get("test_email_address")
-
-DATABASE_URL = DATABASE.get("database_url")
-
-JWT_SECRET_KEY = JWT_CONFIG.get("jwt_secret_key")
-JWT_VERIFY_EXPIRE_TIME = JWT_CONFIG.get("jwt_verify_expire_time")
 JWT_RESET_PASSWORD_EXPIRE_TIME = JWT_CONFIG.get("jwt_reset_password_expire_time")
 JWT_LOGIN_EXPIRE_TIME = JWT_CONFIG.get("jwt_login_expire_time")
 JWT_ALGORITHMS = JWT_CONFIG.get("jwt_algorithms")
-
-VERIFY_URL = VERIFY_CONFIG.get("verify_url")
-RESET_PASSWORD_URL = VERIFY_CONFIG.get("reset_password_url")
-
-CELLXGENE_GATEWAY_URL = CELLXGENE_GATEWAY_CONFIG.get("url")
-H5AD_FILE_PATH = CELLXGENE_GATEWAY_CONFIG.get("h5ad_file_path")
-META_FILE_PATH = CELLXGENE_GATEWAY_CONFIG.get("meta_file_path")
-UPDATE_FILE_PATH = CELLXGENE_GATEWAY_CONFIG.get("update_project_file_path")
-
-MQTT_BROKER_URL = MQTT_CONFIG.get("mqtt_broker_url")
-MQTT_BROKER_PORT = MQTT_CONFIG.get("mqtt_broker_port")
-MQTT_TOPIC = MQTT_CONFIG.get("mqtt_topic")
 
 
 class UserStateConfig:
@@ -98,7 +83,7 @@ class ProjectStatus:
 class FileStatus:
     NORMAL = 1
     DELETE = 0
-    
+
 
 class NormalUserLimit:
     MAXPROJECTCOUNT = 3
