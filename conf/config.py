@@ -4,29 +4,6 @@ import configparser
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
-def parse_cfg_dict(items):
-    cfg_dict = {}
-    for item in items:
-        k, v = item
-        if v.isdigit():
-            cfg_dict[k] = int(v)
-        else:
-            cfg_dict[k] = v
-    return cfg_dict
-
-
-cp = configparser.ConfigParser()
-branch = (
-    os.popen("cd %s; git branch | grep \\* | awk '{print $2}'" % PROJECT_ROOT)
-    .read()
-    .replace("\n", "")
-)
-
-if branch == "master":
-    cp.read(os.path.join(PROJECT_ROOT, "conf_master.cfg"), encoding="utf8")
-else:
-    cp.read(os.path.join(PROJECT_ROOT, "conf_preview.cfg"), encoding="utf8")
-
 MYSQL_USER = os.getenv("mysql_user", "")
 MYSQL_PASSWORD = os.getenv("mysql_password", "")
 MYSQL_HOST = os.getenv("mysql_host", "")
@@ -49,13 +26,11 @@ CELLXGENE_GATEWAY_URL = os.getenv("url", "")
 H5AD_FILE_PATH = os.getenv("h5ad_file_path", "")
 META_FILE_PATH = os.getenv("meta_file_path", "")
 
-JWT_CONFIG = parse_cfg_dict(cp.items("jwt_config"))
-
-JWT_SECRET_KEY = JWT_CONFIG.get("jwt_secret_key")
-JWT_VERIFY_EXPIRE_TIME = JWT_CONFIG.get("jwt_verify_expire_time")
-JWT_RESET_PASSWORD_EXPIRE_TIME = JWT_CONFIG.get("jwt_reset_password_expire_time")
-JWT_LOGIN_EXPIRE_TIME = JWT_CONFIG.get("jwt_login_expire_time")
-JWT_ALGORITHMS = JWT_CONFIG.get("jwt_algorithms")
+JWT_SECRET_KEY = os.getenv("jwt_secret_key", "")
+JWT_VERIFY_EXPIRE_TIME = os.getenv("jwt_verify_expire_time", "")
+JWT_RESET_PASSWORD_EXPIRE_TIME = os.getenv("jwt_reset_password_expire_time", "")
+JWT_LOGIN_EXPIRE_TIME = os.getenv("jwt_login_expire_time", "")
+JWT_ALGORITHMS = os.getenv("jwt_algorithms", "")
 
 
 class UserStateConfig:
