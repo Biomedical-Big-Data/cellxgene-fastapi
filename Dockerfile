@@ -31,7 +31,7 @@ ENV mqtt_topic=
 ENV verify_url=
 ENV reset_password_url=
 
-ENV url=
+ENV cellxgene_gateway_url=
 ENV h5ad_file_path=
 ENV meta_file_path=
 

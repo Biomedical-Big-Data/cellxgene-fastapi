@@ -22,7 +22,7 @@ MQTT_TOPIC = os.getenv("mqtt_topic", "")
 VERIFY_URL = os.getenv("verify_url", "")
 RESET_PASSWORD_URL = os.getenv("reset_password_url", "")
 
-CELLXGENE_GATEWAY_URL = os.getenv("url", "")
+CELLXGENE_GATEWAY_URL = os.getenv("cellxgene_gateway_url", "")
 H5AD_FILE_PATH = os.getenv("h5ad_file_path", "")
 META_FILE_PATH = os.getenv("meta_file_path", "")
 
